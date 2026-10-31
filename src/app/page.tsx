@@ -1,27 +1,48 @@
 import { ButtonLink } from "@/design-system/components/button-link";
-import { strings } from "@/content/strings";
+import { getOwnProfile } from "@/modules/identity/session";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const profile = await getOwnProfile();
+
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-4 py-16">
-      <div className="flex flex-col gap-4">
-        <h1 className="font-display text-4xl leading-tight text-text-brand sm:text-5xl">
-          {strings.appName}
+    <div className="flex flex-col gap-8">
+      <section aria-labelledby="home-title" className="flex flex-col gap-3">
+        <h1
+          id="home-title"
+          className="font-display text-3xl leading-tight text-text-brand sm:text-4xl"
+        >
+          {profile
+            ? `Welcome back, ${profile.displayName}.`
+            : "The gardener gardens. DahliaSeedling remembers."}
         </h1>
-        {/* Decorative accent only. Apricot is never used for text (it fails contrast on porcelain). */}
-        <div aria-hidden="true" className="h-1 w-12 rounded-full bg-primary" />
-      </div>
+        {profile ? null : (
+          <p className="text-base text-text-muted">
+            Browse freely. Create an account when you want to document your own Seedlings, share
+            them, or take part.
+          </p>
+        )}
+      </section>
 
-      <div className="flex flex-col gap-3">
-        <p className="text-xl font-medium text-text">{strings.home.foundation}</p>
-        <p className="text-base text-text-muted">{strings.home.note}</p>
-      </div>
+      <section
+        aria-labelledby="feed-title"
+        className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4"
+      >
+        <h2 id="feed-title" className="text-lg font-medium text-text">
+          Nothing has been shared yet
+        </h2>
+        <p className="text-base text-text-muted">
+          Public Updates and search will appear here as the community grows.
+        </p>
+      </section>
 
-      <div>
-        <ButtonLink href="/api/health" variant="secondary">
-          {strings.home.statusAction}
-        </ButtonLink>
-      </div>
-    </main>
+      {profile ? null : (
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <ButtonLink href="/sign-up">Create an account</ButtonLink>
+          <ButtonLink href="/sign-in" variant="secondary">
+            Sign in
+          </ButtonLink>
+        </div>
+      )}
+    </div>
   );
 }

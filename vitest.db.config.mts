@@ -1,0 +1,19 @@
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+// Behavioural database tests against the running local Supabase stack (`npm run supabase:start`).
+// Files run one at a time: they share the local database and create real auth users.
+export default defineConfig({
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  test: {
+    environment: "node",
+    include: ["tests/db/**/*.test.ts"],
+    fileParallelism: false,
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+  },
+});

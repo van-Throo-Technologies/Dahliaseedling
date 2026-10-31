@@ -9,6 +9,13 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: {
+    serverActions: {
+      // Avatars are capped at 2 MB (see src/modules/identity/validation.ts). The extra headroom
+      // covers multipart boundaries and field metadata.
+      bodySizeLimit: "3mb",
+    },
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
