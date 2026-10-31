@@ -1,0 +1,36 @@
+/*
+ * Semantic design aliases exposed to Tailwind.
+ *
+ * Components use utilities built from these names (bg-primary, text-text-brand, border-border …).
+ * Each alias points at a raw token in tokens.css, so a palette change happens in one place.
+ * Contrast pairs are verified in tests/design-system/tokens.test.ts.
+ */
+@theme {
+  /* Surfaces */
+  --color-background: var(--ds-porcelain);
+  --color-surface: var(--ds-white);
+  --color-border: var(--ds-sand);
+
+  /* Text */
+  --color-text: var(--ds-charcoal);
+  --color-text-muted: var(--ds-plum);
+  --color-text-brand: var(--ds-aubergine);
+
+  /* Actions. Apricot is a fill, never text: dark text is required on it. */
+  --color-primary: var(--ds-apricot);
+  --color-on-primary: var(--ds-aubergine);
+  --color-accent: var(--ds-plum);
+
+  /* Status and focus */
+  --color-destructive: var(--ds-destructive);
+  --color-on-destructive: var(--ds-white);
+  --color-focus: var(--ds-aubergine);
+
+  /* Typography. Loaded by next/font in src/design-system/fonts.ts. */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  /* Moderate corner radii. Avoid pill shapes for general controls. */
+  --radius-control: 0.5rem;
+  --radius-surface: 0.75rem;
+}

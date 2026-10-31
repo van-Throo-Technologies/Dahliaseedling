@@ -1,0 +1,4 @@
+-- Local development seed data.
+--
+-- Phase 0 creates no application tables, so there is nothing to seed yet.
+-- Later phases add SYNTHETIC development data only (never real grower, message or location data).

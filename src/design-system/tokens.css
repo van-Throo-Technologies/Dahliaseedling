@@ -1,0 +1,24 @@
+/*
+ * Raw DahliaSeedling design tokens.
+ *
+ * This is the ONLY file in the codebase that may contain raw HEX colour values.
+ * Components use semantic aliases from theme.css, never these values and never HEX literals.
+ * Source: Design System & UI Brief v1.0, sections 2 and 15.
+ */
+:root {
+  /* The MVP is light-only. Dark mode is explicitly out of scope. */
+  color-scheme: light;
+
+  /* Locked brand palette */
+  --ds-aubergine: #382733;
+  --ds-apricot: #f29b72;
+  --ds-plum: #8b6177;
+  --ds-porcelain: #fbf7f1;
+  --ds-sand: #e8ddd2;
+  --ds-charcoal: #29272a;
+
+  /* Functional neutrals and semantic colours (outside the brand palette, by design) */
+  --ds-white: #ffffff;
+  /* Chosen for AA contrast: 6.8:1 on porcelain, 7.3:1 with white text. */
+  --ds-destructive: #a4262c;
+}
