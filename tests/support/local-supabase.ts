@@ -86,13 +86,42 @@ export async function withSuperuser<T>(run: (db: pg.Client) => Promise<T>): Prom
   }
 }
 
-/** Removes every auth user this suite created. Their profiles and admin rows cascade. */
+/**
+ * Removes the auth users a suite created. Their profiles, seedlings and provenance cascade or follow.
+ * Seedlings are never hard-deleted in the product, so the cleanup turns off triggers and foreign-key
+ * checks for this one local superuser session only. It never runs against a hosted project.
+ */
 export async function removeTestUsers(ids: readonly string[]): Promise<void> {
   if (ids.length === 0) return;
-  await withSuperuser((db) => db.query("delete from auth.users where id = any($1::uuid[])", [ids]));
+  await withSuperuser(async (db) => {
+    await db.query("set session_replication_role = replica");
+    await db.query("delete from auth.users where id = any($1::uuid[])", [ids]);
+  });
 }
 
 /** PostgREST / Postgres error code from a supabase-js error, or null when there was none. */
 export function errorCode(error: { code?: string } | null): string | null {
   return error?.code ?? null;
+}
+
+/**
+ * Test-only: simulates a future confirmed continuation by moving a seedling to another holder. It sets
+ * the same transaction flag the Phase 6 continuation transaction will set, on a local superuser
+ * connection, inside one transaction. The product exposes no client mechanism for this.
+ */
+export async function simulateHolderChange(seedlingId: string, newHolderId: string): Promise<void> {
+  await withSuperuser(async (db) => {
+    await db.query("begin");
+    try {
+      await db.query("select set_config('dahlia.holder_transfer', 'confirmed', true)");
+      await db.query("update public.seedlings set current_holder_id = $2 where id = $1", [
+        seedlingId,
+        newHolderId,
+      ]);
+      await db.query("commit");
+    } catch (error) {
+      await db.query("rollback");
+      throw error;
+    }
+  });
 }

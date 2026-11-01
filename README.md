@@ -4,9 +4,9 @@ A community and continuation platform for genetically unique dahlias grown from 
 
 > **Phase status**
 >
-> Implemented: **Phase 0 — Foundation** and **Phase 1 — Identity & App Shell**.
+> Implemented: **Phase 0 — Foundation**, **Phase 1 — Identity & App Shell** and **Phase 2 — Seedling Core**.
 >
-> Phase 2 (Seedling Core) has **not** been started.
+> Phase 3 (Capture & Observations) has **not** been started.
 
 The product specifications in the repository root are the source of truth. They are not edited by the codebase. Where this README and those documents disagree, the documents win. The locked specifications are: Domain Architecture v1.0, PRD v1.0, TRD v1.0, App Flow & UX v1.0, Data Model + Permissions v1.0, Implementation Plan v1.0, Design System & UI Brief v1.0, and the Post-MVP Backlog.
 
@@ -87,7 +87,9 @@ Phase 1 adds two migrations:
 - `identity_admin_and_avatars`: the `admin_users` table, `is_admin()`, `admin_set_suspended()`, and the `avatars` storage bucket with owner-only write policies.
 - `identity_avatar_private_delivery`: makes the `avatars` bucket **private** and adds the read policy described under "Avatars".
 
-Phase 1 creates **no** Seedling, Capture, Update, message or notification tables.
+Phase 2 adds `20261031233803_seedling_core`: the `series`, `cultivar_references`, `seedlings`, `seedling_identifiers`, `seedling_parentage` and `provenance_events` tables, their RLS and grants, the triggers that protect identity, and the domain functions listed under "Seedling core".
+
+Phase 1 and 2 create **no** Capture, Observation, media, Update, comment, follow, message or notification tables.
 
 ### Database conventions
 
@@ -169,6 +171,96 @@ Admin status is stored in `admin_users`, not on a profile.
 
 Emergency suspension without a signed-in admin is a privileged SQL update of `profiles.is_suspended`. Record it.
 
+## Seedling core (Phase 2)
+
+A **seedling** is one genetically unique dahlia grown from seed. Its database uuid is its immutable internal identity. Every human-readable identifier is a label attached to that identity. Nothing else changes what the seedling is.
+
+### Identity invariants
+
+- The uuid is never reissued, and clients cannot choose or change it.
+- The **originator** is set at creation and never changes. A trigger refuses any change.
+- The **current holder** is the grower with management authority. At creation it is the originator. It changes only inside the future confirmed-continuation transaction, which sets a transaction flag. Nothing else can change it, not even a privileged session.
+- Seedlings are never hard-deleted. Deleting one is refused by a trigger.
+- A cull or continuation is not deletion. Phase 2 has no Cull state, and the schema leaves room for it.
+
+### Identifiers
+
+Each seedling has an automatic number, and may also have a Series identifier. The two are independent.
+
+| Kind      | Format                                                 | Scope                                                       | Notes                                                                |
+| --------- | ------------------------------------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| Automatic | `#1`, `#2`, … (stored as `1`, `2`)                     | Per grower                                                  | Always created at creation. Never reset annually or reused.          |
+| Series    | Pattern filled in from the Series, such as `JV-26-001` | Per Series, and per cohort year when the pattern has `{YY}` | Created at creation, or added later with `attach_series_identifier`. |
+
+**Series.** A grower creates one or more Series, each with a name of 1 to 8 letters or digits (`JV`, `VT`). The pattern is `NAME-{YY}-{NNN}` (year-based) or `NAME-{NNN}` (yearless). DahliaSeedling does not decide what a Series means, and no Series is seeded.
+
+**Year (`{YY}`) comes from the seedling's first-grown year.** It is the year the seedling was first grown from seed. It is never the day the record was entered, and never the identifier allocation time. A seedling first grown in 2026 and entered in 2027 is `JV-26-…`.
+
+**Sequence scope.**
+
+- A year-based pattern counts per **Series and cohort year**. `JV-26-001`, `JV-26-002`, then the first 2027 seedling is `JV-27-001`. Concurrent allocations for one Series and year are serialised by an advisory lock on that pair, and retired numbers are counted, so none is reissued.
+- A yearless pattern counts per **Series** for its lifetime, from a counter on the Series row, locked for each increment. `JV-001`, `JV-002`, …, whatever first-grown years the seedlings have.
+
+**Missing first-grown year.** A seedling can always be created, and it always gets its automatic number. A year-based Series cannot be allocated without a first-grown year. The database refuses the combination with a message on the year field, so no seedling is created with a silently dropped Series. The user chooses "Automatic number only", or enters the year.
+
+**Adding a Series identifier later.** `attach_series_identifier(seedling, series)` adds a Series identifier to a seedling the caller holds. It verifies Series ownership and the year requirement, allocates in the correct scope, and makes the new identifier the primary display identifier. It does not change the seedling's uuid, its automatic number, or any existing identifier. A seedling can have at most one identifier from each Series.
+
+**Changing the first-grown year after allocation.** Existing identifiers are historical. Changing `first_grown_year` does **not** rename them: a seedling already numbered `JV-26-014` stays `JV-26-014` if its year is later edited to 2027. Only seedlings allocated afterwards use the new year. Correcting an erroneous identifier is a future identity-correction mechanism. It is not part of Phase 2.
+
+**History and aliases.** Identifier values and owners are immutable, and identifier rows cannot be deleted. A retired identifier stays in the table with `is_retired_alias = true`. It is never issued again, and `public.resolve_own_identifier` still resolves it to its seedling. The merge operation that creates retirements is Phase 9.
+
+### Privacy and access
+
+- **Private** is the default. Only the current holder can manage a private seedling.
+- **Public** is an explicit choice. Anyone can read a public seedling, its identifiers and its provenance, while its current holder's profile is not suspended.
+- **The originator keeps read access** to a seedling they raised, even after the holder changes, and even when it is private under the later holder. This is **read access only**. The originator cannot edit the name, year or privacy; change parentage; allocate identifiers; change the holder; or do any other holder-only action. Holder authority stays with the current holder. The read rule is `seedlings_select_originator`, and every write rule still checks `current_holder_id`.
+- **A suspended holder's public seedlings are not publicly visible.** Visitors and other ordinary users cannot reach them through public visibility. The holder keeps read access to their own records, and editing stays disabled. Suspension changes no data.
+- A private seedling's existence is not revealed. A private seedling, a missing one and a malformed id all return 404.
+- A parent link is shown only when the reader may see that parent. A private parent is not revealed by its uuid, identifier, name, or any placeholder.
+
+### Parentage
+
+Each seedling has up to two parent rows, a seed parent and a pollen parent. A row names exactly one of three things, enforced by a check constraint:
+
+| State            | Stored as                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| Not recorded     | No row. Shown as "Not recorded yet".                                                  |
+| Unknown          | `is_unknown = true`. Shown as "Unknown". Unknown is a statement, not an absence.      |
+| Another seedling | `parent_seedling_id`, a seedling the caller can see, and never the seedling itself.   |
+| Named cultivar   | `parent_cultivar_id`, a shared `cultivar_references` row, matched by normalised name. |
+
+**Parent selection.** The parent selector is a short search, not a list of every seedling. A grower types a number, identifier, or the start of a working name. Results come from the database under RLS, so the grower gets their own visible seedlings and other growers' public ones, and never a private seedling of someone else. Each result shows the grower who holds it.
+
+Parentage is set through `public.set_seedling_parent`, which replaces one role atomically. Pollen parent is optional. Nothing is inferred.
+
+**Cultivar references.** Any participating grower may create one when parentage needs it. Names are normalised, and duplicates by normalised name are prevented. References are publicly readable. The table is not a cultivar catalogue.
+
+### Provenance
+
+Each new seedling gets one `originated` provenance event, in the same transaction as its identity. The table is append-only: updates and deletes are refused for every role, and ordinary clients have no write grant. Holder changes will add events in Phase 6, through the same transaction flag.
+
+### Domain functions
+
+| Function                                                                                 | Purpose                                                                                                                                  |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_seedling(series_id, working_name, first_grown_year, visibility)`                 | Creates the seedling, its automatic number, any Series identifier, and its provenance, atomically. Originator and holder are the caller. |
+| `create_series(name, include_year)`                                                      | Creates a Series, with its counter for yearless patterns.                                                                                |
+| `attach_series_identifier(seedling_id, series_id)`                                       | Adds a Series identifier to a seedling the caller holds.                                                                                 |
+| `set_seedling_parent(seedling_id, role, kind, parent_seedling_id, cultivar_name, notes)` | Sets one parent role on a seedling the caller holds.                                                                                     |
+| `resolve_own_identifier(identifier)`                                                     | Resolves a human identifier within the caller's own namespace, including retired aliases.                                                |
+| `next_series_identifier(series_id, first_grown_year)`                                    | Internal allocator, used by the two functions above. Clients have no execute grant.                                                      |
+
+Clients update only `working_name`, `first_grown_year` and `visibility`, and only on a seedling they hold while not suspended.
+
+### Routes
+
+- `/series`: create and list your Series. Gated.
+- `/seedlings/new`: create a seedling. Gated.
+- `/seedlings/<uuid>`: the seedling. Public for visitors when public. The holder also sees the management forms. The originator who is not the holder sees a read-only record with a note.
+- `/profile`: your seedlings, with links.
+
+Seedlings are addressed by uuid. Human identifiers are not used in URLs, because the specifications do not define a public slug, and a uuid reveals nothing.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |
@@ -210,6 +302,18 @@ GET /api/health
 - `503` with `{ "status": "error", "problems": { "missing": [...], "invalid": [...] } }` otherwise.
 
 It makes no network calls, so a Supabase outage does not make the app look dead.
+
+## Phase 2 verification
+
+Run the database and browser tests after `npm run supabase:start` and `npm run db:reset`:
+
+```bash
+npm test                 # unit tests, including seedling validation and presentation
+npm run test:db          # RLS, identifier, access and concurrency tests (vitest.db.config.mts)
+npm run test:e2e         # browser journeys, phone and desktop
+```
+
+The concurrency tests (`tests/db/seedlings.concurrency.test.ts`) send parallel requests through the API: 20 creations for one Series and year, two years in parallel, a yearless Series, mixed automatic numbers, and parallel attachments.
 
 ## Manual verification
 

@@ -156,3 +156,40 @@ export function FileField({ label, name, error, hint, ...input }: FileFieldProps
     </FieldFrame>
   );
 }
+
+export interface SelectOption {
+  readonly value: string;
+  readonly label: string;
+}
+
+export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  readonly label: string;
+  readonly name: string;
+  readonly options: readonly SelectOption[];
+  readonly error?: string;
+  readonly hint?: string;
+}
+
+export function SelectField({ label, name, options, error, hint, ...select }: SelectFieldProps) {
+  const id = `field-${name}`;
+  return (
+    <FieldFrame id={id} label={label} hint={hint} error={error}>
+      {(describedBy) => (
+        <select
+          id={id}
+          name={name}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={controlClasses}
+          {...select}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </FieldFrame>
+  );
+}
