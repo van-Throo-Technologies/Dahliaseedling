@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, startTransition } from "react";
+import { useT } from "@/i18n/client";
+import { translateMsg } from "@/i18n/message";
 import { FormMessage } from "@/design-system/components/form-message";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
@@ -9,6 +11,10 @@ import { prepareUploadsAction, captureAction } from "@/modules/capture/actions";
 import { CAPTURE_LIMITS } from "@/modules/capture/limits";
 import { matchVoiceCommand } from "@/modules/capture/voice";
 import { validateSelection } from "@/modules/capture/validation";
+import type { Msg } from "@/i18n/message";
+
+/** An upload problem whose message is already translated, so it can be shown as it is. Other errors are not shown raw. */
+class UploadProblem extends Error {}
 import { MediaPreview } from "./media-preview";
 import { VoiceNote } from "./voice-note";
 
@@ -32,6 +38,7 @@ type Phase = "idle" | "uploading" | "saving";
  * Uploads go straight to private storage, one file at a time. Retrying resumes the files not yet uploaded.
  */
 export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSeedlingChoice[] }) {
+  const t = useT();
   const [state, formAction] = useActionState(captureAction, IDLE_FORM_STATE);
   const [chosen, setChosen] = useState<Chosen[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -65,7 +72,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
       next.push({ key: `${file.name}-${file.size}-${crypto.randomUUID()}`, file, url });
     }
     const check = validateSelection(next.map((item) => item.file));
-    setProblem(check.ok ? null : (Object.values(check.fieldErrors)[0] ?? null));
+    setProblem(check.ok ? null : translateProblem(check.fieldErrors));
     setChosen(next);
     setUploadError(null);
     pathsForAttempt.current = null;
@@ -78,11 +85,14 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
     const next = chosen.filter((item) => item.key !== key);
     setChosen(next);
     const check = validateSelection(next.map((item) => item.file));
-    setProblem(
-      next.length === 0 || check.ok ? null : (Object.values(check.fieldErrors)[0] ?? null),
-    );
+    setProblem(next.length === 0 || check.ok ? null : translateProblem(check.fieldErrors));
     pathsForAttempt.current = null;
     uploadedPaths.current = new Map();
+  }
+
+  function translateProblem(fieldErrors: Readonly<Record<string, Msg>>): string | null {
+    const first = Object.values(fieldErrors)[0];
+    return first ? translateMsg(t, first) : null;
   }
 
   function handleVoiceCommand(transcript: string) {
@@ -92,7 +102,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
   async function save() {
     const check = validateSelection(chosen.map((item) => item.file));
     if (!check.ok) {
-      setProblem(Object.values(check.fieldErrors)[0] ?? null);
+      setProblem(translateProblem(check.fieldErrors));
       return;
     }
     setUploadError(null);
@@ -118,7 +128,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
         });
         // A retry after a dropped response finds the file already there. That is the same upload.
         if (error && !/already exists|duplicate/i.test(error.message)) {
-          throw new Error(`The upload of ${item.file.name} did not finish.`);
+          throw new UploadProblem(t("capture.capture.uploadNotFinished", { name: item.file.name }));
         }
         uploadedPaths.current.set(item.key, path);
         setProgress({ done: uploadedPaths.current.size, total: chosen.length });
@@ -126,9 +136,9 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
     } catch (error) {
       setPhase("idle");
       setUploadError(
-        error instanceof Error
-          ? `${error.message} Your photos are still here, so try again.`
-          : "The upload did not finish. Try again.",
+        error instanceof UploadProblem
+          ? `${error.message} ${t("capture.capture.stillHere")}`
+          : t("capture.capture.uploadFailed"),
       );
       return;
     }
@@ -150,28 +160,26 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
   const busy = phase !== "idle";
   const saveLabel =
     phase === "uploading"
-      ? "Uploading…"
+      ? t("capture.capture.uploadingShort")
       : phase === "saving"
-        ? "Saving privately…"
-        : "Save privately";
+        ? t("capture.capture.savingPrivately")
+        : t("capture.capture.save");
   const message = state.status === "error" ? state.message : null;
 
   return (
     <div className="flex flex-col gap-6">
       <section aria-labelledby="media-title" className="flex flex-col gap-4">
         <h1 id="media-title" className="font-display text-3xl text-text-brand">
-          Capture
+          {t("capture.capture.title")}
         </h1>
-        <p className="text-base text-text-muted">
-          Take a photo, and save it privately. You can add details later.
-        </p>
+        <p className="text-base text-text-muted">{t("capture.capture.intro")}</p>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label
             htmlFor="capture-photo"
             className="flex min-h-14 cursor-pointer items-center justify-center rounded-control bg-primary px-4 py-3 text-base font-medium text-on-primary focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
           >
-            Take photo
+            {t("capture.capture.takePhoto")}
             <input
               id="capture-photo"
               type="file"
@@ -186,7 +194,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
             htmlFor="capture-video"
             className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
           >
-            Record video
+            {t("capture.capture.recordVideo")}
             <input
               id="capture-video"
               type="file"
@@ -201,7 +209,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
             htmlFor="capture-library"
             className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
           >
-            Choose a file
+            {t("capture.capture.chooseFile")}
             <input
               id="capture-library"
               type="file"
@@ -216,7 +224,10 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
 
         {problem ? <FormMessage tone="error">{problem}</FormMessage> : null}
         {chosen.length > 0 ? (
-          <ul aria-label="Files to save" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <ul
+            aria-label={t("capture.capture.filesToSave")}
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+          >
             {chosen.map((item) => (
               <li key={item.key} className="flex flex-col gap-2">
                 <MediaPreview src={item.url} mime={item.file.type} label={item.file.name} />
@@ -226,21 +237,21 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
                   disabled={busy}
                   className="min-h-11 rounded-control text-sm font-medium text-text-brand underline underline-offset-4"
                 >
-                  Remove {item.file.name}
+                  {t("capture.capture.removeFile", { name: item.file.name })}
                 </button>
               </li>
             ))}
           </ul>
         ) : (
           <p className="rounded-surface border border-border bg-surface p-4 text-base text-text-muted">
-            Nothing chosen yet. Take a photo, record a short video, or choose one you already have.
+            {t("capture.capture.nothingChosen")}
           </p>
         )}
       </section>
 
       <form className="flex flex-col gap-6" noValidate onSubmit={(event) => event.preventDefault()}>
         <fieldset className="flex flex-col gap-3" disabled={busy}>
-          <legend className="text-lg font-medium text-text">Where does it go?</legend>
+          <legend className="text-lg font-medium text-text">{t("capture.capture.where")}</legend>
           <label className="flex min-h-11 items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 text-base text-text">
             <input
               type="radio"
@@ -250,9 +261,9 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               className="h-5 w-5"
             />
             <span>
-              <span className="font-medium">New seedling</span>
+              <span className="font-medium">{t("capture.capture.newSeedling")}</span>
               <span className="block text-sm text-text-muted">
-                Creates a seedling with its own number. Nothing else is needed.
+                {t("capture.capture.newSeedlingHint")}
               </span>
             </span>
           </label>
@@ -266,10 +277,10 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
                 className="mt-1 h-5 w-5"
               />
               <span className="flex flex-1 flex-col gap-2">
-                <span className="font-medium">One of my seedlings</span>
+                <span className="font-medium">{t("capture.capture.existing")}</span>
                 {mode === "existing" ? (
                   <select
-                    aria-label="Choose a seedling"
+                    aria-label={t("capture.capture.chooseSeedling")}
                     value={seedlingId}
                     onChange={(event) => setSeedlingId(event.target.value)}
                     className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
@@ -293,15 +304,15 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               className="mt-1 h-5 w-5"
             />
             <span className="flex flex-1 flex-col gap-2">
-              <span className="font-medium">I know its identifier</span>
+              <span className="font-medium">{t("capture.capture.identifier")}</span>
               {mode === "identifier" ? (
                 <input
                   type="text"
                   value={identifier}
                   onChange={(event) => setIdentifier(event.target.value)}
-                  placeholder="JV-26-001 or #12"
+                  placeholder={t("capture.capture.identifierPlaceholder")}
                   autoComplete="off"
-                  aria-label="Seedling identifier"
+                  aria-label={t("capture.capture.identifierLabel")}
                   className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
                 />
               ) : null}
@@ -314,7 +325,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
 
         <details className="rounded-surface border border-border bg-surface p-4">
           <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
-            Add a note (optional)
+            {t("capture.capture.addNote")}
           </summary>
           <div className="mt-4 flex flex-col gap-4">
             <VoiceNote
@@ -328,7 +339,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               disabled={busy}
             />
             <label htmlFor="capture-note" className="text-base font-medium text-text">
-              Note
+              {t("capture.capture.note")}
             </label>
             <textarea
               id="capture-note"
@@ -344,11 +355,11 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
 
         <details className="rounded-surface border border-border bg-surface p-4">
           <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
-            Adjust the time (optional)
+            {t("capture.capture.time")}
           </summary>
           <div className="mt-4 flex flex-col gap-2">
             <label htmlFor="capture-observed" className="text-base font-medium text-text">
-              When was this observed?
+              {t("capture.capture.timeLabel")}
             </label>
             <input
               id="capture-observed"
@@ -358,7 +369,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               disabled={busy}
               className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
             />
-            <p className="text-sm text-text-muted">Leave it empty to use the time you save.</p>
+            <p className="text-sm text-text-muted">{t("capture.capture.timeHint")}</p>
           </div>
         </details>
 
@@ -366,9 +377,9 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
         {message && !uploadError ? <FormMessage tone="error">{message}</FormMessage> : null}
         <p role="status" aria-live="polite" className="text-base text-text-muted">
           {phase === "uploading"
-            ? `Uploading ${progress.done + 1} of ${progress.total}…`
+            ? t("capture.capture.uploading", { done: progress.done + 1, total: progress.total })
             : phase === "saving"
-              ? "Saving privately…"
+              ? t("capture.capture.savingPrivately")
               : ""}
         </p>
 
@@ -380,12 +391,10 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
         >
           {saveLabel}
         </button>
-        <p className="text-sm text-text-muted">
-          Saved privately means only you can see it. It is not shared, and nothing is published.
-        </p>
+        <p className="text-sm text-text-muted">{t("capture.capture.privacyNote")}</p>
         <p className="text-sm">
           <Link href="/profile" className="text-text-brand underline underline-offset-4">
-            Back to your profile
+            {t("capture.capture.backToProfile")}
           </Link>
         </p>
       </form>

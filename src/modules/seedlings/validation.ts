@@ -1,14 +1,17 @@
+import { msg, type Msg } from "@/i18n/message";
+import { cultivarNameMax, cultivarNameMin } from "./cultivar-limits";
+
 /*
  * Pure validation for Seedling-core input. The same rules are enforced as database constraints and
  * inside the domain functions, so a bypassed form still cannot store bad data. This layer exists for
- * clear, field-level feedback.
+ * clear, field-level feedback. Messages are keys, translated at the edge.
  */
 
 export const SEEDLING_LIMITS = {
   workingNameMax: 80,
   seriesNameMax: 8,
-  cultivarNameMin: 2,
-  cultivarNameMax: 80,
+  cultivarNameMin: cultivarNameMin,
+  cultivarNameMax: cultivarNameMax,
   notesMax: 280,
   firstGrownYearMin: 1900,
   firstGrownYearMax: 2100,
@@ -25,7 +28,7 @@ export type ParentKind = (typeof PARENT_KINDS)[number];
 
 export type ValidationResult<T> =
   | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly fieldErrors: Readonly<Record<string, string>> };
+  | { readonly ok: false; readonly fieldErrors: Readonly<Record<string, Msg>> };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,7 +40,7 @@ function text(raw: FormDataEntryValue | null | undefined): string {
   return typeof raw === "string" ? raw.trim() : "";
 }
 
-function fail(field: string, message: string): { ok: false; fieldErrors: Record<string, string> } {
+function fail(field: string, message: Msg): { ok: false; fieldErrors: Record<string, Msg> } {
   return { ok: false, fieldErrors: { [field]: message } };
 }
 
@@ -48,9 +51,9 @@ export function normalizeSeriesName(raw: string): string {
 
 export function validateSeriesName(raw: FormDataEntryValue | null): ValidationResult<string> {
   const name = normalizeSeriesName(text(raw));
-  if (name === "") return fail("name", "Enter a series name, such as JV.");
+  if (name === "") return fail("name", msg("validation.series.required"));
   if (!/^[A-Z0-9]{1,8}$/.test(name)) {
-    return fail("name", "Use 1 to 8 letters or numbers, with no spaces or symbols.");
+    return fail("name", msg("validation.series.format"));
   }
   return { ok: true, value: name };
 }
@@ -60,7 +63,10 @@ export function validateWorkingName(
 ): ValidationResult<string | null> {
   const name = text(raw);
   if (name.length > SEEDLING_LIMITS.workingNameMax) {
-    return fail("workingName", `Use ${SEEDLING_LIMITS.workingNameMax} characters or fewer.`);
+    return fail(
+      "workingName",
+      msg("validation.seedling.workingName", { max: SEEDLING_LIMITS.workingNameMax }),
+    );
   }
   return { ok: true, value: name === "" ? null : name };
 }
@@ -78,7 +84,10 @@ export function validateFirstGrownYear(
   ) {
     return fail(
       "firstGrownYear",
-      `Enter a year between ${SEEDLING_LIMITS.firstGrownYearMin} and ${SEEDLING_LIMITS.firstGrownYearMax}, or leave it empty.`,
+      msg("validation.seedling.year", {
+        min: SEEDLING_LIMITS.firstGrownYearMin,
+        max: SEEDLING_LIMITS.firstGrownYearMax,
+      }),
     );
   }
   return { ok: true, value: year };
@@ -87,7 +96,7 @@ export function validateFirstGrownYear(
 export function validateVisibility(raw: FormDataEntryValue | null): ValidationResult<Visibility> {
   const value = text(raw);
   const match = VISIBILITIES.find((visibility) => visibility === value);
-  if (!match) return fail("visibility", "Choose private or public.");
+  if (!match) return fail("visibility", msg("validation.seedling.visibility"));
   return { ok: true, value: match };
 }
 
@@ -97,7 +106,7 @@ export function validateSeriesChoice(
 ): ValidationResult<string | null> {
   const value = text(raw);
   if (value === "") return { ok: true, value: null };
-  if (!isUuid(value)) return fail("series", "Choose one of your series.");
+  if (!isUuid(value)) return fail("series", msg("validation.series.choose"));
   return { ok: true, value };
 }
 
@@ -123,28 +132,31 @@ export interface ParentInput {
 export function validateParentInput(form: FormData): ValidationResult<ParentInput> {
   const roleRaw = text(form.get("role"));
   const role = PARENT_ROLES.find((candidate) => candidate === roleRaw);
-  if (!role) return fail("role", "Choose seed parent or pollen parent.");
+  if (!role) return fail("role", msg("validation.seedling.role"));
 
   const kindRaw = text(form.get("kind"));
   const kind = PARENT_KINDS.find((candidate) => candidate === kindRaw);
-  if (!kind) return fail("kind", "Choose how this parent is known.");
+  if (!kind) return fail("kind", msg("validation.seedling.kind"));
 
   const parentSeedling = text(form.get("parentSeedlingId"));
   if (kind === "seedling" && !isUuid(parentSeedling)) {
-    return fail("parentSeedlingId", "Choose one of the seedlings you can see.");
+    return fail("parentSeedlingId", msg("validation.seedling.parentChoose"));
   }
 
   const cultivarRaw = text(form.get("cultivarName"));
   if (kind === "cultivar" && validateCultivarName(cultivarRaw) === null) {
     return fail(
       "cultivarName",
-      `Enter a cultivar name of ${SEEDLING_LIMITS.cultivarNameMin} to ${SEEDLING_LIMITS.cultivarNameMax} characters.`,
+      msg("validation.seedling.cultivar", {
+        min: SEEDLING_LIMITS.cultivarNameMin,
+        max: SEEDLING_LIMITS.cultivarNameMax,
+      }),
     );
   }
 
   const notes = text(form.get("notes"));
   if (notes.length > SEEDLING_LIMITS.notesMax) {
-    return fail("notes", `Use ${SEEDLING_LIMITS.notesMax} characters or fewer.`);
+    return fail("notes", msg("validation.seedling.notes", { max: SEEDLING_LIMITS.notesMax }));
   }
 
   return {

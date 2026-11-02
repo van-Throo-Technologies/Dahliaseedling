@@ -19,7 +19,9 @@ export interface PublicImage {
   readonly height: number;
 }
 
-export class DerivativeError extends Error {}
+import { DerivativeError } from "./derivatives.error";
+
+export { DerivativeError };
 
 export async function makePublicImage(original: Buffer): Promise<PublicImage> {
   try {
@@ -42,6 +44,6 @@ export async function makePublicImage(original: Buffer): Promise<PublicImage> {
       .toBuffer({ resolveWithObject: true });
     return { data, width: info.width, height: info.height };
   } catch {
-    throw new DerivativeError("The photo could not be prepared for sharing.");
+    throw new DerivativeError("errors.publication.preparationFailed");
   }
 }

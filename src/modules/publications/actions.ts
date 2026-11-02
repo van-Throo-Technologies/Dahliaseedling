@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslation } from "@/i18n/server";
+import type { MessageKey } from "@/i18n/translator";
+import { msg, type Msg } from "@/i18n/message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FormState } from "@/modules/identity/form-state";
 import { requireParticipant } from "@/modules/identity/gate";
@@ -9,13 +12,14 @@ import { getObservation, mediaFor, mediaRow } from "@/modules/capture/repository
 import { isUuid } from "@/modules/capture/validation";
 import { getSeedling } from "@/modules/seedlings/repository";
 import { DerivativeError, makePublicImage } from "./derivatives";
+import { isPubliclyShareable } from "./limits";
 import { validateCaption, validateCommentBody, validateSelection } from "./validation";
-import { isPubliclyShareable, PRIVATE_ONLY_MESSAGE } from "./limits";
 
 /*
  * Server actions for publication and the social layer. Each one passes the participation gate, checks its
  * input, and then calls a domain function as the signed-in grower. The database decides ownership,
  * visibility, idempotency and suspension, so a bypassed form cannot do more than the rules allow.
+ * Messages are translated here, in the visitor's language.
  */
 
 function text(formData: FormData, name: string): string {
@@ -23,25 +27,39 @@ function text(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
-/** A publication step the database or the storage layer refused, with a message safe to show. */
-class PublishFailure extends Error {}
-
-function failure(message: string): FormState {
-  return { status: "error", fieldErrors: {}, message };
+async function failureKey(key: MessageKey): Promise<FormState> {
+  const { t } = await getTranslation();
+  return { status: "error", fieldErrors: {}, message: t(key) };
 }
 
-function publicationError(error: { code?: string; message: string }): string {
+async function failureMsg(message: Msg): Promise<FormState> {
+  const { t } = await getTranslation();
+  return { status: "error", fieldErrors: {}, message: t(message.key, message.values) };
+}
+
+/** A publication step the database or the storage layer refused, with a key safe to show. */
+class PublishFailure extends Error {
+  readonly key: MessageKey;
+
+  constructor(key: MessageKey) {
+    super(key);
+    this.key = key;
+  }
+}
+
+/** Maps a database refusal to the key the grower can act on. Database wording is never shown. */
+function publicationKey(error: { code?: string }): MessageKey {
   switch (error.code) {
     case "42501":
-      return "Only the current holder can share this seedling.";
+      return "errors.publication.notHolder";
     case "P0002":
-      return "That observation could not be found.";
+      return "errors.publication.observationNotFound";
     case "23514":
-      return "Make the seedling public first. Sharing needs a public seedling page.";
+      return "errors.publication.makePublicFirst";
     case "0A000":
-      return "Public video sharing isn't available yet.";
+      return "errors.publication.videoNotAvailable";
     default:
-      return "The update could not be published. Nothing was shared. Try again.";
+      return "errors.publication.notPublished";
   }
 }
 
@@ -91,38 +109,33 @@ export async function publishUpdateAction(
   formData: FormData,
 ): Promise<FormState> {
   const observationId = text(formData, "observationId");
-  if (!isUuid(observationId)) return failure("That observation could not be found.");
+  if (!isUuid(observationId)) return failureKey("errors.publication.observationNotFound");
   const { userId } = await requireParticipant(`/observations/${observationId}/share`);
 
   const clientKey = text(formData, "clientKey");
-  if (!isUuid(clientKey)) return failure("This form has expired. Reload the page and try again.");
+  if (!isUuid(clientKey)) return failureKey("errors.publication.formExpired");
 
   const caption = validateCaption(formData.get("caption"));
-  if (!caption.ok) return failure(caption.message);
+  if (!caption.ok) return failureMsg(caption.message);
   const selection = validateSelection(formData.getAll("mediaId"));
-  if (!selection.ok) return failure(selection.message);
+  if (!selection.ok) return failureMsg(selection.message);
 
   const supabase = await createSupabaseServerClient();
   const observation = await getObservation(supabase, observationId);
-  if (!observation) return failure("That observation could not be found.");
+  if (!observation) return failureKey("errors.publication.observationNotFound");
   const seedling = await getSeedling(supabase, observation.seedlingId);
-  if (!seedling || seedling.currentHolderId !== userId) {
-    return failure("Only the current holder can share this seedling.");
-  }
-  if (seedling.visibility !== "public") {
-    return failure("Make the seedling public first. Sharing needs a public seedling page.");
-  }
+  if (!seedling || seedling.currentHolderId !== userId)
+    return failureKey("errors.publication.notHolder");
+  if (seedling.visibility !== "public") return failureKey("errors.publication.makePublicFirst");
 
   const available = (await mediaFor(supabase, [observationId])).get(observationId) ?? [];
   const chosen = selection.value.map((id) => available.find((item) => item.id === id));
-  if (chosen.some((item) => item === undefined)) {
-    return failure("The selection could not be read. Choose the images again.");
-  }
-  if (chosen.some((item) => item?.kind === "video")) {
-    return failure("Public video sharing isn't available yet. Choose images only.");
-  }
+  if (chosen.some((item) => item === undefined))
+    return failureMsg(msg("validation.publication.selection"));
+  if (chosen.some((item) => item?.kind === "video"))
+    return failureKey("errors.publication.videoNotAvailableChoose");
   if (chosen.some((item) => item && !isPubliclyShareable(item.mimeType))) {
-    return failure(PRIVATE_ONLY_MESSAGE);
+    return failureKey("publication.publish.privateOnly");
   }
 
   const uploaded: string[] = [];
@@ -132,20 +145,19 @@ export async function publishUpdateAction(
     for (const item of chosen) {
       if (!item) continue;
       const row = await mediaRow(supabase, item.id);
-      if (!row) throw new Error("The photo could not be read.");
+      if (!row) throw new PublishFailure("errors.publication.photoNotRead");
 
       const { data: blob, error: downloadError } = await supabase.storage
         .from("private-media")
         .download(row.storage_path);
-      if (downloadError || !blob) throw new Error("The photo could not be read.");
+      if (downloadError || !blob) throw new PublishFailure("errors.publication.photoNotRead");
 
       const image = await makePublicImage(Buffer.from(await blob.arrayBuffer()));
       const path = `${userId}/${crypto.randomUUID()}.webp`;
       const { error: uploadError } = await supabase.storage
         .from("public-media")
         .upload(path, image.data, { contentType: "image/webp", upsert: false });
-      if (uploadError)
-        throw new Error("The photo could not be uploaded, so nothing was shared. Try again.");
+      if (uploadError) throw new PublishFailure("errors.publication.photoNotUploaded");
       uploaded.push(path);
 
       items.push({
@@ -163,14 +175,14 @@ export async function publishUpdateAction(
       p_caption: caption.value ?? undefined,
       p_items: items,
     });
-    if (error) throw new PublishFailure(publicationError(error));
+    if (error) throw new PublishFailure(publicationKey(error));
     outcome = data as unknown as { id: string; created: boolean };
   } catch (error) {
     await discard(supabase, uploaded);
-    if (error instanceof DerivativeError || error instanceof PublishFailure)
-      return failure(error.message);
-    if (error instanceof Error) return failure(error.message);
-    return failure("Nothing was shared. Try again.");
+    if (error instanceof DerivativeError || error instanceof PublishFailure) {
+      return failureKey(error.key);
+    }
+    return failureKey("errors.publication.nothingShared");
   }
 
   // A repeated submission created nothing new, so the files it uploaded are unreferenced and removed.
@@ -223,11 +235,11 @@ export async function addCommentAction(
   formData: FormData,
 ): Promise<FormState> {
   const updateId = text(formData, "updateId");
-  if (!isUuid(updateId)) return failure("That update could not be found.");
+  if (!isUuid(updateId)) return failureKey("errors.publication.updateNotFound");
   await requireParticipant(`/updates/${updateId}`);
 
   const body = validateCommentBody(formData.get("body"));
-  if (!body.ok) return failure(body.message);
+  if (!body.ok) return failureMsg(body.message);
   const parentId = text(formData, "parentId");
 
   const supabase = await createSupabaseServerClient();
@@ -236,9 +248,10 @@ export async function addCommentAction(
     p_parent_comment_id: isUuid(parentId) ? parentId : undefined,
     p_body: body.value,
   });
-  if (error) return failure("Your comment could not be posted. Try again.");
+  if (error) return failureKey("errors.publication.commentFailed");
   revalidatePath(`/updates/${updateId}`);
-  return { status: "saved", message: "Your comment is posted." };
+  const { t } = await getTranslation();
+  return { status: "saved", message: t("publication.comments.posted") };
 }
 
 export async function editCommentAction(
@@ -247,20 +260,22 @@ export async function editCommentAction(
 ): Promise<FormState> {
   const updateId = text(formData, "updateId");
   const commentId = text(formData, "commentId");
-  if (!isUuid(updateId) || !isUuid(commentId)) return failure("That comment could not be found.");
+  if (!isUuid(updateId) || !isUuid(commentId))
+    return failureKey("errors.publication.updateNotFound");
   await requireParticipant(`/updates/${updateId}`);
 
   const body = validateCommentBody(formData.get("body"));
-  if (!body.ok) return failure(body.message);
+  if (!body.ok) return failureMsg(body.message);
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("edit_comment", {
     p_comment_id: commentId,
     p_body: body.value,
   });
-  if (error) return failure("Your comment could not be changed.");
+  if (error) return failureKey("errors.publication.commentChangeFailed");
   revalidatePath(`/updates/${updateId}`);
-  return { status: "saved", message: "Your comment is changed." };
+  const { t } = await getTranslation();
+  return { status: "saved", message: t("publication.comments.changed") };
 }
 
 export async function deleteCommentAction(formData: FormData): Promise<void> {

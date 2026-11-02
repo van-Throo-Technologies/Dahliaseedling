@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SelectField, TextAreaField, TextField } from "@/design-system/components/form-fields";
 import { SubmitButton } from "@/design-system/components/submit-button";
+import { useLocale, useT } from "@/i18n/client";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { findParentCandidatesAction, setParentAction } from "@/modules/seedlings/actions";
 import type { ParentCandidate } from "@/modules/seedlings/repository";
@@ -32,6 +33,8 @@ export function ParentForm({
   readonly heading: string;
   readonly defaults: ParentDefaults;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [state, action] = useActionState(setParentAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
   const [kind, setKind] = useState(defaults.kind);
@@ -90,16 +93,16 @@ export function ParentForm({
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
 
       <SelectField
-        label="How is it known?"
+        label={t("seedlings.parent.howKnown")}
         name="kind"
         value={kind}
         onChange={(event) => setKind(event.target.value as ParentDefaults["kind"])}
         error={errors.kind}
         options={[
-          { value: "none", label: "Not recorded yet" },
-          { value: "unknown", label: "Unknown" },
-          { value: "seedling", label: "A seedling" },
-          { value: "cultivar", label: "A named cultivar" },
+          { value: "none", label: t("glossary.parentNotRecorded") },
+          { value: "unknown", label: t("glossary.unknownParent") },
+          { value: "seedling", label: t("glossary.aSeedling") },
+          { value: "cultivar", label: t("glossary.namedCultivar") },
         ]}
       />
 
@@ -107,32 +110,30 @@ export function ParentForm({
         <div className="flex flex-col gap-3">
           {chosen ? (
             <p className="flex flex-wrap items-center gap-2 text-base text-text">
-              <span>Chosen: {chosen.label}</span>
+              <span>{t("seedlings.parent.chosen", { label: chosen.label })}</span>
               <button
                 type="button"
                 onClick={() => setChosen(null)}
                 className="min-h-11 rounded-control px-2 text-base font-medium text-text-brand underline underline-offset-4"
               >
-                Change
+                {t("seedlings.parent.change")}
               </button>
             </p>
           ) : null}
           <TextField
-            label="Find a seedling"
+            label={t("seedlings.parent.findSeedling")}
             name="parentSearch"
             autoComplete="off"
-            hint="Type its number or identifier, or the start of its working name. You can choose your own seedlings and public ones."
+            hint={t("seedlings.parent.findHint")}
             value={term}
             onChange={(event) => setTerm(event.target.value)}
             error={errors.parentSeedlingId}
           />
           {searchFailed ? (
-            <p className="text-sm text-destructive">
-              Search is not available right now. Try again.
-            </p>
+            <p className="text-sm text-destructive">{t("errors.searchFailed")}</p>
           ) : null}
           {shown.length > 0 ? (
-            <ul aria-label="Matching seedlings" className="flex flex-col gap-2">
+            <ul aria-label={t("seedlings.parent.matching")} className="flex flex-col gap-2">
               {shown.map((candidate) => (
                 <li key={candidate.id}>
                   <button
@@ -143,7 +144,7 @@ export function ParentForm({
                     <span className="font-medium">{candidate.label}</span>
                     {candidate.ownerName ? (
                       <span className="text-sm text-text-muted">
-                        Grown by {candidate.ownerName}
+                        {t("seedlings.parent.grownBy", { name: candidate.ownerName })}
                       </span>
                     ) : null}
                   </button>
@@ -151,26 +152,24 @@ export function ParentForm({
               ))}
             </ul>
           ) : searching && !searchFailed ? (
-            <p className="text-sm text-text-muted">
-              No seedling matches that. Check the number, or try the start of its name.
-            </p>
+            <p className="text-sm text-text-muted">{t("seedlings.parent.noMatch")}</p>
           ) : null}
         </div>
       ) : null}
 
       {kind === "cultivar" ? (
         <TextField
-          label="Cultivar name"
+          label={t("seedlings.parent.cultivarName")}
           name="cultivarName"
           maxLength={80}
           defaultValue={defaults.cultivarName}
           error={errors.cultivarName}
-          hint="Shared with other growers, so use the common name."
+          hint={t("seedlings.parent.cultivarHint")}
         />
       ) : null}
 
       <TextAreaField
-        label="Note (optional)"
+        label={t("seedlings.parent.note")}
         name="notes"
         rows={2}
         maxLength={280}
@@ -178,7 +177,9 @@ export function ParentForm({
         error={errors.notes}
       />
 
-      <SubmitButton pendingLabel="Saving…">Save {heading.toLowerCase()}</SubmitButton>
+      <SubmitButton pendingLabel={t("common.saving")}>
+        {t("seedlings.parent.submit", { role: heading.toLocaleLowerCase(locale) })}
+      </SubmitButton>
     </form>
   );
 }

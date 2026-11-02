@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, patternExample, roleLabel, visibilityLabel } from "./presentation";
+import { formatDate } from "@/i18n/format";
+import { MESSAGES } from "@/i18n/messages";
+import { patternExample } from "./presentation";
 
 describe("patternExample", () => {
   const twenty26 = new Date("2026-06-01T12:00:00Z");
@@ -18,14 +20,17 @@ describe("patternExample", () => {
 });
 
 describe("labels", () => {
-  it("names parent roles and visibility in plain words", () => {
-    expect(roleLabel("seed_parent")).toBe("Seed parent");
-    expect(roleLabel("pollen_parent")).toBe("Pollen parent");
-    expect(visibilityLabel("private")).toBe("Private");
-    expect(visibilityLabel("public")).toBe("Public");
+  it("names parent roles and visibility in plain words, in each language", () => {
+    expect(MESSAGES.en.glossary.seedParent).toBe("Seed parent");
+    expect(MESSAGES.en.glossary.pollenParent).toBe("Pollen parent");
+    expect(MESSAGES.en.glossary.private).toBe("Private");
+    expect(MESSAGES.en.glossary.public).toBe("Public");
+    expect(MESSAGES.nl.glossary.seedParent).toBe("Zaadouder");
+    expect(MESSAGES.nl.glossary.pollenParent).toBe("Stuifmeelouder");
   });
 
-  it("formats a stored timestamp as a calendar date", () => {
-    expect(formatDate("2026-10-31T23:30:00Z")).toBe("October 31, 2026");
+  it("formats a stored timestamp as a calendar date in the interface language", () => {
+    expect(formatDate("2026-10-31T23:30:00Z", "en")).toBe("October 31, 2026");
+    expect(formatDate("2026-10-31T23:30:00Z", "nl")).toBe("31 oktober 2026");
   });
 });

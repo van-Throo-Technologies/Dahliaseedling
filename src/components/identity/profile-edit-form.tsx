@@ -9,6 +9,7 @@ import {
 } from "@/design-system/components/form-fields";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
+import { useT } from "@/i18n/client";
 import { updateProfileAction } from "@/modules/identity/actions";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { LIMITS } from "@/modules/identity/validation";
@@ -22,6 +23,7 @@ export interface ProfileEditDefaults {
 }
 
 export function ProfileEditForm({ defaults }: { readonly defaults: ProfileEditDefaults }) {
+  const t = useT();
   const [state, action] = useActionState(updateProfileAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
   const values = state.status === "error" ? state.values : undefined;
@@ -35,7 +37,7 @@ export function ProfileEditForm({ defaults }: { readonly defaults: ProfileEditDe
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
 
       <TextField
-        label="Display name"
+        label={t("identity.fields.displayName")}
         name="displayName"
         autoComplete="nickname"
         required
@@ -44,14 +46,14 @@ export function ProfileEditForm({ defaults }: { readonly defaults: ProfileEditDe
         error={errors.displayName}
       />
       <CountrySelect
-        label="Country"
+        label={t("identity.fields.country")}
         name="countryCode"
         required
         defaultValue={pick("countryCode")}
         error={errors.countryCode}
       />
       <TextField
-        label="Region or city (optional)"
+        label={t("identity.fields.regionCity")}
         name="regionCity"
         autoComplete="address-level2"
         maxLength={LIMITS.regionCityMax}
@@ -59,16 +61,16 @@ export function ProfileEditForm({ defaults }: { readonly defaults: ProfileEditDe
         error={errors.regionCity}
       />
       <TextAreaField
-        label="Bio (optional)"
+        label={t("identity.fields.bio")}
         name="bio"
         maxLength={LIMITS.bioMax}
-        hint={`Up to ${LIMITS.bioMax} characters. Plain text only.`}
+        hint={t("identity.fields.bioHint", { max: LIMITS.bioMax })}
         defaultValue={pick("bio")}
         error={errors.bio}
       />
       <div className="flex flex-col gap-2">
         <label htmlFor="field-accountTypeLabel" className="text-base font-medium text-text">
-          How you describe yourself (optional)
+          {t("identity.fields.accountType")}
         </label>
         <select
           id="field-accountTypeLabel"
@@ -78,27 +80,27 @@ export function ProfileEditForm({ defaults }: { readonly defaults: ProfileEditDe
           aria-describedby="field-accountTypeLabel-hint"
           className="min-h-11 w-full rounded-control border border-border bg-surface px-3 py-2 text-base text-text"
         >
-          <option value="">Not specified</option>
-          <option value="individual">Individual grower</option>
-          <option value="breeder">Breeder</option>
-          <option value="farm">Farm</option>
+          <option value="">{t("identity.fields.accountTypeNotSpecified")}</option>
+          <option value="individual">{t("identity.fields.accountTypeIndividual")}</option>
+          <option value="breeder">{t("identity.fields.accountTypeBreeder")}</option>
+          <option value="farm">{t("identity.fields.accountTypeFarm")}</option>
         </select>
         <p id="field-accountTypeLabel-hint" className="text-sm text-text-muted">
-          A label for your profile only. It does not change what you can do.
+          {t("identity.fields.accountTypeHint")}
         </p>
         {errors.accountTypeLabel ? (
           <p className="text-sm font-medium text-destructive">{errors.accountTypeLabel}</p>
         ) : null}
       </div>
       <FileField
-        label="Profile photo (optional)"
+        label={t("identity.fields.avatar")}
         name="avatar"
         accept="image/jpeg,image/png,image/webp"
-        hint="JPEG, PNG or WebP, up to 2 MB. Leave empty to keep your current photo."
+        hint={t("identity.fields.avatarHint")}
         error={errors.avatar}
       />
 
-      <SubmitButton pendingLabel="Saving…">Save profile</SubmitButton>
+      <SubmitButton pendingLabel={t("common.saving")}>{t("identity.edit.submit")}</SubmitButton>
     </form>
   );
 }

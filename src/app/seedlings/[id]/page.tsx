@@ -5,6 +5,8 @@ import { AttachSeriesForm } from "@/components/seedlings/attach-series-form";
 import { ParentForm } from "@/components/seedlings/parent-form";
 import { SeedlingEditForm } from "@/components/seedlings/seedling-edit-form";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTranslation } from "@/i18n/server";
+import { formatDate } from "@/i18n/format";
 import { getCurrentUser, getOwnProfile } from "@/modules/identity/session";
 import {
   displayIdentifier,
@@ -18,12 +20,8 @@ import {
   listSeries,
   attachedSeriesIds,
 } from "@/modules/seedlings/repository";
-import {
-  formatDate,
-  patternUsesYear,
-  roleLabel,
-  visibilityLabel,
-} from "@/modules/seedlings/presentation";
+import { labelWords } from "@/modules/seedlings/labels";
+import { patternUsesYear } from "@/modules/seedlings/presentation";
 import { isUuid } from "@/modules/seedlings/validation";
 import { listObservationsForSeedling, mediaFor } from "@/modules/capture/repository";
 import { LocalTime } from "@/components/capture/local-time";
@@ -39,13 +37,15 @@ export async function generateMetadata({
 }: {
   readonly params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  const { t } = await getTranslation();
   const { id } = await params;
-  if (!isUuid(id)) return { title: "Seedling not found" };
+  if (!isUuid(id)) return { title: t("errors.notFound") };
   const supabase = await createSupabaseServerClient();
   const seedling = await getSeedling(supabase, id);
-  if (!seedling) return { title: "Seedling not found" };
+  if (!seedling) return { title: t("errors.notFound") };
   const identifiers = await listIdentifiers(supabase, id);
-  return { title: seedling.workingName ?? displayIdentifier(identifiers) };
+  const title = displayIdentifier(identifiers, labelWords(t)) || t("glossary.seedling");
+  return { title: seedling.workingName ?? title };
 }
 
 export default async function SeedlingPage({
@@ -55,6 +55,8 @@ export default async function SeedlingPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
+  const { t, locale } = await getTranslation();
+  const words = labelWords(t);
 
   const supabase = await createSupabaseServerClient();
   const seedling = await getSeedling(supabase, id);
@@ -86,6 +88,7 @@ export default async function SeedlingPage({
   const parentLabels = await displayLabels(
     supabase,
     parentage.flatMap((link) => (link.parentSeedlingId ? [link.parentSeedlingId] : [])),
+    words,
   );
 
   const parentNames = await workingNames(
@@ -93,7 +96,7 @@ export default async function SeedlingPage({
     parentage.flatMap((link) => (link.parentSeedlingId ? [link.parentSeedlingId] : [])),
   );
   const parentDisplay = (parentId: string): string => {
-    const label = parentLabels.get(parentId) ?? "Seedling";
+    const label = parentLabels.get(parentId) ?? words.seedling;
     const name = parentNames.get(parentId);
     return name ? `${name} · ${label}` : label;
   };
@@ -106,7 +109,7 @@ export default async function SeedlingPage({
     observations.map((item) => item.id),
   );
 
-  const title = displayIdentifier(identifiers);
+  const title = displayIdentifier(identifiers, words) || words.seedling;
   const originator = names.get(seedling.originatorId);
   const holder = names.get(seedling.currentHolderId);
 
@@ -132,13 +135,13 @@ export default async function SeedlingPage({
       notes: current?.notes ?? "",
     };
   };
+  const visibilityText =
+    seedling.visibility === "public" ? t("glossary.public") : t("glossary.private");
 
   return (
     <article className="flex flex-col gap-8" aria-labelledby="seedling-title">
       <header className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-text-muted">
-          {visibilityLabel(seedling.visibility)}
-        </p>
+        <p className="text-sm font-medium text-text-muted">{visibilityText}</p>
         <h1 id="seedling-title" className="font-display text-3xl leading-tight text-text-brand">
           {seedling.workingName ?? title}
         </h1>
@@ -159,31 +162,32 @@ export default async function SeedlingPage({
 
       {isSuspendedHolder ? (
         <p className="rounded-surface border border-destructive p-4 text-base text-destructive">
-          Your account is suspended, so this seedling is read-only for you.
+          {t("seedlings.page.suspendedHolder")}
         </p>
       ) : null}
 
       {isOriginatorOnly ? (
         <p className="rounded-surface border border-border bg-surface p-4 text-base text-text">
-          You originated this seedling, so you can read its record. It is now grown by{" "}
-          {holder ?? "its current grower"}, who alone can change it.
+          {t("seedlings.page.originatedNotHolder", {
+            holder: holder ?? t("seedlings.page.currentGrowerFallback"),
+          })}
         </p>
       ) : null}
 
       <section aria-labelledby="facts-title" className="flex flex-col gap-3">
         <h2 id="facts-title" className="text-lg font-medium text-text">
-          About this seedling
+          {t("seedlings.page.about")}
         </h2>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
           {seedling.firstGrownYear ? (
             <>
-              <dt className="text-text-muted">First grown</dt>
+              <dt className="text-text-muted">{t("seedlings.page.firstGrown")}</dt>
               <dd className="text-text">{seedling.firstGrownYear}</dd>
             </>
           ) : null}
           {originator ? (
             <>
-              <dt className="text-text-muted">Originated by</dt>
+              <dt className="text-text-muted">{t("glossary.originator")}</dt>
               <dd className="text-text">
                 <Link
                   href={`/profiles/${seedling.originatorId}`}
@@ -196,7 +200,7 @@ export default async function SeedlingPage({
           ) : null}
           {holder ? (
             <>
-              <dt className="text-text-muted">Currently grown by</dt>
+              <dt className="text-text-muted">{t("glossary.currentGrower")}</dt>
               <dd className="text-text">
                 <Link
                   href={`/profiles/${seedling.currentHolderId}`}
@@ -212,7 +216,7 @@ export default async function SeedlingPage({
 
       <section aria-labelledby="identifiers-title" className="flex flex-col gap-3">
         <h2 id="identifiers-title" className="text-lg font-medium text-text">
-          Identifiers
+          {t("seedlings.page.identifiers")}
         </h2>
         <ul className="flex flex-col gap-2">
           {identifiers.map((identifier) => (
@@ -226,9 +230,13 @@ export default async function SeedlingPage({
                   : identifier.identifier}
               </span>
               <span className="text-sm text-text-muted">
-                {identifier.kind === "automatic" ? "automatic number" : "series identifier"}
-                {identifier.isPrimary && !identifier.isRetiredAlias ? " · shown first" : ""}
-                {identifier.isRetiredAlias ? " · retired, still refers to this seedling" : ""}
+                {identifier.kind === "automatic"
+                  ? t("seedlings.page.automaticNumber")
+                  : t("seedlings.page.seriesIdentifier")}
+                {identifier.isPrimary && !identifier.isRetiredAlias
+                  ? ` · ${t("seedlings.page.shownFirst")}`
+                  : ""}
+                {identifier.isRetiredAlias ? ` · ${t("seedlings.page.retired")}` : ""}
               </span>
             </li>
           ))}
@@ -238,17 +246,21 @@ export default async function SeedlingPage({
       {parentage.length > 0 || canEdit ? (
         <section aria-labelledby="parentage-title" className="flex flex-col gap-3">
           <h2 id="parentage-title" className="text-lg font-medium text-text">
-            Parentage
+            {t("seedlings.page.parentage")}
           </h2>
           {parentage.length === 0 ? (
-            <p className="text-base text-text-muted">Not recorded yet.</p>
+            <p className="text-base text-text-muted">{t("glossary.parentNotRecorded")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {parentage.map((link) => (
                 <li key={link.role} className="flex flex-col gap-1 text-base text-text">
-                  <span className="text-text-muted">{roleLabel(link.role)}</span>
+                  <span className="text-text-muted">
+                    {link.role === "seed_parent"
+                      ? t("glossary.seedParent")
+                      : t("glossary.pollenParent")}
+                  </span>
                   {link.isUnknown ? (
-                    <span>Unknown</span>
+                    <span>{t("glossary.unknownParent")}</span>
                   ) : link.parentSeedlingId ? (
                     <Link
                       href={`/seedlings/${link.parentSeedlingId}`}
@@ -271,28 +283,35 @@ export default async function SeedlingPage({
 
       <section aria-labelledby="history-title" className="flex flex-col gap-3">
         <h2 id="history-title" className="text-lg font-medium text-text">
-          History
+          {t("seedlings.page.history")}
         </h2>
         <ul className="flex flex-col gap-2 text-base text-text">
           {provenance.map((event) => (
             <li key={event.occurredAt}>
-              {event.eventType === "originated" ? "Originated" : "Recorded"} on{" "}
-              {formatDate(event.occurredAt)}
-              {event.eventType === "originated" && originator ? ` by ${originator}` : ""}
+              {t("seedlings.page.onDate", {
+                event:
+                  event.eventType === "originated"
+                    ? t("seedlings.page.originated")
+                    : t("seedlings.page.recorded"),
+                date: formatDate(event.occurredAt, locale),
+              })}
+              {event.eventType === "originated" && originator
+                ? ` ${t("seedlings.page.byName", { name: originator })}`
+                : ""}
             </li>
           ))}
         </ul>
-        <p className="text-sm text-text-muted">Added on {formatDate(seedling.createdAt)}</p>
+        <p className="text-sm text-text-muted">
+          {t("seedlings.page.addedOn", { date: formatDate(seedling.createdAt, locale) })}
+        </p>
       </section>
 
       {observations.length > 0 ? (
         <section aria-labelledby="observations-title" className="flex flex-col gap-4">
           <h2 id="observations-title" className="text-lg font-medium text-text">
-            Your private observations
+            {t("seedlings.page.privateObservations")}
           </h2>
-          <p className="text-sm text-text-muted">
-            Only you can see these. They are not shared with visitors or other growers.
-          </p>
+          <p className="text-sm text-text-muted">{t("seedlings.page.onlyYou")}</p>
           <ul className="flex flex-col gap-4">
             {observations.map((item) => {
               const first = observationMedia.get(item.id)?.[0];
@@ -307,12 +326,12 @@ export default async function SeedlingPage({
                         <MediaPreview
                           src={`/media/${first.id}`}
                           mime={first.mimeType}
-                          label="Private photo or video"
+                          label={t("seedlings.page.privatePhoto")}
                         />
                       </div>
                     ) : null}
                     <span className="text-base font-medium text-text-brand">
-                      Observed <LocalTime iso={item.observedAt} />
+                      {t("seedlings.page.observed")} <LocalTime iso={item.observedAt} />
                     </span>
                     {item.note ? (
                       <span className="line-clamp-2 text-base text-text">{item.note}</span>
@@ -328,14 +347,12 @@ export default async function SeedlingPage({
       {canEdit ? (
         <section aria-labelledby="manage-title" className="flex flex-col gap-6">
           <h2 id="manage-title" className="text-lg font-medium text-text">
-            Manage this seedling
+            {t("seedlings.page.manage")}
           </h2>
 
           {!seedling.firstGrownYear && yearNeeded ? (
             <p className="rounded-surface border border-border bg-surface p-4 text-base text-text">
-              Add the first grown year to number this seedling with a year-based series, such as
-              JV-26-001. The seedling already has its automatic number, and nothing is lost by
-              waiting.
+              {t("seedlings.page.yearNeeded")}
             </p>
           ) : null}
 
@@ -346,8 +363,8 @@ export default async function SeedlingPage({
                 series={attachable.map((item) => ({
                   id: item.id,
                   label: patternUsesYear(item.pattern)
-                    ? `Series ${item.name} (uses the year)`
-                    : `Series ${item.name}`,
+                    ? t("seedlings.create.seriesWithYear", { name: item.name })
+                    : t("seedlings.create.seriesPlain", { name: item.name }),
                 }))}
               />
             </div>
@@ -364,13 +381,13 @@ export default async function SeedlingPage({
           <ParentForm
             seedlingId={id}
             role="seed_parent"
-            heading="Seed parent"
+            heading={t("seedlings.page.seedParent")}
             defaults={parentDefaults("seed_parent")}
           />
           <ParentForm
             seedlingId={id}
             role="pollen_parent"
-            heading="Pollen parent"
+            heading={t("seedlings.page.pollenParent")}
             defaults={parentDefaults("pollen_parent")}
           />
         </section>

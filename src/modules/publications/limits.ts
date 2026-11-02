@@ -33,6 +33,3 @@ const PRIVATE_ONLY_MIME_TYPES: readonly string[] = ["image/heic", "image/heif"];
 export function isPubliclyShareable(mimeType: string): boolean {
   return !PRIVATE_ONLY_MIME_TYPES.includes(mimeType);
 }
-
-export const PRIVATE_ONLY_MESSAGE =
-  "HEIC photos stay private for now. Public sharing of HEIC isn't available yet. Choose JPEG, PNG or WebP photos to share.";

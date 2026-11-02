@@ -483,6 +483,66 @@ Derivative processing uses synthetic metadata only. No real location data is kep
 - Retired derivative objects remain in private storage until a later lifecycle phase.
 - **HEIC private capture works, but HEIC public publication does not.** HEIC and HEIF photos are accepted, stored privately, and shown in the timeline. The bundled `sharp` (libvips 8.18, libheif 1.23) reads the AV1-based HEIF container, but not the HEVC encoding that phone cameras use for HEIC. A real HEIC sample fails to decode with "HEVC (a suitable decoder plugin is libde265) not built in". So the Share step shows such photos as "stays private", cannot tick them, and the server refuses them before anything is downloaded. Adding a decoder or a conversion service is a separate decision, and none was added here.
 
+## Languages (Phase 4.5)
+
+The interface is available in English, Nederlands and Français. English is the fallback for every other language.
+
+### How the language is chosen
+
+In order, highest first:
+
+1. The visitor's or grower's explicit choice, stored in the `dahlia_locale` cookie (one year) by the language selector.
+2. The browser's `Accept-Language` preference. Quality weights are honoured, and a regional tag counts as its language (`nl-BE` is Dutch).
+3. English.
+
+Nothing else influences the language: not the profile country, the IP address, or a Seedling's country. The language is never an authorisation input.
+
+### Stable addresses
+
+Addresses never carry a language. Changing the language keeps the visitor on the same page, and every UUID in a route stays as it is.
+
+### Three kinds of content
+
+| Category                | Examples                                                                                                                                                                | Handling                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Application language    | buttons, labels, validation and error messages, page copy                                                                                                               | Translated in `src/i18n/messages/`                            |
+| Canonical domain values | visibility (`private`, `public`), parent roles (`seed_parent`), country codes (`NL`)                                                                                    | Stored language-neutral; shown through the glossary or `Intl` |
+| User and domain content | cultivar names (`Wizard of Oz`), Seedling identifiers (`#14`, `JV-26-014`), Series codes, working names, captions, notes, transcripts, comments, profile names and bios | Never translated                                              |
+
+Seedling identifiers and cultivar names are shown exactly as they were entered. The interface words around them are translated.
+
+### Dictionaries
+
+- One file per area in `src/i18n/messages/`, each with `en`, `nl` and `fr`. Dutch and French are typed against English, so a missing key is a type error.
+- `src/i18n/messages/parity.test.ts` checks that every language has the same keys and the same placeholders.
+- Values are inserted as plain text, never as markup.
+- Server code uses `getTranslation()`. Client components use `useT()` and `useLocale()`, and receive only the active dictionary.
+- Validators and domain code return keys (`Msg`), so the sentence is chosen where it is shown. Database error text is mapped to keys in `src/i18n/database-messages.ts`. Unknown database text falls back to a generic message and is never shown raw.
+
+### Adding a string or a canonical value
+
+1. Add the key to the English dictionary, then to `nl` and `fr`. Typecheck fails until all three exist.
+2. For a new canonical value, store the language-neutral code and add its glossary entry in all three languages.
+3. Run `npx vitest run src/i18n` and then `npm run check`.
+
+### Formatting
+
+Dates, numbers and country names use `Intl` for the active language (`src/i18n/format.ts`). Dates are formatted in UTC. Stored values never change.
+
+### Deliberately English
+
+Developer-facing output stays in English: configuration errors (`src/lib/config/env.ts`), `/api/health`, and server logs.
+
+### Rules for later phases
+
+Every new user-visible string is added to English, Dutch and French in the same change. The app uses no translation service, no runtime machine translation, and no translation tables in the database.
+
+### Verification
+
+- Unit tests: dictionary parity, the translator, locale resolution and fallback, and locale-aware presentation.
+- Browser tests: `tests/e2e/language.spec.ts` covers the saved choice, the unchanged address, the browser language and the English fallback.
+- Layout: checked at 390×844 and 1280×800 in English, Dutch and French. On narrow screens the header wraps so the longer translated labels fit.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

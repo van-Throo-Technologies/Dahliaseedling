@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getTranslation } from "@/i18n/server";
 import { getCurrentUser } from "@/modules/identity/session";
 import { AppHeader } from "./app-header";
 import { PrimaryNav } from "./primary-nav";
@@ -9,6 +10,7 @@ import { PrimaryNav } from "./primary-nav";
  */
 export async function AppShell({ children }: { readonly children: ReactNode }) {
   const user = await getCurrentUser();
+  const { t } = await getTranslation();
 
   return (
     <>
@@ -16,7 +18,7 @@ export async function AppShell({ children }: { readonly children: ReactNode }) {
         href="#main"
         className="sr-only z-50 rounded-control bg-surface px-4 py-2 text-text-brand focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
-        Skip to content
+        {t("app.skip")}
       </a>
       <AppHeader signedIn={user !== null} />
       <PrimaryNav />

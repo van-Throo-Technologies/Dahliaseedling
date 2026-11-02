@@ -1,5 +1,6 @@
 import { setCoverAction } from "@/modules/publications/actions";
 import type { PublicImage, UpdateSummary } from "@/modules/publications/repository";
+import { getTranslation } from "@/i18n/server";
 import { SeedlingActions } from "./social-buttons";
 import { PublicPhoto } from "./public-photo";
 import { UpdateCard } from "./update-card";
@@ -9,7 +10,7 @@ import { UpdateCard } from "./update-card";
  * grouped by the year each observation was made. One seedling, one page, however many years it spans.
  */
 
-export function SeedlingJourney({
+export async function SeedlingJourney({
   seedlingId,
   title,
   cover,
@@ -26,6 +27,7 @@ export function SeedlingJourney({
   readonly followed: boolean;
   readonly saved: boolean;
 }) {
+  const { t } = await getTranslation();
   const returnTo = `/seedlings/${seedlingId}`;
   const byYear = new Map<number, UpdateSummary[]>();
   for (const update of journey) {
@@ -39,10 +41,14 @@ export function SeedlingJourney({
     <section aria-labelledby="journey-title" className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
         {cover ? (
-          <PublicPhoto image={cover} alt={`Cover photo of ${title}`} className="max-h-[32rem]" />
+          <PublicPhoto
+            image={cover}
+            alt={t("publication.journey.coverAlt", { title })}
+            className="max-h-[32rem]"
+          />
         ) : (
           <p className="rounded-surface border border-border bg-surface p-4 text-base text-text-muted">
-            No public photo yet.
+            {t("publication.journey.noPhoto")}
           </p>
         )}
         <SeedlingActions
@@ -54,13 +60,11 @@ export function SeedlingJourney({
       </div>
 
       <h2 id="journey-title" className="text-lg font-medium text-text">
-        Journey
+        {t("publication.journey.title")}
       </h2>
       {years.length === 0 ? (
         <p className="text-base text-text-muted">
-          {isHolder
-            ? "Nothing is shared from this seedling yet. Share an observation to start its public journey."
-            : "No public Updates yet."}
+          {isHolder ? t("publication.journey.nothingYet") : t("publication.journey.noUpdates")}
         </p>
       ) : (
         years.map((year) => (
@@ -82,25 +86,22 @@ export function SeedlingJourney({
       {isHolder && photos.length > 0 ? (
         <details className="rounded-surface border border-border bg-surface p-4">
           <summary className="inline-flex min-h-11 cursor-pointer items-center text-base font-medium text-text-brand">
-            Choose the cover photo
+            {t("publication.journey.chooseCover")}
           </summary>
           <div className="flex flex-col gap-4 pt-4">
-            <p className="text-base text-text-muted">
-              The most recently shared photo is the cover unless you choose another. Video is never
-              the cover.
-            </p>
+            <p className="text-base text-text-muted">{t("publication.journey.coverNote")}</p>
             <ul className="grid grid-cols-2 gap-3">
               {photos.map((photo) => (
                 <li key={photo.id}>
                   <form action={setCoverAction} className="flex flex-col gap-2">
                     <input type="hidden" name="seedlingId" value={seedlingId} />
                     <input type="hidden" name="derivativeId" value={photo.id} />
-                    <PublicPhoto image={photo} alt="A shared photo you can use as the cover" />
+                    <PublicPhoto image={photo} alt={t("publication.journey.coverChoiceAlt")} />
                     <button
                       type="submit"
                       className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-3 text-base text-text-brand"
                     >
-                      Use as cover
+                      {t("publication.journey.useCover")}
                     </button>
                   </form>
                 </li>
@@ -112,7 +113,7 @@ export function SeedlingJourney({
                 type="submit"
                 className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand"
               >
-                Use the most recent photo
+                {t("publication.journey.useRecent")}
               </button>
             </form>
           </div>

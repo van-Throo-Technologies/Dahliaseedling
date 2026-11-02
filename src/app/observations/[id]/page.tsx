@@ -8,14 +8,19 @@ import { ObservationNoteForm } from "@/components/capture/observation-note-form"
 import { FormMessage } from "@/design-system/components/form-message";
 import { ButtonLink } from "@/design-system/components/button-link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTranslation } from "@/i18n/server";
 import { getOwnProfile } from "@/modules/identity/session";
 import { getObservation, mediaFor } from "@/modules/capture/repository";
 import { isUuid } from "@/modules/capture/validation";
+import { labelWords } from "@/modules/seedlings/labels";
 import { displayIdentifier, getSeedling, listIdentifiers } from "@/modules/seedlings/repository";
 
 // An observation is private to its author. Anyone else, and a missing observation, get the same 404.
 
-export const metadata: Metadata = { title: "Observation" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t("capture.observation.metaTitle") };
+}
 
 export default async function ObservationPage({
   params,
@@ -27,6 +32,8 @@ export default async function ObservationPage({
   const { id } = await params;
   const query = await searchParams;
   if (!isUuid(id)) notFound();
+  const { t } = await getTranslation();
+  const words = labelWords(t);
 
   const supabase = await createSupabaseServerClient();
   const observation = await getObservation(supabase, id);
@@ -41,49 +48,51 @@ export default async function ObservationPage({
   ]);
   const items = media.get(id) ?? [];
   const identifiers = seedling ? await listIdentifiers(supabase, seedling.id) : [];
-  const seedlingTitle = seedling ? displayIdentifier(identifiers) : null;
-  const savedMessage = `Saved privately.${seedlingTitle ? ` Added to ${seedlingTitle}.` : ""} Nothing is shared.`;
+  const seedlingTitle = seedling ? displayIdentifier(identifiers, words) : null;
+  const savedMessage = seedlingTitle
+    ? `${t("capture.observation.savedPrivately")} ${t("capture.observation.addedTo", { seedling: seedlingTitle })} ${t("capture.observation.nothingShared")}`
+    : `${t("capture.observation.savedPrivately")} ${t("capture.observation.nothingShared")}`;
 
   return (
     <article aria-labelledby="observation-title" className="flex flex-col gap-6">
       {query.saved === "1" ? <FormMessage tone="success">{savedMessage}</FormMessage> : null}
       {query.moved === "1" ? (
-        <FormMessage tone="success">Moved. The photos were not uploaded again.</FormMessage>
+        <FormMessage tone="success">{t("capture.move.moved")}</FormMessage>
       ) : null}
       {query.deleteFailed === "1" ? (
-        <FormMessage tone="error">That observation could not be deleted. Try again.</FormMessage>
+        <FormMessage tone="error">{t("errors.capture.notDeleted")}</FormMessage>
       ) : null}
 
       <header className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-text-muted">Private</p>
+        <p className="text-sm font-medium text-text-muted">{t("capture.observation.private")}</p>
         <h1 id="observation-title" className="font-display text-2xl text-text-brand">
-          Observed <LocalTime iso={observation.observedAt} />
+          {t("capture.observation.observed")} <LocalTime iso={observation.observedAt} />
         </h1>
         {seedling && seedlingTitle ? (
           <p className="text-base text-text">
-            On{" "}
             <Link
               href={`/seedlings/${seedling.id}`}
               className="text-text-brand underline underline-offset-4"
             >
-              {seedlingTitle}
+              {t("capture.observation.on", { seedling: seedlingTitle })}
             </Link>
           </p>
         ) : (
-          <p className="text-base text-text-muted">
-            This seedling is not visible to you at the moment.
-          </p>
+          <p className="text-base text-text-muted">{t("capture.observation.notVisible")}</p>
         )}
       </header>
 
       {items.length > 0 ? (
-        <ul aria-label="Photos and videos" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul
+          aria-label={t("capture.observation.photos")}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
           {items.map((item) => (
             <li key={item.id}>
               <MediaPreview
                 src={`/media/${item.id}`}
                 mime={item.mimeType}
-                label="Your private photo or video"
+                label={t("capture.observation.yourPhoto")}
               />
             </li>
           ))}
@@ -93,7 +102,7 @@ export default async function ObservationPage({
       {observation.note ? (
         <section aria-labelledby="note-title" className="flex flex-col gap-2">
           <h2 id="note-title" className="text-lg font-medium text-text">
-            Note
+            {t("capture.observation.note")}
           </h2>
           <p className="whitespace-pre-line text-base text-text">{observation.note}</p>
         </section>
@@ -102,33 +111,32 @@ export default async function ObservationPage({
       {canEdit ? (
         <section aria-labelledby="edit-title" className="flex flex-col gap-4">
           <h2 id="edit-title" className="text-lg font-medium text-text">
-            Add or change the note
+            {t("capture.observation.addNote")}
           </h2>
           <ObservationNoteForm observationId={id} defaultNote={observation.note ?? ""} />
           <div className="flex flex-col gap-3 sm:flex-row">
             <ButtonLink href={`/observations/${id}/move`} variant="secondary">
-              Change seedling
+              {t("capture.observation.change")}
             </ButtonLink>
           </div>
         </section>
       ) : (
         <p className="rounded-surface border border-border bg-surface p-4 text-base text-text">
-          Your account is suspended, so you can read this observation but cannot change it.
+          {t("capture.observation.suspended")}
         </p>
       )}
 
       <section aria-labelledby="share-title" className="flex flex-col gap-2">
         <h2 id="share-title" className="text-lg font-medium text-text">
-          Share
+          {t("capture.observation.share")}
         </h2>
         {canEdit ? (
           <ButtonLink href={`/observations/${id}/share`} variant="secondary">
-            Share selected photos
+            {t("capture.observation.shareSelected")}
           </ButtonLink>
         ) : null}
         <p id="share-note" className="text-sm text-text-muted">
-          Sharing creates a public Update from the photos you choose. This observation, its note and
-          the rest of its photos stay private.
+          {t("capture.observation.shareNote")}
         </p>
       </section>
 

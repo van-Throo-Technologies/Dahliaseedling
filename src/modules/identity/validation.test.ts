@@ -32,7 +32,7 @@ describe("validatePassword", () => {
   it("requires the minimum length", () => {
     expect(validatePassword("short")).toMatchObject({
       ok: false,
-      fieldErrors: { password: expect.any(String) },
+      fieldErrors: { password: expect.objectContaining({ key: "validation.password.min" }) },
     });
     expect(validatePassword("long-enough-1")).toEqual({ ok: true, value: "long-enough-1" });
   });
@@ -69,7 +69,9 @@ describe("validateProfileInput", () => {
   it("requires a display name between the limits", () => {
     expect(validateProfileInput(formOf({ ...valid, displayName: "A" }))).toMatchObject({
       ok: false,
-      fieldErrors: { displayName: expect.any(String) },
+      fieldErrors: {
+        displayName: expect.objectContaining({ key: "validation.displayName.range" }),
+      },
     });
     expect(
       validateProfileInput(
@@ -81,7 +83,7 @@ describe("validateProfileInput", () => {
   it("requires a country from the ISO list", () => {
     expect(validateProfileInput(formOf({ ...valid, countryCode: "" }))).toMatchObject({
       ok: false,
-      fieldErrors: { countryCode: expect.any(String) },
+      fieldErrors: { countryCode: { key: "validation.country.choose" } },
     });
     expect(validateProfileInput(formOf({ ...valid, countryCode: "UK" }))).toMatchObject({
       ok: false,
@@ -95,7 +97,7 @@ describe("validateProfileInput", () => {
     });
     expect(validateProfileInput(formOf({ ...valid, accountTypeLabel: "admin" }))).toMatchObject({
       ok: false,
-      fieldErrors: { accountTypeLabel: expect.any(String) },
+      fieldErrors: { accountTypeLabel: { key: "validation.accountType.choose" } },
     });
   });
 

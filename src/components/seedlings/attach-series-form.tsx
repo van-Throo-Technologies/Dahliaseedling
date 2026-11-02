@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SelectField } from "@/design-system/components/form-fields";
 import { SubmitButton } from "@/design-system/components/submit-button";
+import { useT } from "@/i18n/client";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { attachSeriesAction } from "@/modules/seedlings/actions";
 
@@ -23,6 +24,7 @@ export function AttachSeriesForm({
   readonly seedlingId: string;
   readonly series: readonly AttachableSeries[];
 }) {
+  const t = useT();
   const [state, action] = useActionState(attachSeriesAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
 
@@ -34,16 +36,18 @@ export function AttachSeriesForm({
       ) : null}
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
       <SelectField
-        label="Add a series identifier"
+        label={t("seedlings.attach.label")}
         name="seriesId"
         defaultValue=""
         error={errors.seriesId}
         options={[
-          { value: "", label: "Choose a series" },
+          { value: "", label: t("seedlings.attach.choose") },
           ...series.map((item) => ({ value: item.id, label: item.label })),
         ]}
       />
-      <SubmitButton pendingLabel="Adding…">Add series identifier</SubmitButton>
+      <SubmitButton pendingLabel={t("seedlings.attach.submitting")}>
+        {t("seedlings.attach.submit")}
+      </SubmitButton>
     </form>
   );
 }

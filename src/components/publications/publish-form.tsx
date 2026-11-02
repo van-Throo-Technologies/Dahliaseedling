@@ -6,7 +6,10 @@ import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { publishUpdateAction } from "@/modules/publications/actions";
-import { PRIVATE_ONLY_MESSAGE, PUBLISH_LIMITS } from "@/modules/publications/limits";
+import { PUBLISH_LIMITS } from "@/modules/publications/limits";
+import { useT } from "@/i18n/client";
+import { formatCount } from "@/i18n/format";
+import { useLocale } from "@/i18n/client";
 
 export interface ShareableImage {
   readonly id: string;
@@ -30,6 +33,8 @@ export function PublishForm({
   readonly images: readonly ShareableImage[];
   readonly videoCount: number;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [state, action] = useActionState(publishUpdateAction, IDLE_FORM_STATE);
   // The choice and the caption are mirrored in component state. The fields keep their DOM values, but their
   // defaults follow the state, so the browser reset React applies after a form action restores what the grower chose.
@@ -46,11 +51,10 @@ export function PublishForm({
       <input type="hidden" name="clientKey" value={clientKey} />
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-lg font-medium text-text">Choose the photos to share</legend>
-        <p className="text-base text-text-muted">
-          Only the photos you tick become public. Each one is shared as a smaller copy, with its
-          location details removed. The original stays private.
-        </p>
+        <legend className="text-lg font-medium text-text">
+          {t("publication.publish.chooseTitle")}
+        </legend>
+        <p className="text-base text-text-muted">{t("publication.publish.chooseText")}</p>
         <ul className="grid gap-3 sm:grid-cols-2">
           {images.map((image) => (
             <li key={image.id}>
@@ -68,7 +72,9 @@ export function PublishForm({
                     className="h-6 w-6 shrink-0 accent-[var(--color-text-brand)]"
                   />
                   <span className="text-base text-text">
-                    {image.shareable ? `Share ${image.label}` : `${image.label} stays private`}
+                    {image.shareable
+                      ? t("publication.publish.share", { label: image.label })
+                      : t("publication.publish.stayPrivate", { label: image.label })}
                   </span>
                 </span>
                 <MediaPreview src={`/media/${image.id}`} mime={image.mime} label={image.label} />
@@ -78,24 +84,25 @@ export function PublishForm({
         </ul>
         {images.some((image) => !image.shareable) ? (
           <p className="rounded-surface border border-border bg-surface p-4 text-base text-text-muted">
-            {PRIVATE_ONLY_MESSAGE}
+            {t("publication.publish.privateOnly")}
           </p>
         ) : null}
         {videoCount > 0 ? (
           <p className="rounded-surface border border-border bg-surface p-4 text-base text-text-muted">
-            {videoCount === 1 ? "One video stays private." : `${videoCount} videos stay private.`}{" "}
-            Public video sharing isn&apos;t available yet.
+            {videoCount === 1
+              ? t("publication.publish.videoOne")
+              : t("publication.publish.videoMany", { count: formatCount(videoCount, locale) })}{" "}
+            {t("publication.publish.videoNotAvailable")}
           </p>
         ) : null}
       </fieldset>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="caption" className="text-lg font-medium text-text">
-          Caption (optional)
+          {t("publication.publish.captionLabel")}
         </label>
         <p id="caption-hint" className="text-base text-text-muted">
-          Your public story for this Update. Nothing from the private note is copied in. Write it
-          yourself.
+          {t("publication.publish.captionHint")}
         </p>
         <textarea
           id="caption"
@@ -113,7 +120,9 @@ export function PublishForm({
         <FormMessage tone="error">{state.message}</FormMessage>
       ) : null}
       {images.some((image) => image.shareable) ? (
-        <SubmitButton pendingLabel="Publishing…">Publish update</SubmitButton>
+        <SubmitButton pendingLabel={t("publication.publish.pending")}>
+          {t("publication.publish.submit")}
+        </SubmitButton>
       ) : null}
     </form>
   );

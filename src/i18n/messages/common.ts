@@ -1,0 +1,55 @@
+/* Words that appear on many screens. Keep this small: a word used once belongs in its own area. */
+
+export const en = {
+  save: "Save",
+  saving: "Saving…",
+  cancel: "Cancel",
+  back: "Back",
+  continue: "Continue",
+  delete: "Delete",
+  edit: "Edit",
+  remove: "Remove",
+  close: "Close",
+  retry: "Try again",
+  loading: "Loading…",
+  yes: "Yes",
+  no: "No",
+  unavailable: "Not available",
+  notYet: "This is not available yet.",
+};
+
+export const nl: typeof en = {
+  save: "Opslaan",
+  saving: "Opslaan…",
+  cancel: "Annuleren",
+  back: "Terug",
+  continue: "Doorgaan",
+  delete: "Verwijderen",
+  edit: "Bewerken",
+  remove: "Verwijderen",
+  close: "Sluiten",
+  retry: "Probeer opnieuw",
+  loading: "Laden…",
+  yes: "Ja",
+  no: "Nee",
+  unavailable: "Niet beschikbaar",
+  notYet: "Dit is nog niet beschikbaar.",
+};
+
+export const fr: typeof en = {
+  save: "Enregistrer",
+  saving: "Enregistrement…",
+  cancel: "Annuler",
+  back: "Retour",
+  continue: "Continuer",
+  delete: "Supprimer",
+  edit: "Modifier",
+  remove: "Retirer",
+  close: "Fermer",
+  retry: "Réessayer",
+  loading: "Chargement…",
+  yes: "Oui",
+  no: "Non",
+  unavailable: "Non disponible",
+  notYet: "Ceci n'est pas encore disponible.",
+};

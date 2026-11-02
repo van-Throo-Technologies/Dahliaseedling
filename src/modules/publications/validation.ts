@@ -1,21 +1,23 @@
+import { msg, type Msg } from "@/i18n/message";
 import { isUuid } from "@/modules/capture/validation";
 import { PUBLISH_LIMITS } from "./limits";
 
 /*
  * Input checks for publication and social actions. The domain functions check again, so these only
- * give clear messages. They never decide what is allowed.
+ * give clear messages. They never decide what is allowed. Messages are keys, translated where they are shown.
  */
 
-export type Checked<T> = { ok: true; value: T } | { ok: false; message: string };
+export type Checked<T> = { ok: true; value: T } | { ok: false; message: Msg };
 
 export function validateCaption(raw: unknown): Checked<string | null> {
   if (raw === null || raw === undefined) return { ok: true, value: null };
-  if (typeof raw !== "string") return { ok: false, message: "The caption could not be read." };
+  if (typeof raw !== "string")
+    return { ok: false, message: msg("validation.publication.captionRead") };
   const value = raw.trim();
   if (value.length > PUBLISH_LIMITS.captionMaxLength) {
     return {
       ok: false,
-      message: `A caption can be at most ${PUBLISH_LIMITS.captionMaxLength} characters.`,
+      message: msg("validation.publication.captionMax", { max: PUBLISH_LIMITS.captionMaxLength }),
     };
   }
   return { ok: true, value: value.length > 0 ? value : null };
@@ -23,11 +25,11 @@ export function validateCaption(raw: unknown): Checked<string | null> {
 
 export function validateCommentBody(raw: unknown): Checked<string> {
   const value = typeof raw === "string" ? raw.trim() : "";
-  if (value.length === 0) return { ok: false, message: "Write something before you post." };
+  if (value.length === 0) return { ok: false, message: msg("validation.publication.commentEmpty") };
   if (value.length > PUBLISH_LIMITS.commentMaxLength) {
     return {
       ok: false,
-      message: `A comment can be at most ${PUBLISH_LIMITS.commentMaxLength} characters.`,
+      message: msg("validation.publication.commentMax", { max: PUBLISH_LIMITS.commentMaxLength }),
     };
   }
   return { ok: true, value };
@@ -36,12 +38,15 @@ export function validateCommentBody(raw: unknown): Checked<string> {
 /** Selected media ids: one to six, each a distinct uuid. */
 export function validateSelection(raw: readonly FormDataEntryValue[]): Checked<string[]> {
   const ids = raw.filter((value): value is string => typeof value === "string" && value.length > 0);
-  if (ids.length === 0) return { ok: false, message: "Choose at least one image to share." };
+  if (ids.length === 0) return { ok: false, message: msg("validation.publication.chooseImage") };
   if (ids.length > PUBLISH_LIMITS.maxItems) {
-    return { ok: false, message: `Choose up to ${PUBLISH_LIMITS.maxItems} images.` };
+    return {
+      ok: false,
+      message: msg("validation.publication.chooseMax", { max: PUBLISH_LIMITS.maxItems }),
+    };
   }
   if (!ids.every(isUuid) || new Set(ids).size !== ids.length) {
-    return { ok: false, message: "The selection could not be read. Choose the images again." };
+    return { ok: false, message: msg("validation.publication.selection") };
   }
   return { ok: true, value: ids };
 }
@@ -52,7 +57,7 @@ export function validateFeedCursor(
   if (!raw) return { ok: true, value: null };
   const decoded = decodeCursor(raw);
   if (!decoded || !isUuid(decoded.id) || Number.isNaN(Date.parse(decoded.publishedAt))) {
-    return { ok: false, message: "That page link is out of date. Start again from the Feed." };
+    return { ok: false, message: msg("validation.publication.cursor") };
   }
   return { ok: true, value: decoded };
 }

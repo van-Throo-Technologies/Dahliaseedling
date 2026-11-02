@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell/app-shell";
-import { strings } from "@/content/strings";
 import { dmSans, fraunces } from "@/design-system/fonts";
+import { LocaleProvider } from "@/i18n/client";
+import { getTranslation } from "@/i18n/server";
+import { APP_NAME } from "@/lib/brand";
 import "./globals.css";
 
 // Every page depends on the visitor's session (header state, participation gates, own profile).
 // Nothing may be prerendered once and then shared between visitors.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: strings.appName,
-  description: strings.description,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: APP_NAME, description: t("app.description") };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -21,11 +23,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const { locale, messages } = await getTranslation();
   return (
-    <html lang={strings.locale} className={`${dmSans.variable} ${fraunces.variable}`}>
+    <html lang={locale} className={`${dmSans.variable} ${fraunces.variable}`}>
       <body className="min-h-dvh bg-background font-sans text-text antialiased">
-        <AppShell>{children}</AppShell>
+        <LocaleProvider locale={locale} messages={messages}>
+          <AppShell>{children}</AppShell>
+        </LocaleProvider>
       </body>
     </html>
   );

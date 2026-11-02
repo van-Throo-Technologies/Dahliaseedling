@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/identity/sign-in-form";
+import { getTranslation } from "@/i18n/server";
 import { safeNextPath } from "@/lib/http/safe-next";
 import { getCurrentUser } from "@/modules/identity/session";
 
-export const metadata = { title: "Sign in" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t("identity.signIn.title") };
+}
 
 export default async function SignInPage({
   searchParams,
@@ -12,6 +17,7 @@ export default async function SignInPage({
 }) {
   const { next } = await searchParams;
   const destination = safeNextPath(Array.isArray(next) ? next[0] : next, "/");
+  const { t } = await getTranslation();
 
   // Already signed in: the gate on the destination decides what happens next.
   if (await getCurrentUser()) redirect(destination);
@@ -20,11 +26,9 @@ export default async function SignInPage({
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h1 id="page-title" className="font-display text-3xl text-text-brand">
-          Sign in
+          {t("identity.signIn.title")}
         </h1>
-        <p className="text-base text-text-muted">
-          An account lets you document Seedlings, share Updates and take part in the community.
-        </p>
+        <p className="text-base text-text-muted">{t("identity.signIn.intro")}</p>
       </div>
       <SignInForm next={destination} />
     </section>

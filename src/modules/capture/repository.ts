@@ -3,6 +3,8 @@ import "server-only";
 import type { Database } from "@/lib/supabase/database.types";
 import type { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MediaKind } from "./limits";
+import type { MessageKey, Values } from "@/i18n/translator";
+import { mapDatabaseMessage } from "@/i18n/database-messages";
 
 /*
  * Observation and media data access. Every call runs with the caller's own session, so RLS decides
@@ -14,7 +16,23 @@ type Client = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 type ObservationRow = Database["public"]["Tables"]["observations"]["Row"];
 type MediaRow = Database["public"]["Tables"]["media"]["Row"];
 
-export class CaptureError extends Error {}
+/** A failure the interface can show. It carries a message key and its values, never a sentence. */
+export class CaptureError extends Error {
+  readonly key: MessageKey;
+  readonly values?: Values;
+
+  constructor(key: MessageKey, values?: Values) {
+    super(key);
+    this.key = key;
+    this.values = values;
+  }
+}
+
+/** A database failure as a key: a known sentence is translated, anything else becomes the fallback key. */
+function captureFailure(error: { message?: string } | null, fallback: MessageKey): CaptureError {
+  const mapped = mapDatabaseMessage(error?.message);
+  return mapped ? new CaptureError(mapped.key, mapped.values) : new CaptureError(fallback);
+}
 
 /**
  * A read that the database refuses with a permission error means "not visible to this reader". Visitors have
@@ -83,7 +101,7 @@ export async function captureObservation(
     p_voice_transcript: input.voiceTranscript ?? undefined,
     p_paths: [...input.paths],
   });
-  if (error || !data) throw new CaptureError(error?.message ?? "The capture could not be saved.");
+  if (error || !data) throw captureFailure(error, "errors.capture.captureFailed");
   return toObservation(data);
 }
 
@@ -97,14 +115,13 @@ export async function moveObservation(
     p_target_seedling_id: target.seedlingId ?? undefined,
     p_new_seedling: target.newSeedling,
   });
-  if (error || !data)
-    throw new CaptureError(error?.message ?? "The observation could not be moved.");
+  if (error || !data) throw captureFailure(error, "errors.capture.notMoved");
   return toObservation(data);
 }
 
 export async function deleteObservation(client: Client, observationId: string): Promise<void> {
   const { error } = await client.rpc("delete_observation", { p_observation_id: observationId });
-  if (error) throw new CaptureError(error.message);
+  if (error) throw captureFailure(error, "errors.unexpected");
 }
 
 /** Changes the note and/or the observed time. Returns false when RLS allowed no change (not the author, or suspended). */
@@ -120,7 +137,7 @@ export async function updateObservationText(
     .update(update)
     .eq("id", observationId)
     .select("id");
-  if (error) throw new CaptureError("The observation could not be saved.");
+  if (error) throw new CaptureError("errors.capture.notSaved");
   return data.length > 0;
 }
 
@@ -134,7 +151,7 @@ export async function getObservation(
     .eq("id", observationId)
     .maybeSingle();
   if (refusedByPolicy(error)) return null;
-  if (error) throw new CaptureError("The observation could not be read.");
+  if (error) throw new CaptureError("errors.readFailed");
   return data ? toObservation(data) : null;
 }
 
@@ -149,7 +166,7 @@ export async function listObservationsForSeedling(
     .eq("seedling_id", seedlingId)
     .order("observed_at", { ascending: false });
   if (refusedByPolicy(error)) return [];
-  if (error) throw new CaptureError("The observations could not be read.");
+  if (error) throw new CaptureError("errors.readFailed");
   return data.map(toObservation);
 }
 
@@ -164,7 +181,7 @@ export async function mediaFor(
     .select("observation_id, media_id, sort_order")
     .in("observation_id", [...observationIds]);
   if (refusedByPolicy(linkError)) return result;
-  if (linkError) throw new CaptureError("The photos could not be read.");
+  if (linkError) throw new CaptureError("errors.capture.readFailed");
   if (links.length === 0) return result;
 
   const { data: media, error: mediaError } = await client
@@ -172,7 +189,7 @@ export async function mediaFor(
     .select("id, kind, mime_type, byte_size")
     .in("id", [...new Set(links.map((link) => link.media_id))]);
   if (refusedByPolicy(mediaError)) return result;
-  if (mediaError) throw new CaptureError("The photos could not be read.");
+  if (mediaError) throw new CaptureError("errors.capture.readFailed");
   const byId = new Map(media.map((row) => [row.id, row] as const));
 
   for (const link of [...links].sort((a, b) => a.sort_order - b.sort_order)) {
@@ -201,7 +218,7 @@ export async function mediaRow(
     .eq("id", mediaId)
     .maybeSingle();
   if (refusedByPolicy(error)) return null;
-  if (error) throw new CaptureError("The file could not be read.");
+  if (error) throw new CaptureError("errors.capture.readFailed");
   return data;
 }
 

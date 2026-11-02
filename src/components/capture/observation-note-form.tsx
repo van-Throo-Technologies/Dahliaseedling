@@ -6,6 +6,7 @@ import { SubmitButton } from "@/design-system/components/submit-button";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { updateObservationAction } from "@/modules/capture/actions";
 import { CAPTURE_LIMITS } from "@/modules/capture/limits";
+import { useT } from "@/i18n/client";
 
 /** Edits the note and, if needed, the observed time. The original dictation transcript is never changed here. */
 export function ObservationNoteForm({
@@ -15,6 +16,7 @@ export function ObservationNoteForm({
   readonly observationId: string;
   readonly defaultNote: string;
 }) {
+  const t = useT();
   const [state, action] = useActionState(updateObservationAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
 
@@ -27,7 +29,7 @@ export function ObservationNoteForm({
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
 
       <label htmlFor="observation-note" className="text-base font-medium text-text">
-        Note
+        {t("capture.noteForm.note")}
       </label>
       <textarea
         id="observation-note"
@@ -46,7 +48,7 @@ export function ObservationNoteForm({
       ) : null}
 
       <label htmlFor="observation-time" className="text-base font-medium text-text">
-        Observed at (optional)
+        {t("capture.noteForm.observedAt")}
       </label>
       <input
         id="observation-time"
@@ -56,13 +58,15 @@ export function ObservationNoteForm({
         aria-describedby="observation-time-hint"
       />
       <p id="observation-time-hint" className="text-sm text-text-muted">
-        Leave it empty to keep the time it has now.
+        {t("capture.noteForm.keepTime")}
       </p>
       {errors.observedAt ? (
         <p className="text-sm font-medium text-destructive">{errors.observedAt}</p>
       ) : null}
 
-      <SubmitButton pendingLabel="Saving…">Save note</SubmitButton>
+      <SubmitButton pendingLabel={t("capture.noteForm.saving")}>
+        {t("capture.noteForm.save")}
+      </SubmitButton>
     </form>
   );
 }

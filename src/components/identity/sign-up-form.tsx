@@ -5,10 +5,12 @@ import { useActionState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { TextField } from "@/design-system/components/form-fields";
+import { useT } from "@/i18n/client";
 import { signUpAction } from "@/modules/identity/actions";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 
 export function SignUpForm({ next }: { readonly next: string }) {
+  const t = useT();
   const [state, action] = useActionState(signUpAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
   const values = state.status === "error" ? state.values : undefined;
@@ -21,7 +23,7 @@ export function SignUpForm({ next }: { readonly next: string }) {
           href={`/sign-in?next=${encodeURIComponent(next)}`}
           className="font-medium text-text-brand underline underline-offset-4"
         >
-          Go to sign in
+          {t("identity.signUp.goSignIn")}
         </Link>
       </div>
     );
@@ -35,7 +37,7 @@ export function SignUpForm({ next }: { readonly next: string }) {
       ) : null}
 
       <TextField
-        label="Email"
+        label={t("identity.fields.email")}
         name="email"
         type="email"
         autoComplete="email"
@@ -45,24 +47,26 @@ export function SignUpForm({ next }: { readonly next: string }) {
         error={errors.email}
       />
       <TextField
-        label="Password"
+        label={t("identity.fields.password")}
         name="password"
         type="password"
         autoComplete="new-password"
         required
-        hint="At least 8 characters."
+        hint={t("identity.signUp.passwordHint")}
         error={errors.password}
       />
 
-      <SubmitButton pendingLabel="Creating account…">Create account</SubmitButton>
+      <SubmitButton pendingLabel={t("identity.signUp.submitting")}>
+        {t("identity.signUp.submit")}
+      </SubmitButton>
 
       <p className="text-base text-text-muted">
-        Already have an account?{" "}
+        {t("identity.signUp.haveAccount")}{" "}
         <Link
           href={`/sign-in?next=${encodeURIComponent(next)}`}
           className="font-medium text-text-brand underline underline-offset-4"
         >
-          Sign in
+          {t("identity.signUp.signIn")}
         </Link>
       </p>
     </form>

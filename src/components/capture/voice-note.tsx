@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore } from "react";
+import { useT } from "@/i18n/client";
 
 interface RecognitionResultLike {
   readonly isFinal: boolean;
@@ -51,6 +52,7 @@ export function VoiceNote({
   readonly onCommand: (transcript: string) => void;
   readonly disabled: boolean;
 }) {
+  const t = useT();
   const supported = useSyncExternalStore(
     noSubscribe,
     () => recognitionConstructor() !== null,
@@ -77,7 +79,7 @@ export function VoiceNote({
     };
     instance.onerror = () => {
       setListening(false);
-      setMessage("Dictation stopped. You can type the note instead.");
+      setMessage(t("capture.voice.stopped"));
     };
     instance.onend = () => setListening(false);
     recognition.current = instance;
@@ -87,7 +89,7 @@ export function VoiceNote({
       instance.start();
     } catch {
       setListening(false);
-      setMessage("Dictation is not available right now. You can type the note instead.");
+      setMessage(t("capture.voice.unavailable"));
     }
   }
 
@@ -97,11 +99,7 @@ export function VoiceNote({
   }
 
   if (!supported) {
-    return (
-      <p className="text-sm text-text-muted">
-        Dictation is not available in this browser. Type your note instead.
-      </p>
-    );
+    return <p className="text-sm text-text-muted">{t("capture.voice.unsupported")}</p>;
   }
 
   return (
@@ -113,11 +111,11 @@ export function VoiceNote({
         aria-pressed={listening}
         className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-background px-4 text-base font-medium text-text-brand"
       >
-        {listening ? "Stop dictating" : "Dictate a note"}
+        {listening ? t("capture.voice.stop") : t("capture.voice.dictate")}
       </button>
       {listening ? (
         <p role="status" className="text-sm text-text-muted">
-          Listening. Speak, then stop when you are done.
+          {t("capture.voice.listening")}
         </p>
       ) : null}
       {message ? (

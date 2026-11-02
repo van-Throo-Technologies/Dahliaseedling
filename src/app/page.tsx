@@ -3,12 +3,16 @@ import Link from "next/link";
 import { FormMessage } from "@/design-system/components/form-message";
 import { UpdateCard } from "@/components/publications/update-card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTranslation } from "@/i18n/server";
 import { getCurrentUser } from "@/modules/identity/session";
 import { FEED_PAGE_SIZE } from "@/modules/publications/limits";
 import { listFeedPage } from "@/modules/publications/repository";
 import { encodeCursor, validateFeedCursor } from "@/modules/publications/validation";
 
-export const metadata: Metadata = { title: "Feed" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t("publication.feed.title") };
+}
 
 /*
  * Home is the public Feed. Visitors can read it without an account. Participation is needed only for the
@@ -21,6 +25,7 @@ export default async function HomePage({
   readonly searchParams: Promise<{ view?: string; cursor?: string }>;
 }) {
   const query = await searchParams;
+  const { t } = await getTranslation();
   const viewer = await getCurrentUser();
   const followingView = query.view === "following" && viewer !== null;
   const cursor = validateFeedCursor(query.cursor);
@@ -28,9 +33,9 @@ export default async function HomePage({
   if (!cursor.ok) {
     return (
       <div className="flex flex-col gap-6">
-        <FormMessage tone="error">{cursor.message}</FormMessage>
+        <FormMessage tone="error">{t(cursor.message.key, cursor.message.values)}</FormMessage>
         <Link href="/" className="text-base text-text-brand">
-          Back to the Feed
+          {t("publication.feed.backToFeed")}
         </Link>
       </div>
     );
@@ -52,13 +57,12 @@ export default async function HomePage({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <h1 className="font-display text-3xl leading-tight text-text-brand">Feed</h1>
-        <p className="text-base text-text-muted">
-          Stories from growers, shared deliberately. The photo leads, and each one opens its
-          seedling.
-        </p>
+        <h1 className="font-display text-3xl leading-tight text-text-brand">
+          {t("publication.feed.title")}
+        </h1>
+        <p className="text-base text-text-muted">{t("publication.feed.intro")}</p>
         {viewer ? (
-          <nav aria-label="Feed view">
+          <nav aria-label={t("publication.feed.viewLabel")}>
             <ul className="flex flex-wrap gap-2">
               <li>
                 <Link
@@ -66,7 +70,7 @@ export default async function HomePage({
                   aria-current={followingView ? undefined : "page"}
                   className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
                 >
-                  Everyone
+                  {t("publication.feed.everyone")}
                 </Link>
               </li>
               <li>
@@ -75,7 +79,7 @@ export default async function HomePage({
                   aria-current={followingView ? "page" : undefined}
                   className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
                 >
-                  Following
+                  {t("publication.feed.following")}
                 </Link>
               </li>
             </ul>
@@ -90,13 +94,13 @@ export default async function HomePage({
         >
           <h2 id="empty-title" className="text-lg font-medium text-text">
             {followingView
-              ? "Nothing from the people you follow yet"
-              : "Nothing has been shared yet"}
+              ? t("publication.feed.emptyFollowingTitle")
+              : t("publication.feed.emptyTitle")}
           </h2>
           <p className="text-base text-text-muted">
             {followingView
-              ? "Follow a seedling or a grower, and their public Updates will collect here."
-              : "When a grower shares a photo from one of their seedlings, it appears here."}
+              ? t("publication.feed.emptyFollowingText")
+              : t("publication.feed.emptyText")}
           </p>
         </section>
       ) : (
@@ -110,12 +114,12 @@ export default async function HomePage({
       )}
 
       {olderHref ? (
-        <nav aria-label="Older updates">
+        <nav aria-label={t("publication.feed.olderLabel")}>
           <Link
             href={olderHref}
             className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
           >
-            Show older updates
+            {t("publication.feed.showOlder")}
           </Link>
         </nav>
       ) : null}

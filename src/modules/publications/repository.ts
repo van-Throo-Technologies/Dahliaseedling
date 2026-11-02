@@ -135,7 +135,7 @@ export async function listFeedPage(
     p_before_id: options.before?.id ?? undefined,
     p_following_only: options.followingOnly,
   });
-  if (error) throw new Error("The Feed could not be loaded.");
+  if (error) throw new Error("errors.publication.feedFailed");
   const rows = (data ?? []) as unknown as RawUpdateRow[];
   const pageRows = rows.slice(0, options.limit);
   const items = await toSummaries(client, pageRows);
@@ -153,7 +153,7 @@ export async function listSeedlingJourney(
   seedlingId: string,
 ): Promise<UpdateSummary[]> {
   const { data, error } = await client.rpc("list_seedling_updates", { p_seedling_id: seedlingId });
-  if (error) throw new Error("The journey could not be loaded.");
+  if (error) throw new Error("errors.publication.journeyFailed");
   const rows = (data ?? []) as unknown as {
     update_id: string;
     author_id: string;
@@ -189,7 +189,7 @@ export async function getPublicUpdate(
   updateId: string,
 ): Promise<UpdateSummary | null> {
   const { data, error } = await client.rpc("get_public_update", { p_update_id: updateId });
-  if (error) throw new Error("The update could not be loaded.");
+  if (error) throw new Error("errors.publication.updateFailed");
   const rows = (data ?? []) as unknown as RawUpdateRow[];
   if (rows.length === 0) return null;
   const [summary] = await toSummaries(client, rows);
@@ -199,7 +199,7 @@ export async function getPublicUpdate(
 /** Comments on a public Update, nested one level: replies sit under the comment they answer. */
 export async function listComments(client: Client, updateId: string): Promise<CommentNode[]> {
   const { data, error } = await client.rpc("list_update_comments", { p_update_id: updateId });
-  if (error) throw new Error("The comments could not be loaded.");
+  if (error) throw new Error("errors.publication.commentsFailed");
   const rows = (data ?? []) as unknown as {
     comment_id: string;
     parent_comment_id: string | null;
@@ -348,7 +348,7 @@ async function seedlingCards(
   }>,
 ): Promise<SeedlingCard[]> {
   const { data, error } = await query;
-  if (error) throw new Error("The seedlings could not be loaded.");
+  if (error) throw new Error("errors.publication.seedlingsFailed");
   return Promise.all(
     (data ?? []).map(async (row) => ({
       id: row.id,
@@ -375,7 +375,7 @@ export async function listUpdatesByAuthor(
     .order("published_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(24);
-  if (error) throw new Error("The updates could not be loaded.");
+  if (error) throw new Error("errors.publication.updatesFailed");
   const rows = (data ?? []).map((row) => ({
     update_id: row.id,
     seedling_id: row.seedling_id,

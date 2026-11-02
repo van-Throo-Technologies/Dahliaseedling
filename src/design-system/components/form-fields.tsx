@@ -4,7 +4,9 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
-import { COUNTRIES } from "@/modules/identity/country-codes";
+import { useLocale, useT } from "@/i18n/client";
+import { formatCountry } from "@/i18n/format";
+import { COUNTRY_CODES } from "@/modules/identity/country-codes";
 
 /*
  * Form controls. Each one labels its input, links hint and error text with aria-describedby,
@@ -108,6 +110,13 @@ export interface CountrySelectProps extends SelectHTMLAttributes<HTMLSelectEleme
 
 export function CountrySelect({ label, name, error, hint, ...select }: CountrySelectProps) {
   const id = `field-${name}`;
+  const t = useT();
+  const locale = useLocale();
+  // Sorted by the name the reader sees, in their own language. The stored value is always the ISO code.
+  const collator = new Intl.Collator(locale);
+  const countries = COUNTRY_CODES.map((code) => ({ code, name: formatCountry(code, locale) })).sort(
+    (a, b) => collator.compare(a.name, b.name),
+  );
   return (
     <FieldFrame id={id} label={label} hint={hint} error={error}>
       {(describedBy) => (
@@ -119,8 +128,8 @@ export function CountrySelect({ label, name, error, hint, ...select }: CountrySe
           className={controlClasses}
           {...select}
         >
-          <option value="">Choose a country</option>
-          {COUNTRIES.map((country) => (
+          <option value="">{t("identity.chooseCountry")}</option>
+          {countries.map((country) => (
             <option key={country.code} value={country.code}>
               {country.name}
             </option>

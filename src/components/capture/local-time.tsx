@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useLocale } from "@/i18n/client";
 
 const noSubscribe = () => () => {};
 
@@ -9,14 +10,15 @@ const noSubscribe = () => () => {};
  * matches; the client then switches to local time without a hydration mismatch.
  */
 export function LocalTime({ iso }: { readonly iso: string }) {
+  const locale = useLocale();
   const text = useSyncExternalStore(
     noSubscribe,
     () =>
-      new Intl.DateTimeFormat("en", { dateStyle: "long", timeStyle: "short" }).format(
+      new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short" }).format(
         new Date(iso),
       ),
     () =>
-      `${new Intl.DateTimeFormat("en", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" }).format(new Date(iso))} UTC`,
+      `${new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short", timeZone: "UTC" }).format(new Date(iso))} UTC`,
   );
   return <time dateTime={iso}>{text}</time>;
 }

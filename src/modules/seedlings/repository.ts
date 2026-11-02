@@ -3,6 +3,9 @@ import "server-only";
 import type { Database } from "@/lib/supabase/database.types";
 import type { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ParentInput, Visibility } from "./validation";
+import type { MessageKey, Values } from "@/i18n/translator";
+import { mapDatabaseMessage } from "@/i18n/database-messages";
+import { type LabelWords } from "./labels";
 
 /*
  * Data access for Seedling core. Every call runs with the caller's own session, so RLS decides
@@ -90,11 +93,27 @@ export async function createSeedlingRecord(
     p_first_grown_year: input.firstGrownYear ?? undefined,
     p_visibility: input.visibility,
   });
-  if (error || !data) throw new SeedlingError(error?.message ?? "Could not create the seedling.");
+  if (error || !data) throw seedlingFailure(error, "errors.seedling.seedlingFailed");
   return toSeedling(data);
 }
 
-export class SeedlingError extends Error {}
+/** A failure the interface can show. It carries a message key and its values, never a sentence. */
+export class SeedlingError extends Error {
+  readonly key: MessageKey;
+  readonly values?: Values;
+
+  constructor(key: MessageKey, values?: Values) {
+    super(key);
+    this.key = key;
+    this.values = values;
+  }
+}
+
+/** A database failure as a key: a known sentence is translated, anything else becomes the generic key. */
+function seedlingFailure(error: { message?: string } | null, fallback: MessageKey): SeedlingError {
+  const mapped = mapDatabaseMessage(error?.message);
+  return mapped ? new SeedlingError(mapped.key, mapped.values) : new SeedlingError(fallback);
+}
 
 export async function getSeedling(client: Client, id: string): Promise<Seedling | null> {
   const { data, error } = await client
@@ -102,7 +121,7 @@ export async function getSeedling(client: Client, id: string): Promise<Seedling 
     .select(SEEDLING_COLUMNS)
     .eq("id", id)
     .maybeSingle();
-  if (error) throw new SeedlingError("Could not read the seedling.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data ? toSeedling(data) : null;
 }
 
@@ -112,7 +131,7 @@ export async function listHeldSeedlings(client: Client, holderId: string): Promi
     .select(SEEDLING_COLUMNS)
     .eq("current_holder_id", holderId)
     .order("created_at", { ascending: false });
-  if (error) throw new SeedlingError("Could not read your seedlings.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data.map(toSeedling);
 }
 
@@ -136,7 +155,7 @@ export async function updateSeedlingCore(
     .eq("id", id)
     .select(SEEDLING_COLUMNS)
     .maybeSingle();
-  if (error) throw new SeedlingError("Could not save the seedling.");
+  if (error) throw new SeedlingError("errors.seedling.changesFailed");
   return data ? toSeedling(data) : null;
 }
 
@@ -149,7 +168,7 @@ export async function listIdentifiers(
     .select("identifier, kind, is_primary_for_user, is_retired_alias, created_at")
     .eq("seedling_id", seedlingId)
     .order("created_at", { ascending: true });
-  if (error) throw new SeedlingError("Could not read identifiers.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data.map((row) => ({
     identifier: row.identifier,
     kind: row.kind,
@@ -158,15 +177,21 @@ export async function listIdentifiers(
   }));
 }
 
-/** Display identifier: the primary series identifier if there is one, otherwise the automatic number. */
-export function displayIdentifier(identifiers: readonly SeedlingIdentifier[]): string {
+/**
+ * Display identifier: the primary series identifier if there is one, otherwise the automatic number. Series
+ * identifiers are returned exactly as stored. Returns an empty string when the seedling has no identifier.
+ */
+export function displayIdentifier(
+  identifiers: readonly SeedlingIdentifier[],
+  words: LabelWords,
+): string {
   const primary = identifiers.find(
     (identifier) => identifier.isPrimary && !identifier.isRetiredAlias,
   );
   if (primary)
-    return primary.kind === "automatic" ? `Seedling #${primary.identifier}` : primary.identifier;
+    return primary.kind === "automatic" ? words.automatic(primary.identifier) : primary.identifier;
   const automatic = identifiers.find((identifier) => identifier.kind === "automatic");
-  return automatic ? `Seedling #${automatic.identifier}` : "Seedling";
+  return automatic ? words.automatic(automatic.identifier) : "";
 }
 
 export async function listSeries(client: Client): Promise<SeriesSummary[]> {
@@ -174,7 +199,7 @@ export async function listSeries(client: Client): Promise<SeriesSummary[]> {
     .from("series")
     .select("id, name, pattern, active")
     .order("name", { ascending: true });
-  if (error) throw new SeedlingError("Could not read your series.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data.map((row) => ({
     id: row.id,
     name: row.name,
@@ -192,12 +217,10 @@ export async function createSeriesRecord(
     p_name: name,
     p_include_year: includeYear,
   });
-  if (error || !data)
-    throw new SeedlingError(
-      error?.code === "23505"
-        ? `You already have a series named ${name}.`
-        : (error?.message ?? "Could not create the series."),
-    );
+  if (error || !data) {
+    if (error?.code === "23505") throw new SeedlingError("errors.seedling.seriesExists", { name });
+    throw seedlingFailure(error, "errors.seedling.seriesFailed");
+  }
   return { id: data.id, name: data.name, pattern: data.pattern, active: data.active };
 }
 
@@ -206,7 +229,7 @@ export async function listParentage(client: Client, seedlingId: string): Promise
     .from("seedling_parentage")
     .select("role, is_unknown, parent_seedling_id, notes, cultivar_references(name)")
     .eq("child_seedling_id", seedlingId);
-  if (error) throw new SeedlingError("Could not read parentage.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data.map((row) => ({
     role: row.role === "pollen_parent" ? "pollen_parent" : "seed_parent",
     isUnknown: row.is_unknown,
@@ -229,7 +252,7 @@ export async function setParentRecord(
     p_cultivar_name: input.cultivarName || undefined,
     p_notes: input.notes ?? undefined,
   });
-  if (error) throw new SeedlingError(error.message);
+  if (error) throw seedlingFailure(error, "errors.seedling.parentageFailed");
 }
 
 export async function listProvenance(
@@ -241,7 +264,7 @@ export async function listProvenance(
     .select("event_type, occurred_at, to_holder_id")
     .eq("seedling_id", seedlingId)
     .order("occurred_at", { ascending: true });
-  if (error) throw new SeedlingError("Could not read provenance.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data.map((row) => ({
     eventType: row.event_type,
     occurredAt: row.occurred_at,
@@ -258,7 +281,7 @@ export async function displayNames(
   const names = new Map<string, string>();
   if (unique.length === 0) return names;
   const { data, error } = await client.from("profiles").select("id, display_name").in("id", unique);
-  if (error) throw new SeedlingError("Could not read grower names.");
+  if (error) throw new SeedlingError("errors.readFailed");
   for (const row of data) names.set(row.id, row.display_name);
   return names;
 }
@@ -267,6 +290,7 @@ export async function displayNames(
 export async function displayLabels(
   client: Client,
   seedlingIds: readonly string[],
+  words: LabelWords,
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   const unique = [...new Set(seedlingIds)];
@@ -275,7 +299,7 @@ export async function displayLabels(
     .from("seedling_identifiers")
     .select("seedling_id, identifier, kind, is_primary_for_user, is_retired_alias")
     .in("seedling_id", unique);
-  if (error) throw new SeedlingError("Could not read parent identifiers.");
+  if (error) throw new SeedlingError("errors.readFailed");
   const grouped = new Map<string, SeedlingIdentifier[]>();
   for (const row of data) {
     const list = grouped.get(row.seedling_id) ?? [];
@@ -287,7 +311,7 @@ export async function displayLabels(
     });
     grouped.set(row.seedling_id, list);
   }
-  for (const [id, identifiers] of grouped) result.set(id, displayIdentifier(identifiers));
+  for (const [id, identifiers] of grouped) result.set(id, displayIdentifier(identifiers, words));
   return result;
 }
 
@@ -301,12 +325,11 @@ export async function attachSeriesRecord(
     p_seedling_id: seedlingId,
     p_series_id: seriesId,
   });
-  if (error)
-    throw new SeedlingError(
-      error.code === "23505"
-        ? "This seedling already has an identifier from that series."
-        : error.message,
-    );
+  if (error) {
+    if (error.code === "23505")
+      throw new SeedlingError("errors.seedling.duplicateSeriesIdentifier");
+    throw seedlingFailure(error, "errors.seedling.identifierFailed");
+  }
 }
 
 /** Escapes LIKE wildcards so user text is matched literally. */
@@ -327,7 +350,12 @@ export interface ParentCandidate {
  */
 export async function findParentCandidates(
   client: Client,
-  input: { readonly term: string; readonly excludeSeedlingId: string; readonly readerId: string },
+  input: {
+    readonly term: string;
+    readonly excludeSeedlingId: string;
+    readonly readerId: string;
+    readonly words: LabelWords;
+  },
 ): Promise<ParentCandidate[]> {
   const term = input.term.trim().replace(/^#/, "");
   if (term.length === 0 || term.length > 40) return [];
@@ -338,7 +366,7 @@ export async function findParentCandidates(
     .select("seedling_id, kind, assigned_by")
     .ilike("identifier", escaped)
     .limit(10);
-  if (identifierRows.error) throw new SeedlingError("Could not search seedlings.");
+  if (identifierRows.error) throw new SeedlingError("errors.searchFailed");
 
   const ids = new Set<string>();
   for (const row of identifierRows.data) {
@@ -352,7 +380,7 @@ export async function findParentCandidates(
     .ilike("working_name", `${escaped}%`)
     .is("deleted_at", null)
     .limit(10);
-  if (nameRows.error) throw new SeedlingError("Could not search seedlings.");
+  if (nameRows.error) throw new SeedlingError("errors.searchFailed");
   for (const row of nameRows.data) ids.add(row.id);
 
   ids.delete(input.excludeSeedlingId);
@@ -360,15 +388,15 @@ export async function findParentCandidates(
   if (found.length === 0) return [];
 
   const [labels, holders] = await Promise.all([
-    displayLabels(client, found),
+    displayLabels(client, found, input.words),
     client.from("seedlings").select("id, current_holder_id, working_name").in("id", found),
   ]);
-  if (holders.error) throw new SeedlingError("Could not search seedlings.");
+  if (holders.error) throw new SeedlingError("errors.searchFailed");
   const holderIds = holders.data.map((row) => row.current_holder_id);
   const owners = await displayNames(client, holderIds);
 
   return holders.data.map((row) => {
-    const label = labels.get(row.id) ?? "Seedling";
+    const label = labels.get(row.id) ?? input.words.seedling;
     return {
       id: row.id,
       label: row.working_name ? `${label} · ${row.working_name}` : label,
@@ -384,7 +412,7 @@ export async function attachedSeriesIds(client: Client, seedlingId: string): Pro
     .select("series_id")
     .eq("seedling_id", seedlingId)
     .eq("kind", "series");
-  if (error) throw new SeedlingError("Could not read identifiers.");
+  if (error) throw new SeedlingError("errors.readFailed");
   return data.flatMap((row) => (row.series_id ? [row.series_id] : []));
 }
 
@@ -400,7 +428,7 @@ export async function workingNames(
     .from("seedlings")
     .select("id, working_name")
     .in("id", unique);
-  if (error) throw new SeedlingError("Could not read seedling names.");
+  if (error) throw new SeedlingError("errors.readFailed");
   for (const row of data) names.set(row.id, row.working_name);
   return names;
 }
@@ -415,6 +443,6 @@ export async function resolveOwnIdentifier(
   identifier: string,
 ): Promise<string | null> {
   const { data, error } = await client.rpc("resolve_own_identifier", { p_identifier: identifier });
-  if (error) throw new SeedlingError("Could not look up that identifier.");
+  if (error) throw new SeedlingError("errors.seedling.lookupFailed");
   return data?.[0]?.seedling_id ?? null;
 }

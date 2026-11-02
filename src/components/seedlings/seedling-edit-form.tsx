@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SelectField, TextField } from "@/design-system/components/form-fields";
 import { SubmitButton } from "@/design-system/components/submit-button";
+import { useT } from "@/i18n/client";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { updateSeedlingAction } from "@/modules/seedlings/actions";
 
@@ -21,6 +22,7 @@ export function SeedlingEditForm({
   readonly seedlingId: string;
   readonly defaults: SeedlingCoreDefaults;
 }) {
+  const t = useT();
   const [state, action] = useActionState(updateSeedlingAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
 
@@ -33,34 +35,36 @@ export function SeedlingEditForm({
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
 
       <TextField
-        label="Working name"
+        label={t("seedlings.edit.workingName")}
         name="workingName"
         maxLength={80}
         defaultValue={defaults.workingName}
         error={errors.workingName}
       />
       <TextField
-        label="First grown year"
+        label={t("seedlings.edit.firstGrownYear")}
         name="firstGrownYear"
         inputMode="numeric"
         maxLength={4}
-        hint="Needed to number this seedling with a year-based series. Changing it does not rename identifiers that already exist."
+        hint={t("seedlings.edit.firstGrownYearHint")}
         defaultValue={defaults.firstGrownYear}
         error={errors.firstGrownYear}
       />
       <SelectField
-        label="Who can see it"
+        label={t("seedlings.edit.visibility")}
         name="visibility"
         defaultValue={defaults.visibility}
-        hint="Making it public lets visitors see this seedling, its identifiers and its history."
+        hint={t("seedlings.edit.visibilityHint")}
         options={[
-          { value: "private", label: "Private (only me)" },
-          { value: "public", label: "Public (visitors can see it)" },
+          { value: "private", label: t("glossary.visibleToOnlyMe") },
+          { value: "public", label: t("glossary.visibleToVisitors") },
         ]}
         error={errors.visibility}
       />
 
-      <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
+      <SubmitButton pendingLabel={t("seedlings.edit.submitting")}>
+        {t("seedlings.edit.submit")}
+      </SubmitButton>
     </form>
   );
 }

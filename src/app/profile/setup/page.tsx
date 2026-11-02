@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ProfileSetupForm } from "@/components/identity/profile-setup-form";
+import { getTranslation } from "@/i18n/server";
 import { safeNextPath } from "@/lib/http/safe-next";
 import { getCurrentUser, getOwnProfile } from "@/modules/identity/session";
 
-export const metadata = { title: "Set up your profile" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t("identity.setup.title") };
+}
 
 export default async function ProfileSetupPage({
   searchParams,
@@ -12,6 +17,7 @@ export default async function ProfileSetupPage({
 }) {
   const { next } = await searchParams;
   const destination = safeNextPath(Array.isArray(next) ? next[0] : next, "/");
+  const { t } = await getTranslation();
 
   if (!(await getCurrentUser())) {
     const returnHere = `/profile/setup?next=${encodeURIComponent(destination)}`;
@@ -23,11 +29,9 @@ export default async function ProfileSetupPage({
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h1 id="page-title" className="font-display text-3xl text-text-brand">
-          Set up your profile
+          {t("identity.setup.title")}
         </h1>
-        <p className="text-base text-text-muted">
-          Two things to start. You can add a photo, region and bio later.
-        </p>
+        <p className="text-base text-text-muted">{t("identity.setup.intro")}</p>
       </div>
       <ProfileSetupForm next={destination} />
     </section>

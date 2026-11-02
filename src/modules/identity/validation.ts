@@ -1,8 +1,9 @@
-import { COUNTRIES } from "./country-codes";
+import { msg, type Msg } from "@/i18n/message";
+import { COUNTRY_CODES } from "./country-codes";
 
 /*
  * Pure validation for identity input. The same rules are repeated as database CHECK constraints
- * (see supabase/migrations), so a bypassed UI still cannot store bad data.
+ * (see supabase/migrations), so a bypassed UI still cannot store bad data. Messages are keys, translated at the edge.
  */
 
 export const LIMITS = {
@@ -23,7 +24,7 @@ export type AccountTypeLabel = (typeof ACCOUNT_TYPE_LABELS)[number];
 
 export type ValidationResult<T> =
   | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly fieldErrors: Readonly<Record<string, string>> };
+  | { readonly ok: false; readonly fieldErrors: Readonly<Record<string, Msg>> };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -33,9 +34,9 @@ function clean(value: FormDataEntryValue | null | undefined): string {
 
 export function validateEmail(raw: FormDataEntryValue | null): ValidationResult<string> {
   const email = clean(raw).toLowerCase();
-  if (email === "") return fail("email", "Enter your email address.");
+  if (email === "") return fail("email", msg("validation.email.required"));
   if (email.length > LIMITS.emailMax || !EMAIL_PATTERN.test(email)) {
-    return fail("email", "Enter an email address in the form name@example.com.");
+    return fail("email", msg("validation.email.format"));
   }
   return { ok: true, value: email };
 }
@@ -43,10 +44,10 @@ export function validateEmail(raw: FormDataEntryValue | null): ValidationResult<
 export function validatePassword(raw: FormDataEntryValue | null): ValidationResult<string> {
   const password = typeof raw === "string" ? raw : "";
   if (password.length < LIMITS.passwordMin) {
-    return fail("password", `Use at least ${LIMITS.passwordMin} characters.`);
+    return fail("password", msg("validation.password.min", { min: LIMITS.passwordMin }));
   }
   if (new TextEncoder().encode(password).length > LIMITS.passwordMaxBytes) {
-    return fail("password", "Use a shorter password.");
+    return fail("password", msg("validation.password.tooLong"));
   }
   return { ok: true, value: password };
 }
@@ -61,32 +62,35 @@ export interface ProfileInput {
 
 /** Validates the fields a participant may set on their own profile. */
 export function validateProfileInput(form: FormData): ValidationResult<ProfileInput> {
-  const errors: Record<string, string> = {};
+  const errors: Record<string, Msg> = {};
 
   const displayName = clean(form.get("displayName"));
   if (displayName.length < LIMITS.displayNameMin || displayName.length > LIMITS.displayNameMax) {
-    errors.displayName = `Use ${LIMITS.displayNameMin} to ${LIMITS.displayNameMax} characters.`;
+    errors.displayName = msg("validation.displayName.range", {
+      min: LIMITS.displayNameMin,
+      max: LIMITS.displayNameMax,
+    });
   }
 
   const countryCode = clean(form.get("countryCode")).toUpperCase();
-  if (!COUNTRIES.some((country) => country.code === countryCode)) {
-    errors.countryCode = "Choose your country from the list.";
+  if (!COUNTRY_CODES.some((code) => code === countryCode)) {
+    errors.countryCode = msg("validation.country.choose");
   }
 
   const regionCity = clean(form.get("regionCity"));
   if (regionCity.length > LIMITS.regionCityMax) {
-    errors.regionCity = `Use ${LIMITS.regionCityMax} characters or fewer.`;
+    errors.regionCity = msg("validation.regionCity.max", { max: LIMITS.regionCityMax });
   }
 
   const bio = clean(form.get("bio"));
   if (bio.length > LIMITS.bioMax) {
-    errors.bio = `Use ${LIMITS.bioMax} characters or fewer.`;
+    errors.bio = msg("validation.bio.max", { max: LIMITS.bioMax });
   }
 
   const accountTypeRaw = clean(form.get("accountTypeLabel"));
   const accountTypeLabel = ACCOUNT_TYPE_LABELS.find((label) => label === accountTypeRaw) ?? null;
   if (accountTypeRaw !== "" && accountTypeLabel === null) {
-    errors.accountTypeLabel = "Choose one of the listed options.";
+    errors.accountTypeLabel = msg("validation.accountType.choose");
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, fieldErrors: errors };
@@ -107,14 +111,14 @@ export function validateProfileInput(form: FormData): ValidationResult<ProfileIn
 export function validateAvatar(raw: FormDataEntryValue | null): ValidationResult<File | null> {
   if (!(raw instanceof File) || raw.size === 0) return { ok: true, value: null };
   if (!(AVATAR_MIME_TYPES as readonly string[]).includes(raw.type)) {
-    return fail("avatar", "Choose a JPEG, PNG or WebP image.");
+    return fail("avatar", msg("validation.avatar.type"));
   }
   if (raw.size > LIMITS.avatarMaxBytes) {
-    return fail("avatar", "Choose an image of 2 MB or smaller.");
+    return fail("avatar", msg("validation.avatar.size"));
   }
   return { ok: true, value: raw };
 }
 
-function fail(field: string, message: string): { ok: false; fieldErrors: Record<string, string> } {
+function fail(field: string, message: Msg): { ok: false; fieldErrors: Record<string, Msg> } {
   return { ok: false, fieldErrors: { [field]: message } };
 }

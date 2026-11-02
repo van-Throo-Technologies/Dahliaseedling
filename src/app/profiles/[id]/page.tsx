@@ -6,7 +6,8 @@ import { UpdateCard } from "@/components/publications/update-card";
 import { PublicPhoto } from "@/components/publications/public-photo";
 import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { avatarHref, countryName, formatMemberSince } from "@/modules/identity/presentation";
+import { getTranslation } from "@/i18n/server";
+import { formatMemberSinceMonth, countryName, avatarHref } from "@/modules/identity/presentation";
 import { getCurrentUser, getPublicProfile } from "@/modules/identity/session";
 import {
   listHeldPublicSeedlings,
@@ -19,9 +20,9 @@ import {
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const TABS = [
-  { key: "seedlings", label: "Seedlings" },
-  { key: "originated", label: "Originated" },
-  { key: "updates", label: "Updates" },
+  { key: "seedlings", labelKey: "identity.publicProfile.tabSeedlings" },
+  { key: "originated", labelKey: "identity.publicProfile.tabOriginated" },
+  { key: "updates", labelKey: "identity.publicProfile.tabUpdates" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -30,10 +31,11 @@ export async function generateMetadata({
 }: {
   readonly params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  const { t } = await getTranslation();
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) return { title: "Profile not found" };
+  if (!UUID_PATTERN.test(id)) return { title: t("identity.publicProfile.notFound") };
   const profile = await getPublicProfile(id);
-  return { title: profile ? profile.displayName : "Profile not found" };
+  return { title: profile ? profile.displayName : t("identity.publicProfile.notFound") };
 }
 
 /**
@@ -51,6 +53,7 @@ export default async function PublicProfilePage({
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) notFound();
   const query = await searchParams;
+  const { t, locale } = await getTranslation();
 
   const profile = await getPublicProfile(id);
   if (!profile) notFound();
@@ -100,10 +103,14 @@ export default async function PublicProfilePage({
               {profile.displayName}
             </h1>
             <p className="text-base text-text-muted">
-              {countryName(profile.countryCode)}
+              {countryName(profile.countryCode, locale)}
               {profile.regionCity ? `, ${profile.regionCity}` : ""}
             </p>
-            <p className="text-sm text-text-muted">{formatMemberSince(profile.createdAt)}</p>
+            <p className="text-sm text-text-muted">
+              {t("identity.profile.memberSince", {
+                month: formatMemberSinceMonth(profile.createdAt, locale),
+              })}
+            </p>
           </div>
         </div>
         {profile.bio ? (
@@ -114,7 +121,7 @@ export default async function PublicProfilePage({
         ) : null}
       </header>
 
-      <nav aria-label="Profile sections">
+      <nav aria-label={t("identity.publicProfile.sections")}>
         <ul className="flex flex-wrap gap-2">
           {TABS.map((item) => (
             <li key={item.key}>
@@ -123,7 +130,7 @@ export default async function PublicProfilePage({
                 aria-current={tab === item.key ? "page" : undefined}
                 className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
               >
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             </li>
           ))}
@@ -132,7 +139,7 @@ export default async function PublicProfilePage({
 
       {tab === "updates" ? (
         updates.length === 0 ? (
-          <p className="text-base text-text-muted">No public Updates yet.</p>
+          <p className="text-base text-text-muted">{t("identity.publicProfile.noUpdates")}</p>
         ) : (
           <ul className="flex flex-col gap-6">
             {updates.map((update) => (
@@ -145,8 +152,8 @@ export default async function PublicProfilePage({
       ) : seedlings.length === 0 ? (
         <p className="text-base text-text-muted">
           {tab === "seedlings"
-            ? "No public seedlings are held here yet."
-            : "No public seedlings are recorded as originated here yet."}
+            ? t("identity.publicProfile.noHeld")
+            : t("identity.publicProfile.noOriginated")}
         </p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
@@ -160,11 +167,11 @@ export default async function PublicProfilePage({
                   <PublicPhoto image={seedling.cover} alt="" />
                 ) : (
                   <span className="rounded-surface bg-background p-6 text-sm text-text-muted">
-                    No photo yet
+                    {t("identity.publicProfile.noPhoto")}
                   </span>
                 )}
                 <span className="text-base font-medium text-text-brand">
-                  {seedling.workingName ?? "Unnamed seedling"}
+                  {seedling.workingName ?? t("identity.publicProfile.unnamedSeedling")}
                 </span>
               </Link>
             </li>

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/identity/profile-avatar";
+import { formatDate, formatCount } from "@/i18n/format";
+import { getTranslation } from "@/i18n/server";
 import { avatarHref } from "@/modules/identity/presentation";
 import type { UpdateSummary } from "@/modules/publications/repository";
-import { formatDate } from "@/modules/seedlings/presentation";
 import { PublicPhoto } from "./public-photo";
 import { LikeForm } from "./social-buttons";
 
@@ -12,21 +13,26 @@ import { LikeForm } from "./social-buttons";
  * seedling page. Tapping a photo opens the persistent seedling page.
  */
 
-export function UpdateCard({
+export async function UpdateCard({
   update,
   showSeedling = true,
 }: {
   readonly update: UpdateSummary;
   readonly showSeedling?: boolean;
 }) {
+  const { t, locale } = await getTranslation();
   const [lead, ...others] = update.images;
   const seedlingHref = `/seedlings/${update.seedlingId}`;
-  const seedlingLabel = update.seedlingName ?? "a seedling";
+  const seedlingLabel = update.seedlingName ?? t("publication.update.unnamedSeedling");
   const comments = update.commentCount;
+  const commentText =
+    comments === 1
+      ? t("publication.update.comments.one")
+      : t("publication.update.comments.other", { count: formatCount(comments, locale) });
 
   return (
     <article
-      aria-label={`Update by ${update.authorName}`}
+      aria-label={t("publication.update.byAuthor", { name: update.authorName })}
       className="flex flex-col gap-4 rounded-surface border border-border bg-surface p-4"
     >
       <header className="flex items-center gap-3">
@@ -39,7 +45,7 @@ export function UpdateCard({
             {update.authorName}
           </Link>
           <p className="text-sm text-text-muted">
-            Shared {formatDate(update.publishedAt)}
+            {t("publication.update.shared", { date: formatDate(update.publishedAt, locale) })}
             {showSeedling && update.seedlingName ? (
               <>
                 {" · "}
@@ -59,22 +65,32 @@ export function UpdateCard({
       {lead ? (
         <Link
           href={seedlingHref}
-          aria-label={`Open ${seedlingLabel}`}
+          aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
           className="block rounded-surface focus-visible:outline-2"
         >
           <PublicPhoto
             image={lead}
-            alt={`Photo shared by ${update.authorName} of ${seedlingLabel}`}
+            alt={t("publication.update.photoAlt", {
+              author: update.authorName,
+              seedling: seedlingLabel,
+            })}
           />
         </Link>
       ) : null}
 
       {others.length > 0 ? (
-        <ul className="grid grid-cols-3 gap-2" aria-label="More photos in this update">
+        <ul className="grid grid-cols-3 gap-2" aria-label={t("publication.update.morePhotos")}>
           {others.map((image) => (
             <li key={image.id}>
-              <Link href={seedlingHref} aria-label={`Open ${seedlingLabel}`} className="block">
-                <PublicPhoto image={image} alt={`Another photo from ${seedlingLabel}`} />
+              <Link
+                href={seedlingHref}
+                aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
+                className="block"
+              >
+                <PublicPhoto
+                  image={image}
+                  alt={t("publication.update.anotherPhoto", { seedling: seedlingLabel })}
+                />
               </Link>
             </li>
           ))}
@@ -87,7 +103,7 @@ export function UpdateCard({
           href={`/updates/${update.updateId}`}
           className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
         >
-          {comments === 1 ? "1 comment" : `${comments} comments`}
+          {commentText}
         </Link>
       </footer>
     </article>

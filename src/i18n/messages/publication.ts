@@ -1,0 +1,371 @@
+/*
+ * The Feed, sharing, Updates, comments, likes, follows and Save. The privacy-critical copy is written to be read
+ * carefully: the private-Seedling step and the "stays private" explanations change what a reader can see.
+ */
+
+export const en = {
+  feed: {
+    title: "Feed",
+    intro:
+      "Stories from growers, shared deliberately. The photo leads, and each one opens its seedling.",
+    everyone: "Everyone",
+    following: "Following",
+    viewLabel: "Feed view",
+    olderLabel: "Older updates",
+    showOlder: "Show older updates",
+    emptyTitle: "Nothing has been shared yet",
+    emptyText: "When a grower shares a photo from one of their seedlings, it appears here.",
+    emptyFollowingTitle: "Nothing from the people you follow yet",
+    emptyFollowingText:
+      "Follow a seedling or a grower, and their public Updates will collect here.",
+    backToFeed: "Back to the Feed",
+  },
+  update: {
+    label: "Update",
+    byAuthor: "Update by {name}",
+    shared: "Shared {date}",
+    openSeedling: "Open {seedling}",
+    photoAlt: "Photo shared by {author} of {seedling}",
+    morePhotos: "More photos in this update",
+    anotherPhoto: "Another photo from {seedling}",
+    unnamedSeedling: "a seedling",
+    comments: { one: "1 comment", other: "{count} comments" },
+    published:
+      "Published. Visitors can now see this Update on the Feed and on the seedling's page.",
+    manage: "Manage this update",
+    manageText:
+      "Removing it takes it off the Feed and the seedling's page. Your observation stays private and unchanged.",
+    remove: "Remove this update",
+    unavailable: "This update is not available.",
+  },
+  social: {
+    liked: "Liked",
+    like: "Like",
+    followingSeedling: "Following this seedling",
+    followSeedling: "Follow this seedling",
+    savedPrivately: "Saved privately",
+    save: "Save",
+    followingGrower: "Following this grower",
+    followGrower: "Follow this grower",
+  },
+  comments: {
+    title: "Comments",
+    none: "No comments yet. Start the conversation.",
+    add: "Add a comment",
+    post: "Post comment",
+    postReply: "Post reply",
+    posting: "Posting…",
+    replyTo: "Reply to {name}",
+    byAuthor: "Comment by {name}",
+    edited: "edited",
+    removed: "This comment was removed.",
+    editLabel: "Edit your comment",
+    saveChanges: "Save changes",
+    saving: "Saving…",
+    posted: "Your comment is posted.",
+    changed: "Your comment is changed.",
+    removeMine: "Remove my comment",
+  },
+  share: {
+    title: "Share this observation",
+    intro:
+      "Sharing creates a public Update. Only the photos you choose are shared, and the observation itself stays private.",
+    holderOnly: "Only the current holder of this seedling can share it.",
+    back: "Back to the observation",
+    publicNow: "The seedling is public now. Choose the photos you want to share.",
+    makePublicError: "The seedling could not be made public. Nothing has changed.",
+    videoTitle: "Public video sharing isn't available yet",
+    videoText:
+      "This observation holds only video, and video stays private for now. Your video is kept safely and is not published.",
+    nothingTitle: "Nothing to share yet",
+    nothingText: "This observation has no photos to share.",
+    makePublicTitle: "Make this seedling public to share it",
+    makePublicWhy:
+      "This seedling is private, and a public Update needs a public seedling page for visitors to open.",
+    makePublicWhat:
+      "Continuing changes only the seedling's visibility to public. Your observations, notes, transcripts and original photos stay private.",
+    makePublicButton: "Make Seedling public & continue",
+    makePublicPending: "Making public…",
+    makePublicKeep: "To keep this private, leave this page. Nothing has changed.",
+  },
+  publish: {
+    chooseTitle: "Choose the photos to share",
+    chooseText:
+      "Only the photos you tick become public. Each one is shared as a smaller copy, with its location details removed. The original stays private.",
+    share: "Share {label}",
+    stayPrivate: "{label} stays private",
+    photoLabel: "photo {number}",
+    videoOne: "One video stays private.",
+    videoMany: "{count} videos stay private.",
+    videoNotAvailable: "Public video sharing isn't available yet.",
+    captionLabel: "Caption (optional)",
+    captionHint:
+      "Your public story for this Update. Nothing from the private note is copied in. Write it yourself.",
+    pending: "Publishing…",
+    submit: "Publish update",
+    privateOnly:
+      "HEIC photos stay private for now. Public sharing of HEIC isn't available yet. Choose JPEG, PNG or WebP photos to share.",
+  },
+  journey: {
+    noPhoto: "No public photo yet.",
+    coverAlt: "Cover photo of {title}",
+    title: "Journey",
+    nothingYet:
+      "Nothing is shared from this seedling yet. Share an observation to start its public journey.",
+    noUpdates: "No public Updates yet.",
+    chooseCover: "Choose the cover photo",
+    coverNote:
+      "The most recently shared photo is the cover unless you choose another. Video is never the cover.",
+    useCover: "Use as cover",
+    useRecent: "Use the most recent photo",
+    coverChoiceAlt: "A shared photo you can use as the cover",
+  },
+  publicProfile: {
+    updatesDeleted: "The update has been removed.",
+  },
+};
+
+export const nl: typeof en = {
+  feed: {
+    title: "Start-feed",
+    intro:
+      "Verhalen van kwekers, bewust gedeeld. De foto staat voorop en elk verhaal opent de zaailing.",
+    everyone: "Iedereen",
+    following: "Gevolgd",
+    viewLabel: "Weergave van de feed",
+    olderLabel: "Oudere updates",
+    showOlder: "Oudere updates tonen",
+    emptyTitle: "Er is nog niets gedeeld",
+    emptyText:
+      "Wanneer een kweker een foto van een van zijn zaailingen deelt, verschijnt die hier.",
+    emptyFollowingTitle: "Nog niets van de mensen die je volgt",
+    emptyFollowingText:
+      "Volg een zaailing of een kweker, dan verzamelen hun openbare updates zich hier.",
+    backToFeed: "Terug naar de feed",
+  },
+  update: {
+    label: "Update",
+    byAuthor: "Update van {name}",
+    shared: "Gedeeld op {date}",
+    openSeedling: "Open {seedling}",
+    photoAlt: "Foto gedeeld door {author} van {seedling}",
+    morePhotos: "Meer foto's in deze update",
+    anotherPhoto: "Nog een foto van {seedling}",
+    unnamedSeedling: "een zaailing",
+    comments: { one: "1 reactie", other: "{count} reacties" },
+    published:
+      "Gepubliceerd. Bezoekers kunnen deze update nu zien op de feed en op de pagina van de zaailing.",
+    manage: "Deze update beheren",
+    manageText:
+      "Verwijderen haalt hem van de feed en van de pagina van de zaailing. Je observatie blijft privé en ongewijzigd.",
+    remove: "Deze update verwijderen",
+    unavailable: "Deze update is niet beschikbaar.",
+  },
+  social: {
+    liked: "Leuk gevonden",
+    like: "Vind ik leuk",
+    followingSeedling: "Je volgt deze zaailing",
+    followSeedling: "Deze zaailing volgen",
+    savedPrivately: "Privé bewaard",
+    save: "Bewaren",
+    followingGrower: "Je volgt deze kweker",
+    followGrower: "Deze kweker volgen",
+  },
+  comments: {
+    title: "Reacties",
+    none: "Nog geen reacties. Begin het gesprek.",
+    add: "Een reactie toevoegen",
+    post: "Reactie plaatsen",
+    postReply: "Antwoord plaatsen",
+    posting: "Plaatsen…",
+    replyTo: "Antwoorden aan {name}",
+    byAuthor: "Reactie van {name}",
+    edited: "bewerkt",
+    removed: "Deze reactie is verwijderd.",
+    editLabel: "Bewerk je reactie",
+    saveChanges: "Wijzigingen opslaan",
+    saving: "Opslaan…",
+    posted: "Je reactie is geplaatst.",
+    changed: "Je reactie is gewijzigd.",
+    removeMine: "Mijn reactie verwijderen",
+  },
+  share: {
+    title: "Deze observatie delen",
+    intro:
+      "Delen maakt een openbare update. Alleen de foto's die je kiest worden gedeeld, en de observatie zelf blijft privé.",
+    holderOnly: "Alleen de huidige kweker van deze zaailing kan haar delen.",
+    back: "Terug naar de observatie",
+    publicNow: "De zaailing is nu openbaar. Kies de foto's die je wilt delen.",
+    makePublicError: "De zaailing kon niet openbaar worden gemaakt. Er is niets veranderd.",
+    videoTitle: "Het openbaar delen van video is nog niet beschikbaar",
+    videoText:
+      "Deze observatie bevat alleen video, en video blijft voorlopig privé. Je video wordt veilig bewaard en niet gepubliceerd.",
+    nothingTitle: "Nog niets om te delen",
+    nothingText: "Deze observatie heeft geen foto's om te delen.",
+    makePublicTitle: "Maak deze zaailing openbaar om haar te delen",
+    makePublicWhy:
+      "Deze zaailing is privé, en een openbare update heeft een openbare zaailingpagina nodig die bezoekers kunnen openen.",
+    makePublicWhat:
+      "Doorgaan wijzigt alleen de zichtbaarheid van de zaailing naar openbaar. Je observaties, notities, transcripties en originele foto's blijven privé.",
+    makePublicButton: "Zaailing openbaar maken en doorgaan",
+    makePublicPending: "Openbaar maken…",
+    makePublicKeep: "Wil je dit privé houden? Verlaat deze pagina. Er is niets veranderd.",
+  },
+  publish: {
+    chooseTitle: "Kies de foto's om te delen",
+    chooseText:
+      "Alleen de foto's die je aanvinkt worden openbaar. Elke foto wordt gedeeld als kleinere kopie, zonder locatiegegevens. Het origineel blijft privé.",
+    share: "{label} delen",
+    stayPrivate: "{label} blijft privé",
+    photoLabel: "foto {number}",
+    videoOne: "Eén video blijft privé.",
+    videoMany: "{count} video's blijven privé.",
+    videoNotAvailable: "Het openbaar delen van video is nog niet beschikbaar.",
+    captionLabel: "Bijschrift (optioneel)",
+    captionHint:
+      "Je openbare verhaal bij deze update. Er wordt niets uit de privénotitie overgenomen. Schrijf het zelf.",
+    pending: "Publiceren…",
+    submit: "Update publiceren",
+    privateOnly:
+      "HEIC-foto's blijven voorlopig privé. Openbaar delen van HEIC is nog niet beschikbaar. Kies JPEG-, PNG- of WebP-foto's om te delen.",
+  },
+  journey: {
+    noPhoto: "Nog geen openbare foto.",
+    coverAlt: "Omslagfoto van {title}",
+    title: "Reis",
+    nothingYet:
+      "Er wordt nog niets van deze zaailing gedeeld. Deel een observatie om haar openbare reis te starten.",
+    noUpdates: "Nog geen openbare updates.",
+    chooseCover: "Kies de omslagfoto",
+    coverNote:
+      "De meest recent gedeelde foto is de omslag, tenzij je een andere kiest. Video wordt nooit de omslag.",
+    useCover: "Als omslag gebruiken",
+    useRecent: "De meest recente foto gebruiken",
+    coverChoiceAlt: "Een gedeelde foto die je als omslag kunt gebruiken",
+  },
+  publicProfile: {
+    updatesDeleted: "De update is verwijderd.",
+  },
+};
+
+export const fr: typeof en = {
+  feed: {
+    title: "Fil d'actualité",
+    intro:
+      "Des récits de cultivateurs, partagés en connaissance de cause. La photo est en premier, et chaque récit ouvre son semis.",
+    everyone: "Tous",
+    following: "Abonnements",
+    viewLabel: "Affichage du fil",
+    olderLabel: "Mises à jour plus anciennes",
+    showOlder: "Voir les mises à jour plus anciennes",
+    emptyTitle: "Rien n'a encore été partagé",
+    emptyText: "Lorsqu'un cultivateur partage une photo de l'un de ses semis, elle apparaît ici.",
+    emptyFollowingTitle: "Rien des personnes que vous suivez pour l'instant",
+    emptyFollowingText:
+      "Suivez un semis ou un cultivateur, et leurs mises à jour publiques s'afficheront ici.",
+    backToFeed: "Retour au fil d'actualité",
+  },
+  update: {
+    label: "Mise à jour",
+    byAuthor: "Mise à jour de {name}",
+    shared: "Partagé le {date}",
+    openSeedling: "Ouvrir {seedling}",
+    photoAlt: "Photo partagée par {author} de {seedling}",
+    morePhotos: "Plus de photos dans cette mise à jour",
+    anotherPhoto: "Une autre photo de {seedling}",
+    unnamedSeedling: "un semis",
+    comments: { one: "1 commentaire", other: "{count} commentaires" },
+    published:
+      "Publié. Les visiteurs peuvent maintenant voir cette mise à jour dans le fil et sur la page du semis.",
+    manage: "Gérer cette mise à jour",
+    manageText:
+      "La retirer la fait disparaître du fil et de la page du semis. Votre observation reste privée et inchangée.",
+    remove: "Retirer cette mise à jour",
+    unavailable: "Cette mise à jour n'est pas disponible.",
+  },
+  social: {
+    liked: "Aimé",
+    like: "J'aime",
+    followingSeedling: "Vous suivez ce semis",
+    followSeedling: "Suivre ce semis",
+    savedPrivately: "Enregistré en privé",
+    save: "Enregistrer",
+    followingGrower: "Vous suivez ce cultivateur",
+    followGrower: "Suivre ce cultivateur",
+  },
+  comments: {
+    title: "Commentaires",
+    none: "Pas encore de commentaires. Lancez la discussion.",
+    add: "Ajouter un commentaire",
+    post: "Publier le commentaire",
+    postReply: "Publier la réponse",
+    posting: "Publication…",
+    replyTo: "Répondre à {name}",
+    byAuthor: "Commentaire de {name}",
+    edited: "modifié",
+    removed: "Ce commentaire a été retiré.",
+    editLabel: "Modifiez votre commentaire",
+    saveChanges: "Enregistrer les modifications",
+    saving: "Enregistrement…",
+    posted: "Votre commentaire est publié.",
+    changed: "Votre commentaire est modifié.",
+    removeMine: "Retirer mon commentaire",
+  },
+  share: {
+    title: "Partager cette observation",
+    intro:
+      "Le partage crée une mise à jour publique. Seules les photos que vous choisissez sont partagées, et l'observation elle-même reste privée.",
+    holderOnly: "Seul le cultivateur actuel de ce semis peut le partager.",
+    back: "Retour à l'observation",
+    publicNow: "Le semis est désormais public. Choisissez les photos que vous voulez partager.",
+    makePublicError: "Le semis n'a pas pu être rendu public. Rien n'a changé.",
+    videoTitle: "Le partage public de vidéos n'est pas encore disponible",
+    videoText:
+      "Cette observation ne contient que de la vidéo, et la vidéo reste privée pour le moment. Votre vidéo est conservée en lieu sûr et n'est pas publiée.",
+    nothingTitle: "Rien à partager pour l'instant",
+    nothingText: "Cette observation ne contient aucune photo à partager.",
+    makePublicTitle: "Rendre ce semis public pour le partager",
+    makePublicWhy:
+      "Ce semis est privé, et une mise à jour publique a besoin d'une page publique du semis que les visiteurs peuvent ouvrir.",
+    makePublicWhat:
+      "Continuer ne modifie que la visibilité du semis, qui devient publique. Vos observations, remarques, transcriptions et photos originales restent privées.",
+    makePublicButton: "Rendre le semis public et continuer",
+    makePublicPending: "Passage en public…",
+    makePublicKeep: "Pour garder ceci privé, quittez cette page. Rien n'a changé.",
+  },
+  publish: {
+    chooseTitle: "Choisissez les photos à partager",
+    chooseText:
+      "Seules les photos que vous cochez deviennent publiques. Chacune est partagée sous forme de copie plus petite, sans ses informations de localisation. L'original reste privé.",
+    share: "Partager {label}",
+    stayPrivate: "{label} reste privée",
+    photoLabel: "photo {number}",
+    videoOne: "Une vidéo reste privée.",
+    videoMany: "{count} vidéos restent privées.",
+    videoNotAvailable: "Le partage public de vidéos n'est pas encore disponible.",
+    captionLabel: "Légende (facultatif)",
+    captionHint:
+      "Votre récit public pour cette mise à jour. Rien de la remarque privée n'est repris. Rédigez-le vous-même.",
+    pending: "Publication…",
+    submit: "Publier la mise à jour",
+    privateOnly:
+      "Les photos HEIC restent privées pour le moment. Le partage public de HEIC n'est pas encore disponible. Choisissez des photos JPEG, PNG ou WebP à partager.",
+  },
+  journey: {
+    noPhoto: "Pas encore de photo publique.",
+    coverAlt: "Photo de couverture de {title}",
+    title: "Parcours",
+    nothingYet:
+      "Rien n'est encore partagé de ce semis. Partagez une observation pour démarrer son parcours public.",
+    noUpdates: "Aucune mise à jour publique pour l'instant.",
+    chooseCover: "Choisir la photo de couverture",
+    coverNote:
+      "La photo partagée la plus récente sert de couverture, sauf si vous en choisissez une autre. La vidéo ne devient jamais la couverture.",
+    useCover: "Utiliser comme couverture",
+    useRecent: "Utiliser la photo la plus récente",
+    coverChoiceAlt: "Une photo partagée que vous pouvez utiliser comme couverture",
+  },
+  publicProfile: {
+    updatesDeleted: "La mise à jour a été retirée.",
+  },
+};

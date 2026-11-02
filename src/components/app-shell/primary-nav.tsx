@@ -4,22 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import { BellIcon, CaptureIcon, HomeIcon, UserIcon } from "@/design-system/icons";
+import { useT } from "@/i18n/client";
+import type { MessageKey } from "@/i18n/translator";
 
 type NavIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 interface NavItem {
   readonly href: string;
-  readonly label: string;
+  readonly labelKey: MessageKey;
   readonly icon: NavIcon;
   readonly dominant?: boolean;
 }
 
 /** The locked order: Home · Capture · Notifications · Profile. Capture is the dominant action. */
 export const PRIMARY_NAV: readonly NavItem[] = [
-  { href: "/", label: "Home", icon: HomeIcon },
-  { href: "/capture", label: "Capture", icon: CaptureIcon, dominant: true },
-  { href: "/notifications", label: "Notifications", icon: BellIcon },
-  { href: "/profile", label: "Profile", icon: UserIcon },
+  { href: "/", labelKey: "app.nav.home", icon: HomeIcon },
+  { href: "/capture", labelKey: "app.nav.capture", icon: CaptureIcon, dominant: true },
+  { href: "/notifications", labelKey: "app.nav.notifications", icon: BellIcon },
+  { href: "/profile", labelKey: "app.nav.profile", icon: UserIcon },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -34,10 +36,11 @@ function isActive(pathname: string, href: string): boolean {
  */
 export function PrimaryNav() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label={t("app.nav.label")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[max(env(safe-area-inset-bottom),0.5rem)] md:static md:border-t-0 md:border-b md:pb-0"
     >
       <ul className="mx-auto grid max-w-2xl grid-cols-4 items-end px-2 md:flex md:justify-center md:gap-2 md:px-4">
@@ -64,7 +67,7 @@ export function PrimaryNav() {
                 ) : (
                   <Icon className="h-6 w-6" />
                 )}
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </Link>
             </li>
           );

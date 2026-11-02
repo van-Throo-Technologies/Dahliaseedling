@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslation } from "@/i18n/server";
+import { translateFields, type Msg } from "@/i18n/message";
 import { safeNextPath } from "@/lib/http/safe-next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireParticipant } from "./gate";
@@ -25,24 +27,13 @@ import {
  *
  * Every action validates input here, on the server, before any database call. Identity always
  * comes from the verified session, never from a form field. Redirect targets pass safeNextPath.
+ * Messages are translated here, in the visitor's language, before they reach the form.
  */
 
-const GENERIC_SIGN_IN_ERROR = "That email and password do not match an account.";
-const GENERIC_SIGN_UP_ERROR =
-  "We could not create an account with those details. Try signing in, or use a different email.";
-const GENERIC_SAVE_ERROR = "Your changes could not be saved. Try again.";
 const PROFILE_TEXT_FIELDS = ["displayName", "countryCode", "regionCity", "bio", "accountTypeLabel"];
-const CHECK_FIELDS_ERROR = "Check the highlighted fields.";
 
 function nextFrom(formData: FormData): string {
   return safeNextPath(formData.get("next"), "/");
-}
-
-function invalid(
-  fieldErrors: Record<string, string>,
-  values: Record<string, string> = {},
-): FormState {
-  return { status: "error", fieldErrors, message: CHECK_FIELDS_ERROR, values };
 }
 
 /** Non-sensitive text fields to echo back after a failed submit. Never includes passwords. */
@@ -62,14 +53,29 @@ async function continueAfterAuthentication(next: string): Promise<never> {
   redirect(next);
 }
 
+async function invalid(
+  fields: Readonly<Record<string, Msg>>,
+  values: Record<string, string> = {},
+): Promise<FormState> {
+  const { t } = await getTranslation();
+  return {
+    status: "error",
+    fieldErrors: translateFields(t, fields),
+    message: t("errors.checkFields"),
+    values,
+  };
+}
+
 export async function signInAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  const { t } = await getTranslation();
   const email = validateEmail(formData.get("email"));
   const password = formData.get("password");
 
-  const fieldErrors: Record<string, string> = {};
+  const fieldErrors: Record<string, Msg> = {};
   if (!email.ok) Object.assign(fieldErrors, email.fieldErrors);
-  if (typeof password !== "string" || password === "")
-    fieldErrors.password = "Enter your password.";
+  if (typeof password !== "string" || password === "") {
+    fieldErrors.password = { key: "identity.signIn.passwordRequired" };
+  }
   if (!email.ok || typeof password !== "string" || Object.keys(fieldErrors).length > 0) {
     return invalid(fieldErrors, echo(formData, ["email"]));
   }
@@ -80,7 +86,7 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
     return {
       status: "error",
       fieldErrors: {},
-      message: GENERIC_SIGN_IN_ERROR,
+      message: t("identity.signIn.badCredentials"),
       values: echo(formData, ["email"]),
     };
   }
@@ -89,6 +95,7 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
 }
 
 export async function signUpAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  const { t } = await getTranslation();
   const email = validateEmail(formData.get("email"));
   const password = validatePassword(formData.get("password"));
 
@@ -111,14 +118,14 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
     return {
       status: "error",
       fieldErrors: {},
-      message: GENERIC_SIGN_UP_ERROR,
+      message: t("identity.signUp.genericError"),
       values: echo(formData, ["email"]),
     };
   }
 
   // With email confirmation on, there is no session yet. The user confirms, then signs in.
   if (!data.session) {
-    return { status: "saved", message: "Check your email to confirm your account, then sign in." };
+    return { status: "saved", message: t("identity.signUp.saved") };
   }
 
   return continueAfterAuthentication(nextFrom(formData));
@@ -154,6 +161,7 @@ export async function updateProfileAction(
   formData: FormData,
 ): Promise<FormState> {
   const { userId, profile: current } = await requireParticipant("/profile/edit");
+  const { t } = await getTranslation();
 
   const input = validateProfileInput(formData);
   const avatar = validateAvatar(formData.get("avatar"));
@@ -187,7 +195,7 @@ export async function updateProfileAction(
     return {
       status: "error",
       fieldErrors: {},
-      message: GENERIC_SAVE_ERROR,
+      message: t("identity.edit.saveError"),
       values: echo(formData, PROFILE_TEXT_FIELDS),
     };
   }
@@ -198,5 +206,5 @@ export async function updateProfileAction(
 
   revalidatePath("/profile");
   revalidatePath(`/profiles/${userId}`);
-  return { status: "saved", message: "Your profile is saved." };
+  return { status: "saved", message: t("identity.edit.saved") };
 }

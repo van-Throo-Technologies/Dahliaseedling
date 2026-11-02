@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
+import { useT } from "@/i18n/client";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { moveObservationAction } from "@/modules/capture/actions";
@@ -24,6 +25,7 @@ export function MoveForm({
   readonly currentSeedlingId: string;
   readonly seedlings: readonly MoveChoice[];
 }) {
+  const t = useT();
   const [state, action] = useActionState(moveObservationAction, IDLE_FORM_STATE);
   const [mode, setMode] = useState<"new" | "existing" | "identifier">("new");
   const [seedlingId, setSeedlingId] = useState(
@@ -42,7 +44,7 @@ export function MoveForm({
       ) : null}
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-lg font-medium text-text">Move it to</legend>
+        <legend className="text-lg font-medium text-text">{t("capture.move.moveTo")}</legend>
         <label className="flex min-h-11 items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 text-base text-text">
           <input
             type="radio"
@@ -51,7 +53,7 @@ export function MoveForm({
             onChange={() => setMode("new")}
             className="h-5 w-5"
           />
-          New seedling
+          {t("capture.move.newSeedling")}
         </label>
         {options.length > 0 ? (
           <label className="flex min-h-11 items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-base text-text">
@@ -63,10 +65,10 @@ export function MoveForm({
               className="mt-1 h-5 w-5"
             />
             <span className="flex flex-1 flex-col gap-2">
-              One of my other seedlings
+              {t("capture.move.otherSeedling")}
               {mode === "existing" ? (
                 <select
-                  aria-label="Choose a seedling"
+                  aria-label={t("capture.capture.chooseSeedling")}
                   value={seedlingId}
                   onChange={(event) => setSeedlingId(event.target.value)}
                   className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
@@ -90,14 +92,14 @@ export function MoveForm({
             className="mt-1 h-5 w-5"
           />
           <span className="flex flex-1 flex-col gap-2">
-            I know its identifier
+            {t("capture.move.identifier")}
             {mode === "identifier" ? (
               <input
                 type="text"
                 name="identifier"
-                placeholder="JV-26-001 or #12"
+                placeholder={t("capture.capture.identifierPlaceholder")}
                 autoComplete="off"
-                aria-label="Seedling identifier"
+                aria-label={t("capture.capture.identifierLabel")}
                 className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
               />
             ) : null}
@@ -108,10 +110,10 @@ export function MoveForm({
         ) : null}
       </fieldset>
 
-      <SubmitButton pendingLabel="Moving…">Move observation</SubmitButton>
-      <p className="text-sm text-text-muted">
-        The photos are not uploaded again. Only the seedling it belongs to changes.
-      </p>
+      <SubmitButton pendingLabel={t("capture.move.submitting")}>
+        {t("capture.move.submit")}
+      </SubmitButton>
+      <p className="text-sm text-text-muted">{t("capture.move.note")}</p>
     </form>
   );
 }

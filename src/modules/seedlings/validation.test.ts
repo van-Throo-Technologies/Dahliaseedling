@@ -30,7 +30,7 @@ describe("series names (identifier prefixes)", () => {
   it("rejects empty, too long, and symbol-bearing names", () => {
     expect(validateSeriesName("")).toMatchObject({
       ok: false,
-      fieldErrors: { name: expect.any(String) },
+      fieldErrors: { name: { key: "validation.series.required" } },
     });
     expect(validateSeriesName("TOOLONGNAME")).toMatchObject({ ok: false });
     expect(validateSeriesName("J-V")).toMatchObject({ ok: false });
@@ -110,7 +110,7 @@ describe("parent input", () => {
   it("requires a seedling id for a seedling parent", () => {
     expect(validateParentInput(formOf({ role: "pollen_parent", kind: "seedling" }))).toMatchObject({
       ok: false,
-      fieldErrors: { parentSeedlingId: expect.any(String) },
+      fieldErrors: { parentSeedlingId: { key: "validation.seedling.parentChoose" } },
     });
     expect(
       validateParentInput(
@@ -124,7 +124,9 @@ describe("parent input", () => {
       validateParentInput(formOf({ role: "seed_parent", kind: "cultivar", cultivarName: "" })),
     ).toMatchObject({
       ok: false,
-      fieldErrors: { cultivarName: expect.any(String) },
+      fieldErrors: {
+        cultivarName: expect.objectContaining({ key: "validation.seedling.cultivar" }),
+      },
     });
     expect(
       validateParentInput(

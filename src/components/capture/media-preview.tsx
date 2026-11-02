@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useT } from "@/i18n/client";
 
 /**
  * Shows a photo or video. If the browser cannot display the file (HEIC is not displayed by most
@@ -17,13 +18,14 @@ export function MediaPreview({
   readonly mime: string;
   readonly label: string;
 }) {
+  const t = useT();
   const [failed, setFailed] = useState(false);
   const isVideo = mime.startsWith("video/");
 
   if (failed) {
     return (
       <div className="flex aspect-square items-center justify-center rounded-control border border-border bg-surface p-3 text-center text-sm text-text-muted">
-        Preview not available in this browser. The file is still saved.
+        {t("capture.capture.previewUnavailable")}
       </div>
     );
   }

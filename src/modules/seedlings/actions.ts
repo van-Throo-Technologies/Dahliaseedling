@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslation } from "@/i18n/server";
+import { msg, translateFields, type Msg } from "@/i18n/message";
+import type { MessageKey } from "@/i18n/translator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FormState } from "@/modules/identity/form-state";
 import { requireParticipant } from "@/modules/identity/gate";
+import { labelWords } from "./labels";
 import {
   attachSeriesRecord,
   createSeedlingRecord,
@@ -31,24 +35,36 @@ import {
  *   2. validates input on the server,
  *   3. calls the database through the signed-in user's session.
  * The database decides ownership, visibility and sequencing, so a bypassed form cannot do more.
+ * Messages are translated here, in the visitor's language, before they reach the form.
  */
-
-const CHECK_FIELDS = "Check the highlighted fields.";
-
-function invalid(
-  fieldErrors: Record<string, string>,
-  values: Record<string, string> = {},
-): FormState {
-  return { status: "error", fieldErrors, message: CHECK_FIELDS, values };
-}
-
-function failure(message: string): FormState {
-  return { status: "error", fieldErrors: {}, message };
-}
 
 function text(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value : "";
+}
+
+async function invalid(
+  fieldErrors: Readonly<Record<string, Msg>>,
+  values: Record<string, string> = {},
+): Promise<FormState> {
+  const { t } = await getTranslation();
+  return {
+    status: "error",
+    fieldErrors: translateFields(t, fieldErrors),
+    message: t("errors.checkFields"),
+    values,
+  };
+}
+
+async function failure(message: string): Promise<FormState> {
+  return { status: "error", fieldErrors: {}, message };
+}
+
+/** The sentence for a failure this module raised: its key translated, or the generic message. */
+async function failed(error: unknown, generic: MessageKey): Promise<FormState> {
+  const { t } = await getTranslation();
+  if (error instanceof SeedlingError) return failure(t(error.key, error.values));
+  return failure(t(generic));
 }
 
 export async function createSeriesAction(
@@ -56,6 +72,7 @@ export async function createSeriesAction(
   formData: FormData,
 ): Promise<FormState> {
   await requireParticipant("/series");
+  const { t } = await getTranslation();
 
   const name = validateSeriesName(formData.get("name"));
   if (!name.ok) return invalid(name.fieldErrors, { name: text(formData, "name") });
@@ -69,12 +86,10 @@ export async function createSeriesAction(
     const example = series.pattern.replace("{YY}", yy).replace("{NNN}", "001");
     return {
       status: "saved",
-      message: `Series ${series.name} is ready. Its identifiers look like ${example}.`,
+      message: t("seedlings.series.created", { name: series.name, example }),
     };
   } catch (error) {
-    return failure(
-      error instanceof SeedlingError ? error.message : "The series could not be created.",
-    );
+    return failed(error, "errors.unexpected");
   }
 }
 
@@ -113,16 +128,20 @@ export async function createSeedlingAction(
       visibility: visibility.value,
     });
   } catch (error) {
-    const message =
-      error instanceof SeedlingError ? error.message : "The seedling could not be created.";
     // A year-based series needs the year. Say so on the year field, and keep what the user typed.
-    if (message.includes("first grown year")) {
-      return invalid(
-        { firstGrownYear: message },
-        { workingName: workingName.value ?? "", firstGrownYear: text(formData, "firstGrownYear") },
-      );
+    if (error instanceof SeedlingError && error.key === "errors.seedling.yearNeeded") {
+      const { t } = await getTranslation();
+      return {
+        status: "error",
+        fieldErrors: { firstGrownYear: t(error.key, error.values) },
+        message: t("errors.checkFields"),
+        values: {
+          workingName: workingName.value ?? "",
+          firstGrownYear: text(formData, "firstGrownYear"),
+        },
+      };
     }
-    return failure(message);
+    return failed(error, "errors.seedling.seedlingFailed");
   }
 
   revalidatePath("/profile");
@@ -133,8 +152,9 @@ export async function updateSeedlingAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
-  if (!isUuid(id)) return failure("That seedling could not be found.");
+  if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
   await requireParticipant(`/seedlings/${id}`);
 
   const workingName = validateWorkingName(formData.get("workingName"));
@@ -155,58 +175,57 @@ export async function updateSeedlingAction(
       firstGrownYear: year.value,
       visibility: visibility.value,
     });
-    if (!updated) return failure("Only the grower who holds this seedling can change it.");
+    if (!updated) return failure(t("errors.seedling.notHolder"));
   } catch (error) {
-    return failure(
-      error instanceof SeedlingError ? error.message : "The changes could not be saved.",
-    );
+    return failed(error, "errors.seedling.changesFailed");
   }
 
   revalidatePath(`/seedlings/${id}`);
   revalidatePath("/profile");
   // Identifiers that already exist keep their values. Changing the year does not rename them.
-  return {
-    status: "saved",
-    message: "Your changes are saved. Existing identifiers stay as they are.",
-  };
+  return { status: "saved", message: t("seedlings.edit.saved") };
 }
 
 export async function attachSeriesAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
-  if (!isUuid(id)) return failure("That seedling could not be found.");
+  if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
   await requireParticipant(`/seedlings/${id}`);
 
   const series = validateSeriesChoice(formData.get("seriesId"));
-  if (!series.ok || series.value === null)
-    return invalid({ seriesId: "Choose one of your series." });
+  if (!series.ok || series.value === null) {
+    return invalid({ seriesId: msg("validation.series.choose") });
+  }
 
   const supabase = await createSupabaseServerClient();
   try {
     await attachSeriesRecord(supabase, id, series.value);
   } catch (error) {
-    const message =
-      error instanceof SeedlingError ? error.message : "The identifier could not be added.";
-    if (message.includes("first grown year")) return invalid({ seriesId: message });
-    return failure(message);
+    if (error instanceof SeedlingError && error.key === "errors.seedling.yearNeeded") {
+      return {
+        status: "error",
+        fieldErrors: { seriesId: t(error.key, error.values) },
+        message: t("errors.checkFields"),
+      };
+    }
+    return failed(error, "errors.seedling.identifierFailed");
   }
 
   revalidatePath(`/seedlings/${id}`);
   revalidatePath("/profile");
-  return {
-    status: "saved",
-    message: "The series identifier is added. Your seedling keeps its number and its identity.",
-  };
+  return { status: "saved", message: t("seedlings.attach.saved") };
 }
 
 export async function setParentAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
-  if (!isUuid(id)) return failure("That seedling could not be found.");
+  if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
   await requireParticipant(`/seedlings/${id}`);
 
   const parent = validateParentInput(formData);
@@ -216,13 +235,11 @@ export async function setParentAction(
   try {
     await setParentRecord(supabase, id, parent.value);
   } catch (error) {
-    return failure(
-      error instanceof SeedlingError ? error.message : "Parentage could not be saved.",
-    );
+    return failed(error, "errors.seedling.parentageFailed");
   }
 
   revalidatePath(`/seedlings/${id}`);
-  return { status: "saved", message: "Parentage is saved." };
+  return { status: "saved", message: t("seedlings.parent.saved") };
 }
 
 /**
@@ -235,6 +252,12 @@ export async function findParentCandidatesAction(
 ): Promise<ParentCandidate[]> {
   if (!isUuid(seedlingId)) return [];
   const { userId } = await requireParticipant(`/seedlings/${seedlingId}`);
+  const { t } = await getTranslation();
   const supabase = await createSupabaseServerClient();
-  return findParentCandidates(supabase, { term, excludeSeedlingId: seedlingId, readerId: userId });
+  return findParentCandidates(supabase, {
+    term,
+    excludeSeedlingId: seedlingId,
+    readerId: userId,
+    words: labelWords(t),
+  });
 }

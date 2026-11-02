@@ -5,10 +5,12 @@ import { useActionState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { TextField } from "@/design-system/components/form-fields";
+import { useT } from "@/i18n/client";
 import { signInAction } from "@/modules/identity/actions";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 
 export function SignInForm({ next }: { readonly next: string }) {
+  const t = useT();
   const [state, action] = useActionState(signInAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
   const values = state.status === "error" ? state.values : undefined;
@@ -21,7 +23,7 @@ export function SignInForm({ next }: { readonly next: string }) {
       ) : null}
 
       <TextField
-        label="Email"
+        label={t("identity.fields.email")}
         name="email"
         type="email"
         autoComplete="email"
@@ -31,7 +33,7 @@ export function SignInForm({ next }: { readonly next: string }) {
         error={errors.email}
       />
       <TextField
-        label="Password"
+        label={t("identity.fields.password")}
         name="password"
         type="password"
         autoComplete="current-password"
@@ -39,15 +41,17 @@ export function SignInForm({ next }: { readonly next: string }) {
         error={errors.password}
       />
 
-      <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
+      <SubmitButton pendingLabel={t("identity.signIn.submitting")}>
+        {t("identity.signIn.submit")}
+      </SubmitButton>
 
       <p className="text-base text-text-muted">
-        New to DahliaSeedling?{" "}
+        {t("identity.signIn.newHere")}{" "}
         <Link
           href={`/sign-up?next=${encodeURIComponent(next)}`}
           className="font-medium text-text-brand underline underline-offset-4"
         >
-          Create an account
+          {t("identity.signIn.createAccount")}
         </Link>
       </p>
     </form>

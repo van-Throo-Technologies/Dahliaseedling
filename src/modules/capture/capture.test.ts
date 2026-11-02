@@ -42,14 +42,18 @@ describe("file problems", () => {
   });
 
   it("refuses an unsupported type, an oversize photo, an oversize video and an empty file", () => {
-    expect(fileProblem({ name: "x.txt", type: "text/plain", size: 10 })).toContain("not supported");
+    expect(fileProblem({ name: "x.txt", type: "text/plain", size: 10 })).toEqual({
+      key: "validation.capture.fileType",
+    });
     expect(
       fileProblem({ name: "p.jpg", type: "image/jpeg", size: CAPTURE_LIMITS.imageMaxBytes + 1 }),
-    ).toContain("15 MB");
+    ).toEqual({ key: "validation.capture.fileSize", values: { megabytes: 15 } });
     expect(
       fileProblem({ name: "v.mp4", type: "video/mp4", size: CAPTURE_LIMITS.videoMaxBytes + 1 }),
-    ).toContain("50 MB");
-    expect(fileProblem({ name: "e.jpg", type: "image/jpeg", size: 0 })).toBe("That file is empty.");
+    ).toEqual({ key: "validation.capture.fileSize", values: { megabytes: 50 } });
+    expect(fileProblem({ name: "e.jpg", type: "image/jpeg", size: 0 })).toEqual({
+      key: "validation.capture.fileEmpty",
+    });
   });
 
   it("limits a capture to the configured number of files", () => {

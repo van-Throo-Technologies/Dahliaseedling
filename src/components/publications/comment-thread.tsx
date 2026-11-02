@@ -1,6 +1,7 @@
 import { deleteCommentAction } from "@/modules/publications/actions";
 import type { CommentNode } from "@/modules/publications/repository";
-import { formatDate } from "@/modules/seedlings/presentation";
+import { formatDate } from "@/i18n/format";
+import { getTranslation } from "@/i18n/server";
 import { CommentEditForm, CommentForm } from "./comment-form";
 
 /*
@@ -9,7 +10,7 @@ import { CommentEditForm, CommentForm } from "./comment-form";
  * Disclosure elements open the reply and edit forms, so they work without JavaScript.
  */
 
-export function CommentThread({
+export async function CommentThread({
   updateId,
   comments,
   canPost,
@@ -18,13 +19,14 @@ export function CommentThread({
   readonly comments: readonly CommentNode[];
   readonly canPost: boolean;
 }) {
+  const { t } = await getTranslation();
   return (
     <section aria-labelledby="comments-title" className="flex flex-col gap-4">
       <h2 id="comments-title" className="text-lg font-medium text-text">
-        Comments
+        {t("publication.comments.title")}
       </h2>
       {comments.length === 0 ? (
-        <p className="text-base text-text-muted">No comments yet. Start the conversation.</p>
+        <p className="text-base text-text-muted">{t("publication.comments.none")}</p>
       ) : (
         <ul className="flex flex-col gap-4">
           {comments.map((comment) => (
@@ -39,13 +41,17 @@ export function CommentThread({
         </ul>
       )}
       {canPost ? (
-        <CommentForm updateId={updateId} label="Add a comment" submitLabel="Post comment" />
+        <CommentForm
+          updateId={updateId}
+          label={t("publication.comments.add")}
+          submitLabel={t("publication.comments.post")}
+        />
       ) : null}
     </section>
   );
 }
 
-function CommentItem({
+async function CommentItem({
   updateId,
   node,
   canPost,
@@ -56,16 +62,20 @@ function CommentItem({
   readonly canPost: boolean;
   readonly depth: number;
 }) {
+  const { t, locale } = await getTranslation();
   return (
     <li className={depth > 0 ? "ml-4 border-l border-border pl-4" : ""}>
-      <article aria-label={`Comment by ${node.authorName}`} className="flex flex-col gap-2">
+      <article
+        aria-label={t("publication.comments.byAuthor", { name: node.authorName })}
+        className="flex flex-col gap-2"
+      >
         <p className="text-sm text-text-muted">
           <span className="font-medium text-text">{node.authorName}</span> ·{" "}
-          {formatDate(node.createdAt)}
-          {node.editedAt ? " · edited" : null}
+          {formatDate(node.createdAt, locale)}
+          {node.editedAt ? ` · ${t("publication.comments.edited")}` : null}
         </p>
         {node.isRemoved ? (
-          <p className="text-base italic text-text-muted">This comment was removed.</p>
+          <p className="text-base italic text-text-muted">{t("publication.comments.removed")}</p>
         ) : (
           <p className="whitespace-pre-line text-base text-text">{node.body}</p>
         )}
@@ -74,7 +84,7 @@ function CommentItem({
           <div className="flex flex-col gap-2">
             <details>
               <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-brand">
-                Edit
+                {t("common.edit")}
               </summary>
               <div className="pt-2">
                 <CommentEditForm updateId={updateId} commentId={node.id} body={node.body ?? ""} />
@@ -87,7 +97,7 @@ function CommentItem({
                 type="submit"
                 className="inline-flex min-h-11 items-center text-base text-destructive underline"
               >
-                Remove my comment
+                {t("publication.comments.removeMine")}
               </button>
             </form>
           </div>
@@ -96,14 +106,14 @@ function CommentItem({
         {!node.isRemoved && canPost ? (
           <details>
             <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-brand">
-              Reply to {node.authorName}
+              {t("publication.comments.replyTo", { name: node.authorName })}
             </summary>
             <div className="pt-2">
               <CommentForm
                 updateId={updateId}
                 parentId={node.id}
-                label={`Reply to ${node.authorName}`}
-                submitLabel="Post reply"
+                label={t("publication.comments.replyTo", { name: node.authorName })}
+                submitLabel={t("publication.comments.postReply")}
               />
             </div>
           </details>

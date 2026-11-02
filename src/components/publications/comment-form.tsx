@@ -5,6 +5,7 @@ import { addCommentAction, editCommentAction } from "@/modules/publications/acti
 import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
+import { useT } from "@/i18n/client";
 
 /** Posts a comment, or a reply when a parent is given. The label always names what the text is for. */
 export function CommentForm({
@@ -18,6 +19,7 @@ export function CommentForm({
   readonly label: string;
   readonly submitLabel: string;
 }) {
+  const t = useT();
   const [state, action] = useActionState(addCommentAction, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   const bodyId = `comment-body-${parentId ?? "root"}`;
@@ -48,7 +50,7 @@ export function CommentForm({
         <FormMessage tone="error">{state.message}</FormMessage>
       ) : null}
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
-      <SubmitButton pendingLabel="Posting…">{submitLabel}</SubmitButton>
+      <SubmitButton pendingLabel={t("publication.comments.posting")}>{submitLabel}</SubmitButton>
     </form>
   );
 }
@@ -63,13 +65,14 @@ export function CommentEditForm({
   readonly commentId: string;
   readonly body: string;
 }) {
+  const t = useT();
   const [state, action] = useActionState(editCommentAction, IDLE_FORM_STATE);
   return (
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="updateId" value={updateId} />
       <input type="hidden" name="commentId" value={commentId} />
       <label htmlFor={`edit-${commentId}`} className="text-base font-medium text-text">
-        Edit your comment
+        {t("publication.comments.editLabel")}
       </label>
       <textarea
         id={`edit-${commentId}`}
@@ -84,7 +87,9 @@ export function CommentEditForm({
         <FormMessage tone="error">{state.message}</FormMessage>
       ) : null}
       {state.status === "saved" ? <FormMessage tone="success">{state.message}</FormMessage> : null}
-      <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
+      <SubmitButton pendingLabel={t("publication.comments.saving")}>
+        {t("publication.comments.saveChanges")}
+      </SubmitButton>
     </form>
   );
 }

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SelectField, TextField } from "@/design-system/components/form-fields";
 import { SubmitButton } from "@/design-system/components/submit-button";
+import { useT } from "@/i18n/client";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { createSeedlingAction } from "@/modules/seedlings/actions";
 
@@ -18,6 +19,7 @@ export interface SeriesChoice {
  * automatic number. Only a year-based series needs the year, and the form says so before the user submits.
  */
 export function NewSeedlingForm({ series }: { readonly series: readonly SeriesChoice[] }) {
+  const t = useT();
   const [state, action] = useActionState(createSeedlingAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
   const values = state.status === "error" ? state.values : undefined;
@@ -29,52 +31,56 @@ export function NewSeedlingForm({ series }: { readonly series: readonly SeriesCh
       ) : null}
 
       <SelectField
-        label="Numbering"
+        label={t("seedlings.create.numbering")}
         name="seriesId"
         defaultValue=""
-        hint="Every seedling gets an automatic number, such as Seedling #1. A series adds your own identifier. Series with a year need the first grown year below."
+        hint={t("seedlings.create.numberingHint")}
         options={[
-          { value: "", label: "Automatic number only" },
+          { value: "", label: t("seedlings.create.automaticOnly") },
           ...series.map((item) => ({
             value: item.id,
-            label: item.usesYear ? `Series ${item.name} (uses the year)` : `Series ${item.name}`,
+            label: item.usesYear
+              ? t("seedlings.create.seriesWithYear", { name: item.name })
+              : t("seedlings.create.seriesPlain", { name: item.name }),
           })),
         ]}
         error={errors.series}
       />
 
       <TextField
-        label="Working name (optional)"
+        label={t("seedlings.create.workingName")}
         name="workingName"
         maxLength={80}
-        hint="A nickname you can change later. It does not replace the identifier."
+        hint={t("seedlings.create.workingNameHint")}
         defaultValue={values?.workingName ?? ""}
         error={errors.workingName}
       />
 
       <TextField
-        label="First grown year (optional)"
+        label={t("seedlings.create.firstGrownYear")}
         name="firstGrownYear"
         inputMode="numeric"
         maxLength={4}
-        hint="The year this seedling was first grown from seed. It is not the day you enter it."
+        hint={t("seedlings.create.firstGrownYearHint")}
         defaultValue={values?.firstGrownYear ?? ""}
         error={errors.firstGrownYear}
       />
 
       <SelectField
-        label="Who can see it"
+        label={t("seedlings.create.visibility")}
         name="visibility"
         defaultValue="private"
-        hint="Private means only you can see this seedling. You can make it public later."
+        hint={t("seedlings.create.visibilityHint")}
         options={[
-          { value: "private", label: "Private (only me)" },
-          { value: "public", label: "Public (visitors can see it)" },
+          { value: "private", label: t("glossary.visibleToOnlyMe") },
+          { value: "public", label: t("glossary.visibleToVisitors") },
         ]}
         error={errors.visibility}
       />
 
-      <SubmitButton pendingLabel="Creating…">Create seedling</SubmitButton>
+      <SubmitButton pendingLabel={t("seedlings.create.submitting")}>
+        {t("seedlings.create.submit")}
+      </SubmitButton>
     </form>
   );
 }

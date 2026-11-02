@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isPubliclyShareable, PRIVATE_ONLY_MESSAGE } from "./limits";
-import { PUBLIC_URL_SECONDS } from "./limits";
+import { MESSAGES } from "@/i18n/messages";
+import { isPubliclyShareable, PUBLIC_URL_SECONDS } from "./limits";
 
 describe("publication limits", () => {
   it("keeps public image links to one hour", () => {
@@ -19,6 +19,8 @@ describe("publication limits", () => {
   });
 
   it("explains the HEIC limit in words that do not claim the photo was lost", () => {
-    expect(PRIVATE_ONLY_MESSAGE).toContain("stay private");
+    const explanation = MESSAGES.en.publication.publish.privateOnly;
+    expect(explanation).toContain("stay private");
+    expect(explanation).not.toMatch(/lost|deleted/i);
   });
 });

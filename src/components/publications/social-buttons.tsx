@@ -1,9 +1,12 @@
+"use client";
+
 import {
   toggleGrowerFollowAction,
   toggleLikeAction,
   toggleSavedAction,
   toggleSeedlingFollowAction,
 } from "@/modules/publications/actions";
+import { useT } from "@/i18n/client";
 
 /*
  * Social controls are plain forms that call server actions. They work without JavaScript. A visitor who
@@ -25,12 +28,13 @@ export function LikeForm({
   readonly liked: boolean;
   readonly count: number;
 }) {
+  const t = useT();
   return (
     <form action={toggleLikeAction}>
       <input type="hidden" name="updateId" value={updateId} />
       <input type="hidden" name="on" value={liked ? "0" : "1"} />
       <button type="submit" aria-pressed={liked} className={liked ? controlOn : control}>
-        {liked ? "Liked" : "Like"}
+        {liked ? t("publication.social.liked") : t("publication.social.like")}
         <span className="ml-2 text-sm font-normal">{count}</span>
       </button>
     </form>
@@ -48,6 +52,7 @@ export function SeedlingActions({
   readonly saved: boolean;
   readonly returnTo: string;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-3">
       <form action={toggleSeedlingFollowAction}>
@@ -55,7 +60,9 @@ export function SeedlingActions({
         <input type="hidden" name="returnTo" value={returnTo} />
         <input type="hidden" name="on" value={followed ? "0" : "1"} />
         <button type="submit" aria-pressed={followed} className={followed ? controlOn : control}>
-          {followed ? "Following this seedling" : "Follow this seedling"}
+          {followed
+            ? t("publication.social.followingSeedling")
+            : t("publication.social.followSeedling")}
         </button>
       </form>
       <form action={toggleSavedAction}>
@@ -63,7 +70,7 @@ export function SeedlingActions({
         <input type="hidden" name="returnTo" value={returnTo} />
         <input type="hidden" name="on" value={saved ? "0" : "1"} />
         <button type="submit" aria-pressed={saved} className={saved ? controlOn : control}>
-          {saved ? "Saved privately" : "Save"}
+          {saved ? t("publication.social.savedPrivately") : t("publication.social.save")}
         </button>
       </form>
     </div>
@@ -79,13 +86,14 @@ export function GrowerFollowForm({
   readonly following: boolean;
   readonly returnTo: string;
 }) {
+  const t = useT();
   return (
     <form action={toggleGrowerFollowAction}>
       <input type="hidden" name="profileId" value={profileId} />
       <input type="hidden" name="returnTo" value={returnTo} />
       <input type="hidden" name="on" value={following ? "0" : "1"} />
       <button type="submit" aria-pressed={following} className={following ? controlOn : control}>
-        {following ? "Following this grower" : "Follow this grower"}
+        {following ? t("publication.social.followingGrower") : t("publication.social.followGrower")}
       </button>
     </form>
   );

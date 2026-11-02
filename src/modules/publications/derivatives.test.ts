@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 import { DerivativeError, makePublicImage } from "./derivatives";
+import { MESSAGES } from "@/i18n/messages";
 import { DERIVATIVE } from "./limits";
 
 // The derivative module is server-only in the app. Unit tests run outside React's server runtime.
@@ -87,11 +88,14 @@ describe("public image derivatives", () => {
     expect(source.equals(before)).toBe(true);
   });
 
-  it("refuses bytes that are not an image, with a message a grower can read", async () => {
+  it("refuses bytes that are not an image, with a key the interface can translate", async () => {
     await expect(makePublicImage(Buffer.from("not a picture at all"))).rejects.toBeInstanceOf(
       DerivativeError,
     );
-    await expect(makePublicImage(Buffer.from("not a picture at all"))).rejects.toThrow(
+    await expect(makePublicImage(Buffer.from("not a picture at all"))).rejects.toMatchObject({
+      key: "errors.publication.preparationFailed",
+    });
+    expect(MESSAGES.en.errors.publication.preparationFailed).toBe(
       "The photo could not be prepared for sharing.",
     );
   });

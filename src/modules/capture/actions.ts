@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslation } from "@/i18n/server";
+import { translateFields, type Msg } from "@/i18n/message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FormState } from "@/modules/identity/form-state";
 import { requireParticipant } from "@/modules/identity/gate";
@@ -24,6 +26,7 @@ import {
   validateUploadPaths,
   type SeedlingChoice,
 } from "./validation";
+import type { MessageKey } from "@/i18n/translator";
 
 /*
  * Capture server actions. The participation gate runs first (signed in, profile, not suspended). Input is
@@ -31,38 +34,43 @@ import {
  * seedling's holder, the media limits and the single-transaction capture.
  *
  * Failure messages never say whether a seedling exists that the grower cannot use.
+ * Messages are translated here, in the visitor's language.
  */
-
-const NOT_AVAILABLE =
-  "That seedling is not available to you. Check the identifier, or choose one from your list.";
-const CHECK_FIELDS = "Check the highlighted fields.";
 
 function text(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value : "";
 }
 
-function failure(message: string, fieldErrors: Record<string, string> = {}): FormState {
+async function failure(
+  message: string,
+  fieldErrors: Record<string, string> = {},
+): Promise<FormState> {
   return { status: "error", fieldErrors, message };
 }
 
-/** Turns a database failure into a message the grower can act on, without revealing private detail. */
-function captureMessage(error: unknown, fallback: string): string {
-  const message = error instanceof CaptureError ? error.message : "";
-  if (message.includes("seedling not found")) return NOT_AVAILABLE;
-  if (message.includes("upload could not be found"))
-    return "An upload did not finish. Try the photo again.";
-  if (
-    message.includes("not supported") ||
-    message.includes("larger than") ||
-    message.includes("1 and 6")
-  )
-    return message;
-  if (message.includes("cannot be in the future"))
-    return "The observed time cannot be in the future.";
-  if (message.includes("suspended"))
-    return "Your account is suspended, so you cannot capture or change observations.";
-  return fallback;
+async function failureKey(
+  key: MessageKey,
+  fieldErrors: Record<string, string> = {},
+): Promise<FormState> {
+  const { t } = await getTranslation();
+  return failure(t(key), fieldErrors);
+}
+
+async function invalid(fields: Readonly<Record<string, Msg>>): Promise<FormState> {
+  const { t } = await getTranslation();
+  const first = Object.values(fields)[0];
+  return failure(
+    first ? t(first.key, first.values) : t("errors.checkFields"),
+    translateFields(t, fields),
+  );
+}
+
+/** Turns a failure from this module into the sentence the grower sees, without revealing private detail. */
+async function captureMessage(error: unknown, fallback: MessageKey): Promise<string> {
+  const { t } = await getTranslation();
+  if (error instanceof CaptureError) return t(error.key, error.values);
+  return t(fallback);
 }
 
 /** Issues upload paths for files the grower is about to send. The paths are built here, never by the browser. */
@@ -70,17 +78,18 @@ export async function prepareUploadsAction(
   mimeTypes: readonly string[],
 ): Promise<{ readonly paths: string[] } | { readonly error: string }> {
   const { userId } = await requireParticipant("/capture");
+  const { t } = await getTranslation();
 
   if (mimeTypes.length < 1 || mimeTypes.length > CAPTURE_LIMITS.maxFilesPerCapture) {
-    return { error: `Choose up to ${CAPTURE_LIMITS.maxFilesPerCapture} files for one capture.` };
+    return { error: t("validation.capture.tooMany", { max: CAPTURE_LIMITS.maxFilesPerCapture }) };
   }
   const paths: string[] = [];
   for (const mime of mimeTypes) {
     if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(mime)) {
-      return { error: "That file type is not supported." };
+      return { error: t("errors.capture.fileNotSupported") };
     }
     const path = buildUploadPath(userId, mime, crypto.randomUUID());
-    if (!path) return { error: "That file type is not supported." };
+    if (!path) return { error: t("errors.capture.fileNotSupported") };
     paths.push(path);
   }
   return { paths };
@@ -118,18 +127,22 @@ export async function captureAction(_previous: FormState, formData: FormData): P
   const observedAt = validateObservedAt(text(formData, "observedAt"));
   const paths = validateUploadPaths(text(formData, "paths"), userId);
 
-  const fieldErrors: Record<string, string> = {};
+  const fieldErrors: Record<string, Msg> = {};
   if (!choice.ok) Object.assign(fieldErrors, choice.fieldErrors);
   if (!note.ok) Object.assign(fieldErrors, note.fieldErrors);
   if (!voice.ok) Object.assign(fieldErrors, voice.fieldErrors);
   if (!observedAt.ok) Object.assign(fieldErrors, observedAt.fieldErrors);
   if (!paths.ok) Object.assign(fieldErrors, paths.fieldErrors);
   if (!choice.ok || !note.ok || !voice.ok || !observedAt.ok || !paths.ok) {
-    return failure(Object.values(fieldErrors)[0] ?? CHECK_FIELDS, fieldErrors);
+    return invalid(fieldErrors);
   }
 
   const target = await resolveChoice(choice.value);
-  if (!target) return failure(NOT_AVAILABLE, { identifier: NOT_AVAILABLE });
+  if (!target) {
+    return failureKey("errors.capture.seedlingUnavailable", {
+      identifier: (await getTranslation()).t("errors.capture.seedlingUnavailable"),
+    });
+  }
 
   const supabase = await createSupabaseServerClient();
   let saved;
@@ -143,12 +156,7 @@ export async function captureAction(_previous: FormState, formData: FormData): P
       paths: paths.value,
     });
   } catch (error) {
-    return failure(
-      captureMessage(
-        error,
-        "The capture could not be saved. Your files are still here, so try again.",
-      ),
-    );
+    return failure(await captureMessage(error, "errors.capture.captureFailed"));
   }
 
   revalidatePath("/profile");
@@ -161,16 +169,20 @@ export async function updateObservationAction(
   formData: FormData,
 ): Promise<FormState> {
   const id = text(formData, "observationId");
-  if (!isUuid(id)) return failure("That observation could not be found.");
+  if (!isUuid(id)) return failureKey("errors.capture.notFound");
   await requireParticipant(`/observations/${id}`);
 
   const note = validateNote(text(formData, "note"));
   const observedAt = validateObservedAt(text(formData, "observedAt"));
   if (!note.ok || !observedAt.ok) {
-    return failure(CHECK_FIELDS, {
-      ...(note.ok ? {} : note.fieldErrors),
-      ...(observedAt.ok ? {} : observedAt.fieldErrors),
-    });
+    const { t } = await getTranslation();
+    return failure(
+      t("errors.checkFields"),
+      translateFields(t, {
+        ...(note.ok ? {} : note.fieldErrors),
+        ...(observedAt.ok ? {} : observedAt.fieldErrors),
+      }),
+    );
   }
 
   const supabase = await createSupabaseServerClient();
@@ -179,12 +191,13 @@ export async function updateObservationAction(
       note: note.value,
       observedAt: observedAt.value,
     });
-    if (!updated) return failure("Only the author can change this observation.");
+    if (!updated) return failureKey("errors.capture.notAuthor");
   } catch {
-    return failure("The observation could not be saved. Try again.");
+    return failureKey("errors.capture.notSaved");
   }
   revalidatePath(`/observations/${id}`);
-  return { status: "saved", message: "Saved privately." };
+  const { t } = await getTranslation();
+  return { status: "saved", message: t("capture.observation.savedPrivately") };
 }
 
 export async function moveObservationAction(
@@ -192,7 +205,7 @@ export async function moveObservationAction(
   formData: FormData,
 ): Promise<FormState> {
   const id = text(formData, "observationId");
-  if (!isUuid(id)) return failure("That observation could not be found.");
+  if (!isUuid(id)) return failureKey("errors.capture.notFound");
   await requireParticipant(`/observations/${id}/move`);
 
   const choice = validateSeedlingChoice(
@@ -200,19 +213,22 @@ export async function moveObservationAction(
     text(formData, "seedlingId"),
     text(formData, "identifier"),
   );
-  if (!choice.ok) return failure(CHECK_FIELDS, choice.fieldErrors);
+  if (!choice.ok) return invalid(choice.fieldErrors);
 
   const target = await resolveChoice(choice.value);
-  if (!target) return failure(NOT_AVAILABLE, { identifier: NOT_AVAILABLE });
+  if (!target) {
+    const { t } = await getTranslation();
+    return failure(t("errors.capture.seedlingUnavailable"), {
+      identifier: t("errors.capture.seedlingUnavailable"),
+    });
+  }
 
   const supabase = await createSupabaseServerClient();
   let moved;
   try {
     moved = await moveObservation(supabase, id, target);
   } catch (error) {
-    return failure(
-      captureMessage(error, "The observation could not be moved. Nothing has changed."),
-    );
+    return failure(await captureMessage(error, "errors.capture.notMoved"));
   }
 
   revalidatePath(`/seedlings/${moved.seedlingId}`);
