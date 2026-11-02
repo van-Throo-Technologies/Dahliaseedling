@@ -27,6 +27,8 @@ import {
 import { isUuid } from "@/modules/seedlings/validation";
 import { listObservationsForSeedling, mediaFor } from "@/modules/capture/repository";
 import { LocalTime } from "@/components/capture/local-time";
+import { SeedlingJourney } from "@/components/publications/seedling-journey";
+import { listSeedlingJourney, seedlingCover, socialState } from "@/modules/publications/repository";
 import { MediaPreview } from "@/components/capture/media-preview";
 
 // A seedling is addressed by its uuid. A private seedling, a missing one and a malformed id all produce
@@ -64,6 +66,16 @@ export default async function SeedlingPage({
   const ownProfile = isHolder ? await getOwnProfile() : null;
   const canEdit = isHolder && ownProfile !== null && !ownProfile.isSuspended;
   const isSuspendedHolder = isHolder && ownProfile?.isSuspended === true;
+
+  // The public part of a seedling (its cover, follow and save, and its journey) exists only while the seedling is
+  // public. A private seedling shows none of it, to anyone but its holder.
+  const publicPart = seedling.visibility === "public";
+  const journey = publicPart ? await listSeedlingJourney(supabase, id) : [];
+  const cover = publicPart ? await seedlingCover(supabase, id) : null;
+  const social =
+    publicPart && viewer
+      ? await socialState(supabase, viewer.id, id, seedling.currentHolderId)
+      : null;
 
   const [identifiers, parentage, provenance, names] = await Promise.all([
     listIdentifiers(supabase, id),
@@ -132,6 +144,18 @@ export default async function SeedlingPage({
         </h1>
         {seedling.workingName ? <p className="text-lg text-text-muted">{title}</p> : null}
       </header>
+
+      {publicPart ? (
+        <SeedlingJourney
+          seedlingId={id}
+          title={seedling.workingName ?? title}
+          cover={cover}
+          journey={journey}
+          isHolder={isHolder}
+          followed={social?.followsSeedling ?? false}
+          saved={social?.savedSeedling ?? false}
+        />
+      ) : null}
 
       {isSuspendedHolder ? (
         <p className="rounded-surface border border-destructive p-4 text-base text-destructive">

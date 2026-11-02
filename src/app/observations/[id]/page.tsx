@@ -121,17 +121,14 @@ export default async function ObservationPage({
         <h2 id="share-title" className="text-lg font-medium text-text">
           Share
         </h2>
-        <button
-          type="button"
-          disabled
-          aria-describedby="share-note"
-          className="min-h-11 w-full rounded-control border border-border bg-surface px-4 text-base text-text-muted sm:w-auto"
-        >
-          Share (coming with Updates)
-        </button>
+        {canEdit ? (
+          <ButtonLink href={`/observations/${id}/share`} variant="secondary">
+            Share selected photos
+          </ButtonLink>
+        ) : null}
         <p id="share-note" className="text-sm text-text-muted">
-          Sharing will create a public Update, which comes later. Until then, this observation stays
-          private.
+          Sharing creates a public Update from the photos you choose. This observation, its note and
+          the rest of its photos stay private.
         </p>
       </section>
 

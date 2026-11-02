@@ -37,6 +37,38 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"comments": {
+                  Row: {
+                    "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"id": string,"parent_comment_id": string | null,"update_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"body": string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"id"?: string,"parent_comment_id"?: string | null,"update_id": string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"id"?: string,"parent_comment_id"?: string | null,"update_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "comments_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "comments_parent_comment_id_fkey"
+      columns: ["parent_comment_id"]
+isOneToOne: false
+      referencedRelation: "comments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "comments_update_id_fkey"
+      columns: ["update_id"]
+isOneToOne: false
+      referencedRelation: "updates"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"cultivar_references": {
                   Row: {
                     "created_at": string,"created_by": string | null,"id": string,"name": string,"normalized_name": string
@@ -52,6 +84,58 @@ export type Database = {
                     {
       foreignKeyName: "cultivar_references_created_by_fkey"
       columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"grower_follows": {
+                  Row: {
+                    "created_at": string,"followed_profile_id": string,"follower_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"followed_profile_id": string,"follower_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"followed_profile_id"?: string,"follower_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "grower_follows_followed_profile_id_fkey"
+      columns: ["followed_profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "grower_follows_follower_id_fkey"
+      columns: ["follower_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"likes": {
+                  Row: {
+                    "created_at": string,"update_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"update_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"update_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "likes_update_id_fkey"
+      columns: ["update_id"]
+isOneToOne: false
+      referencedRelation: "updates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "likes_user_id_fkey"
+      columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -175,6 +259,84 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"public_derivatives": {
+                  Row: {
+                    "byte_size": number,"created_at": string,"deleted_at": string | null,"height": number,"id": string,"mime_type": string,"owner_id": string,"source_media_id": string,"storage_path": string,"width": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "byte_size": number,"created_at"?: string,"deleted_at"?: string | null,"height": number,"id"?: string,"mime_type"?: string,"owner_id": string,"source_media_id": string,"storage_path": string,"width": number
+                  }
+                  Update: {
+                    "byte_size"?: number,"created_at"?: string,"deleted_at"?: string | null,"height"?: number,"id"?: string,"mime_type"?: string,"owner_id"?: string,"source_media_id"?: string,"storage_path"?: string,"width"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "public_derivatives_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "public_derivatives_source_media_id_fkey"
+      columns: ["source_media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"saved_seedlings": {
+                  Row: {
+                    "created_at": string,"seedling_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"seedling_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"seedling_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "saved_seedlings_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "saved_seedlings_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"seedling_follows": {
+                  Row: {
+                    "created_at": string,"seedling_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"seedling_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"seedling_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seedling_follows_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seedling_follows_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"seedling_identifiers": {
                   Row: {
                     "assigned_by": string,"created_at": string,"id": string,"identifier": string,"is_primary_for_user": boolean,"is_retired_alias": boolean,"kind": Database["public"]['Enums']["identifier_kind"],"seedling_id": string,"series_id": string | null
@@ -247,17 +409,23 @@ isOneToOne: false
                   ]
                 },"seedlings": {
                   Row: {
-                    "created_at": string,"current_holder_id": string,"deleted_at": string | null,"first_grown_year": number | null,"id": string,"originator_id": string,"updated_at": string,"visibility": Database["public"]['Enums']["seedling_visibility"],"working_name": string | null
+                    "cover_derivative_id": string | null,"created_at": string,"current_holder_id": string,"deleted_at": string | null,"first_grown_year": number | null,"id": string,"originator_id": string,"updated_at": string,"visibility": Database["public"]['Enums']["seedling_visibility"],"working_name": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"current_holder_id": string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"originator_id": string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
+                    "cover_derivative_id"?: string | null,"created_at"?: string,"current_holder_id": string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"originator_id": string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"current_holder_id"?: string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"originator_id"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
+                    "cover_derivative_id"?: string | null,"created_at"?: string,"current_holder_id"?: string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"originator_id"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "seedlings_cover_derivative_id_fkey"
+      columns: ["cover_derivative_id"]
+isOneToOne: false
+      referencedRelation: "public_derivatives"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "seedlings_current_holder_id_fkey"
       columns: ["current_holder_id"]
 isOneToOne: false
@@ -291,17 +459,90 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"update_media": {
+                  Row: {
+                    "derivative_id": string,"sort_order": number,"update_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "derivative_id": string,"sort_order"?: number,"update_id": string
+                  }
+                  Update: {
+                    "derivative_id"?: string,"sort_order"?: number,"update_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "update_media_derivative_id_fkey"
+      columns: ["derivative_id"]
+isOneToOne: false
+      referencedRelation: "public_derivatives"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "update_media_update_id_fkey"
+      columns: ["update_id"]
+isOneToOne: false
+      referencedRelation: "updates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"updates": {
+                  Row: {
+                    "author_id": string,"caption": string | null,"client_key": string,"created_at": string,"deleted_at": string | null,"id": string,"observed_at": string,"published_at": string,"seedling_id": string,"source_observation_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"caption"?: string | null,"client_key": string,"created_at"?: string,"deleted_at"?: string | null,"id"?: string,"observed_at": string,"published_at"?: string,"seedling_id": string,"source_observation_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "author_id"?: string,"caption"?: string | null,"client_key"?: string,"created_at"?: string,"deleted_at"?: string | null,"id"?: string,"observed_at"?: string,"published_at"?: string,"seedling_id"?: string,"source_observation_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "updates_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "updates_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "updates_source_observation_id_fkey"
+      columns: ["source_observation_id"]
+isOneToOne: false
+      referencedRelation: "observations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "_media_object_unregistered":
+            "_derivative_is_public":
+{ Args: { "p_derivative_id": string }; Returns: boolean
+                           },
+"_media_object_unregistered":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"_public_media_object_is_public":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"_public_media_object_unregistered":
 { Args: { "p_name": string }; Returns: boolean
                            },
 "_register_media_object":
 { Args: { "p_path": string }; Returns: string
+                           },
+"_update_is_public":
+{ Args: { "p_update_id": string }; Returns: boolean
+                           },
+"add_comment":
+{ Args: { "p_body": string,"p_parent_comment_id"?: string,"p_update_id": string }; Returns: string
                            },
 "admin_set_suspended":
 { Args: { "suspended": boolean,"target_profile_id": string }; Returns: {
@@ -365,7 +606,8 @@ isOneToOne: false
       } },
 "create_seedling":
 { Args: { "p_first_grown_year"?: number,"p_series_id"?: string,"p_visibility"?: Database["public"]['Enums']["seedling_visibility"],"p_working_name"?: string }; Returns: {
-              "created_at": string,
+              "cover_derivative_id": string | null,
+"created_at": string,
 "current_holder_id": string,
 "deleted_at": string | null,
 "first_grown_year": number | null,
@@ -397,11 +639,40 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"delete_comment":
+{ Args: { "p_comment_id": string }; Returns: undefined
+                           },
 "delete_observation":
 { Args: { "p_observation_id": string }; Returns: undefined
                            },
+"delete_update":
+{ Args: { "p_update_id": string }; Returns: undefined
+                           },
+"edit_comment":
+{ Args: { "p_body": string,"p_comment_id": string }; Returns: undefined
+                           },
+"get_public_update":
+{ Args: { "p_update_id": string }; Returns: {
+              "author_has_avatar": boolean,"author_id": string,"author_name": string,"caption": string,"comment_count": number,"like_count": number,"liked_by_me": boolean,"media": Json,"observed_at": string,"published_at": string,"seedling_id": string,"seedling_name": string,"update_id": string
+            }[]
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"list_public_updates":
+{ Args: { "p_before_id"?: string,"p_before_published"?: string,"p_following_only"?: boolean,"p_limit": number }; Returns: {
+              "author_has_avatar": boolean,"author_id": string,"author_name": string,"caption": string,"comment_count": number,"like_count": number,"liked_by_me": boolean,"media": Json,"observed_at": string,"published_at": string,"seedling_id": string,"seedling_name": string,"update_id": string
+            }[]
+                           },
+"list_seedling_updates":
+{ Args: { "p_seedling_id": string }; Returns: {
+              "author_id": string,"author_name": string,"caption": string,"media": Json,"observed_at": string,"published_at": string,"update_id": string
+            }[]
+                           },
+"list_update_comments":
+{ Args: { "p_update_id": string }; Returns: {
+              "author_id": string,"author_name": string,"body": string,"comment_id": string,"created_at": string,"edited_at": string,"is_mine": boolean,"is_removed": boolean,"parent_comment_id": string
+            }[]
                            },
 "move_observation":
 { Args: { "p_new_seedling"?: boolean,"p_observation_id": string,"p_target_seedling_id"?: string }; Returns: {
@@ -426,10 +697,28 @@ isOneToOne: false
 "next_series_identifier":
 { Args: { "p_first_grown_year": number,"p_series_id": string }; Returns: string
                            },
+"publish_update":
+{ Args: { "p_caption"?: string,"p_client_key": string,"p_items": Json,"p_observation_id": string }; Returns: Json
+                           },
 "resolve_own_identifier":
 { Args: { "p_identifier": string }; Returns: {
               "is_retired_alias": boolean,"seedling_id": string
             }[]
+                           },
+"seedling_cover":
+{ Args: { "p_seedling_id": string }; Returns: string
+                           },
+"set_grower_follow":
+{ Args: { "p_on": boolean,"p_profile_id": string }; Returns: undefined
+                           },
+"set_like":
+{ Args: { "p_on": boolean,"p_update_id": string }; Returns: undefined
+                           },
+"set_seedling_cover":
+{ Args: { "p_derivative_id"?: string,"p_seedling_id": string }; Returns: undefined
+                           },
+"set_seedling_follow":
+{ Args: { "p_on": boolean,"p_seedling_id": string }; Returns: undefined
                            },
 "set_seedling_parent":
 { Args: { "p_cultivar_name"?: string,"p_kind": string,"p_notes"?: string,"p_parent_seedling_id"?: string,"p_role": Database["public"]['Enums']["parent_role"],"p_seedling_id": string }; Returns: {
@@ -448,7 +737,10 @@ isOneToOne: false
         to: "seedling_parentage"
         isOneToOne: true
         isSetofReturn: false
-      } }
+      } },
+"set_seedling_save":
+{ Args: { "p_on": boolean,"p_seedling_id": string }; Returns: undefined
+                           }
           }
           Enums: {
             "identifier_kind": "automatic"|"series"|"originator"|"local"|"working_alias","media_kind": "image"|"video","media_visibility": "private"|"public","observation_visibility": "private"|"public","parent_role": "seed_parent"|"pollen_parent"|"parent_unknown_role","seedling_visibility": "private"|"public"

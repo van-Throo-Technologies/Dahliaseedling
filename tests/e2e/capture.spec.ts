@@ -65,7 +65,7 @@ test("a grower captures a photo into a new seedling in one tap and leaves", asyn
   await expectNoHorizontalOverflow(page);
 });
 
-test("the note stays optional, dictation falls back to typing, and Share is not yet available", async ({
+test("the note stays optional, dictation falls back to typing, and Share opens the publication step", async ({
   page,
 }) => {
   await signUpAndSetUpProfile(page, "note", "Note Grower");
@@ -90,7 +90,7 @@ test("the note stays optional, dictation falls back to typing, and Share is not 
       .getByRole("region", { name: "Note", exact: true })
       .getByText("Bud forming on the left stem"),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Share (coming with Updates)" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Share selected photos" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 

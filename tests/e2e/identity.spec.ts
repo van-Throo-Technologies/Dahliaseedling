@@ -25,9 +25,8 @@ test("visitor can browse, is prompted to sign in only when participating, and ca
   browser,
 }, testInfo) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "The gardener gardens. DahliaSeedling remembers.",
-  );
+  // Home is the public Feed from Phase 4.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Feed");
   await expectNoHorizontalOverflow(page);
 
   // Navigation is exactly the locked set, in order, with no Explore destination.

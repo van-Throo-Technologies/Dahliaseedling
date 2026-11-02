@@ -4,9 +4,9 @@ A community and continuation platform for genetically unique dahlias grown from 
 
 > **Phase status**
 >
-> Implemented: **Phase 0 — Foundation**, **Phase 1 — Identity & App Shell**, **Phase 2 — Seedling Core** and **Phase 3 — Capture & Observations**.
+> Implemented: **Phase 0 — Foundation**, **Phase 1 — Identity & App Shell**, **Phase 2 — Seedling Core**, **Phase 3 — Capture & Observations** and **Phase 4 — Public Community Core**.
 >
-> Phase 4 has **not** been started.
+> Phase 5 has **not** been started.
 
 The product specifications in the repository root are the source of truth. They are not edited by the codebase. Where this README and those documents disagree, the documents win. The locked specifications are: Domain Architecture v1.0, PRD v1.0, TRD v1.0, App Flow & UX v1.0, Data Model + Permissions v1.0, Implementation Plan v1.0, Design System & UI Brief v1.0, and the Post-MVP Backlog.
 
@@ -346,6 +346,142 @@ The limits are defined in `src/modules/capture/limits.ts`. The database enforces
 - **The 60-second video limit is a client-side UX constraint, not a server-enforced security invariant.** The browser checks the duration. A modified client could upload a longer video, as long as it stays within the server and storage size and MIME limits (50 MB, and the allowed types). No FFmpeg or transcoding is used in Phase 3. Server-side media inspection may be added later if real use justifies it.
 - **Soft-deleted media is retained, not purged.** Deleting an Observation hides it and its media from every application path, and the object stays in private storage. No purge job exists in Phase 3. Physical storage reclamation and retention cleanup belong to later lifecycle and launch hardening.
 - **Share is not available.** It is shown as disabled, and it creates no Update and no public media. Phase 4 adds deliberate publication.
+
+## Public community (Phase 4)
+
+Phase 4 turns the private record into public communication, deliberately. **Observation is documentation. Update is communication.** Recording something never publishes it.
+
+### Observation and Update
+
+- An **Observation** stays private to its author, whatever the seedling's visibility.
+- An **Update** is a public post about one seedling. It is created from one observation, and it carries only the public copies of the images the grower chose.
+- Publishing shares the chosen images as public copies. It never flips the observation or its private originals to public. The note, transcript and structured data stay private unless the grower writes new public text as the caption. The caption starts blank.
+
+### The share journey
+
+1. Open an observation and tap **Share selected photos**.
+2. **Private seedling.** A public Update needs a public seedling page, so the first step explains that the seedling is private. Opening the step changes nothing. Pressing **Make Seedling public & continue** is the deliberate confirmation. It changes only the seedling's visibility. Cancelling before that press leaves it private. Once it is public, it stays public, even if the Update is then cancelled.
+3. **Choose the photos.** Nothing is selected by default. Each image is ticked separately. Videos are listed, but cannot be chosen.
+4. **Caption** (optional, blank by default), then **Publish update**.
+
+Only the current holder can share, and only from an observation they wrote. A former originator, another grower, a visitor and a suspended grower cannot.
+
+### Public images
+
+- Public images are **sanitised derivatives**, separate from the private original. The original is never exposed, and its storage policies do not change when an image is published.
+- Derivatives live in the `public-media` bucket. That bucket is **private**, like `private-media`. Readers get a signed URL that lasts an hour, and only while a live public Update references the image. The object is never readable by its path alone. See "Public delivery and revocation" below for exactly when access stops.
+
+### Public delivery and revocation
+
+**Interpretation.** The Data Model describes `public-media` as publicly readable. For MVP, "publicly readable" means that eligible public derivatives reach visitors through the application's public delivery mechanism. The bucket is not anonymously readable, so a suspended grower's or a deleted Update's image cannot be reached by guessing or copying a storage path.
+
+**Boundary, in order:**
+
+1. While an Update is eligible, a visitor is issued a signed URL for its derivative. The URL's token carries a lifetime of exactly 3600 seconds.
+2. The Update is deleted, or its author or holder is suspended.
+3. From that moment no new signed URL for the derivative can be issued. The database refuses it, because the link's eligibility check no longer passes.
+4. A URL issued before step 2 remains usable until its own expiry. This is the accepted residual window for MVP: at most one hour. Instant revocation of issued links would need CDN or object-level invalidation, which is not built.
+5. After expiry the URL is unusable.
+
+The tests in `tests/db/signed-urls.test.ts` check steps 1 to 3 directly, and they confirm the one-hour lifetime from the token. They also show that a link issued before removal is still served (step 4), and that a one-second link stops working after it expires (step 5). The suite does not wait an hour.
+
+- Format: WebP, quality 80, long edge at most 1600 px, aspect ratio kept, never enlarged, orientation applied to the pixels.
+- **Metadata is removed.** Every derivative is written without EXIF, XMP or colour profile data, so GPS and camera details do not survive. The test in `src/modules/publications/derivatives.test.ts` proves this with a synthetic location marker, and the browser test checks the bytes a visitor receives.
+- Processing uses `sharp` (approved), in the Node.js runtime, inside the publish server action. Nothing runs on the Edge runtime, and no separate service is used.
+- Processing is **synchronous** during Publish. This is an intentional MVP simplification of the TRD's asynchronous wording.
+
+### Failure model and double submission
+
+- Derivatives are created and uploaded first. Then `publish_update` writes the Update, its public references and its derivative rows in one database transaction.
+- Only a successful transaction reports **Published**. A failure at any step removes the derivatives uploaded so far, and nothing is referenced.
+- The browser sends a client key with each publication. A repeated submission with the same key is refused by a unique constraint and returns the Update already made. The buttons also disable while a publication is in progress.
+- A leftover upload is unregistered and is readable only by its uploader, so it can never appear publicly.
+
+### Video: a known deferred MVP capability
+
+**Public video publication is a known deferred MVP capability.** Short-video Updates remain an MVP requirement. Phase 4 does not provide them yet. The safe public delivery of video depends on a media-processing decision that comes after the core publication architecture is in place. Until then:
+
+- Private video Capture works as before, and private video stays private.
+- Video cannot be published through the interface, or by calling `publish_update` directly. The database refuses it with `public video sharing is not available yet`.
+- No public video object is ever created.
+
+This is not a Post-MVP item, and Phase 4 does not claim public video.
+
+### Feed, journey and cover
+
+- **Home is the public Feed.** Visitors can read it without an account. Signed-in growers can switch to **Following**, which shows Updates from seedlings and growers they follow.
+- **Order:** newest publication first, with the Update id as a tie-breaker. No ranking, no popularity and no recommendation.
+- **Pagination:** cursor based. The cursor is the publication time and the Update id, so equal timestamps still give a stable order, and a new Update never moves or repeats a page. Page size is 12.
+- The Feed shows the grower's caption and photo, plus lightweight actions. It shows no identifiers, parentage, traits or structured data. Tapping a photo opens the persistent Seedling page.
+- **Seedling journey.** The public Seedling page shows its cover, Follow and Save, and its Updates grouped by the year each observation was made. One seedling is one page, across years.
+- **Cover.** The most recently shared public image is the default. The holder may choose another public image of that seedling. Video is never the cover. If the chosen image's Update is removed, the default applies again.
+
+### Comments, likes, follows and Save
+
+- **Comments and replies** live on each Update. A reply must belong to the same Update as its parent, enforced by a database trigger. Authors can edit and remove their own comments. A removed comment keeps its place, so its replies remain. Comments by suspended growers are hidden. Comments do not create any interest, reservation or transfer.
+- **Likes** are one per person per Update. Liking and unliking are idempotent. A like changes only the count: it sends no notification and does not change the Feed order.
+- **Follow Seedling** attaches to the Seedling's uuid, so it survives a change of holder. It is independent of Save.
+- **Follow Grower** follows a profile. It is independent of following any seedling.
+- **Save Seedling** is a private bookmark. Only the saver can see it. No save count is published. Phase 4 has no Saved list or navigation destination. The saved state appears on the seedling page, and a list can be added later with Search and discovery.
+- All of these are idempotent. Repeating an action leaves one row, and a visitor or suspended grower cannot change any of them.
+
+### Profile tabs
+
+Each public profile has three tabs:
+
+- **Seedlings:** public seedlings the grower currently holds.
+- **Originated:** public seedlings the grower originated, including those someone else holds now.
+- **Updates:** the grower's live public Updates.
+
+A visitor sees only what the database allows them to read. Private seedlings and deleted Updates are never listed.
+
+### Permissions and suspension
+
+| Action                                                      | Who may do it                                                   |
+| ----------------------------------------------------------- | --------------------------------------------------------------- |
+| Read the Feed, a public Update, a journey, comments         | Anyone, including visitors                                      |
+| Publish an Update, choose the cover, make a seedling public | The current holder, from an observation they wrote              |
+| Delete an Update                                            | Its author                                                      |
+| Comment, reply, edit or remove own comment                  | Participating growers                                           |
+| Like                                                        | Participating growers                                           |
+| Follow Seedling, Follow Grower, Save                        | Participating growers (Follow Seedling needs a public seedling) |
+
+A suspended grower cannot publish, comment, like, follow, save or change anything. Their public content is hidden from the Feed, journeys and profiles, and it is not destroyed. The rule is applied in the database, so a suspended holder's Seedling and its Updates disappear from every public read.
+
+### Removal and retention
+
+- Deleting an Update removes it from the Feed, the journey and the profile. The derivatives it alone referenced are retired. Their objects remain in private storage, unreadable, and no purge job runs in Phase 4.
+- The source observation, its note, transcript, structured data and the private originals are never changed by publication or removal.
+
+### Phase 4 verification
+
+```bash
+npm test                 # unit tests, including derivative metadata, orientation and size
+npm run test:db          # publication privacy, Storage, cover, Feed, comments, likes, follows, Save
+npm run test:e2e         # sharing, Feed, journey, comments and likes, phone and desktop
+```
+
+Derivative processing uses synthetic metadata only. No real location data is kept in the repository.
+
+### Manual verification
+
+1. Create an account, capture a photo, and open the observation.
+2. Tap **Share selected photos**. Confirm the seedling is still private, and that the page says so.
+3. Tap **Make Seedling public & continue**. Choose one photo, add a caption, and publish.
+4. Open the Feed in a private window. The Update appears with the derivative, and the observation is not reachable.
+5. Open the seedling from the photo. The journey shows the Update, and the cover is that photo.
+6. Comment, reply, edit and remove your own comment, and like the Update. Signed out, the same actions take you to sign-in.
+7. Follow the seedling and the grower. Save the seedling, and check that only you see it saved.
+8. Open the profile and check the three tabs.
+9. Confirm the private observation still says it is private, and that its other photos are still not shared.
+
+### Known limitations
+
+- Public video is deferred (see above).
+- Derivatives are generated synchronously, so a large batch of photos takes longer to publish.
+- Signed URLs last an hour. A copied link keeps working for up to an hour after removal or suspension.
+- Retired derivative objects remain in private storage until a later lifecycle phase.
+- **HEIC private capture works, but HEIC public publication does not.** HEIC and HEIF photos are accepted, stored privately, and shown in the timeline. The bundled `sharp` (libvips 8.18, libheif 1.23) reads the AV1-based HEIF container, but not the HEVC encoding that phone cameras use for HEIC. A real HEIC sample fails to decode with "HEVC (a suitable decoder plugin is libde265) not built in". So the Share step shows such photos as "stays private", cannot tick them, and the server refuses them before anything is downloaded. Adding a decoder or a conversion service is a separate decision, and none was added here.
 
 ## Quality checks
 
