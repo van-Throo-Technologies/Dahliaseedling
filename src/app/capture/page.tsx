@@ -1,16 +1,27 @@
-import { NotYetAvailable } from "@/components/app-shell/not-yet-available";
+import { CaptureFlow } from "@/components/capture/capture-flow";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireParticipant } from "@/modules/identity/gate";
+import { displayLabels, listHeldSeedlings } from "@/modules/seedlings/repository";
 
 export const metadata = { title: "Capture" };
 
-// Capture is the dominant action, but its workflow arrives in Phase 3. Until then this page only
-// enforces the participation gate and says so plainly.
 export default async function CapturePage() {
-  await requireParticipant("/capture");
+  const { userId } = await requireParticipant("/capture");
+  const supabase = await createSupabaseServerClient();
+  const held = await listHeldSeedlings(supabase, userId);
+  const labels = await displayLabels(
+    supabase,
+    held.map((item) => item.id),
+  );
+
   return (
-    <NotYetAvailable
-      title="Capture"
-      message="Capture is not available yet. Photos and notes will be saved privately here."
+    <CaptureFlow
+      seedlings={held.map((item) => ({
+        id: item.id,
+        label: item.workingName
+          ? `${labels.get(item.id) ?? "Seedling"} · ${item.workingName}`
+          : (labels.get(item.id) ?? "Seedling"),
+      }))}
     />
   );
 }

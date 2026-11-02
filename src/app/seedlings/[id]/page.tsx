@@ -25,6 +25,9 @@ import {
   visibilityLabel,
 } from "@/modules/seedlings/presentation";
 import { isUuid } from "@/modules/seedlings/validation";
+import { listObservationsForSeedling, mediaFor } from "@/modules/capture/repository";
+import { LocalTime } from "@/components/capture/local-time";
+import { MediaPreview } from "@/components/capture/media-preview";
 
 // A seedling is addressed by its uuid. A private seedling, a missing one and a malformed id all produce
 // the same 404, so the existence of a private seedling is never revealed.
@@ -82,6 +85,14 @@ export default async function SeedlingPage({
     const name = parentNames.get(parentId);
     return name ? `${name} · ${label}` : label;
   };
+
+  // Only the author's own observations are returned: RLS hides everyone else's, including a visitor's,
+  // whatever the seedling's visibility.
+  const observations = await listObservationsForSeedling(supabase, id);
+  const observationMedia = await mediaFor(
+    supabase,
+    observations.map((item) => item.id),
+  );
 
   const title = displayIdentifier(identifiers);
   const originator = names.get(seedling.originatorId);
@@ -249,6 +260,46 @@ export default async function SeedlingPage({
         </ul>
         <p className="text-sm text-text-muted">Added on {formatDate(seedling.createdAt)}</p>
       </section>
+
+      {observations.length > 0 ? (
+        <section aria-labelledby="observations-title" className="flex flex-col gap-4">
+          <h2 id="observations-title" className="text-lg font-medium text-text">
+            Your private observations
+          </h2>
+          <p className="text-sm text-text-muted">
+            Only you can see these. They are not shared with visitors or other growers.
+          </p>
+          <ul className="flex flex-col gap-4">
+            {observations.map((item) => {
+              const first = observationMedia.get(item.id)?.[0];
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={`/observations/${item.id}`}
+                    className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4 no-underline"
+                  >
+                    {first ? (
+                      <div className="w-24">
+                        <MediaPreview
+                          src={`/media/${first.id}`}
+                          mime={first.mimeType}
+                          label="Private photo or video"
+                        />
+                      </div>
+                    ) : null}
+                    <span className="text-base font-medium text-text-brand">
+                      Observed <LocalTime iso={item.observedAt} />
+                    </span>
+                    {item.note ? (
+                      <span className="line-clamp-2 text-base text-text">{item.note}</span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       {canEdit ? (
         <section aria-labelledby="manage-title" className="flex flex-col gap-6">

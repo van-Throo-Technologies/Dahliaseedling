@@ -4,9 +4,9 @@ A community and continuation platform for genetically unique dahlias grown from 
 
 > **Phase status**
 >
-> Implemented: **Phase 0 — Foundation**, **Phase 1 — Identity & App Shell** and **Phase 2 — Seedling Core**.
+> Implemented: **Phase 0 — Foundation**, **Phase 1 — Identity & App Shell**, **Phase 2 — Seedling Core** and **Phase 3 — Capture & Observations**.
 >
-> Phase 3 (Capture & Observations) has **not** been started.
+> Phase 4 has **not** been started.
 
 The product specifications in the repository root are the source of truth. They are not edited by the codebase. Where this README and those documents disagree, the documents win. The locked specifications are: Domain Architecture v1.0, PRD v1.0, TRD v1.0, App Flow & UX v1.0, Data Model + Permissions v1.0, Implementation Plan v1.0, Design System & UI Brief v1.0, and the Post-MVP Backlog.
 
@@ -89,7 +89,9 @@ Phase 1 adds two migrations:
 
 Phase 2 adds `20261031233803_seedling_core`: the `series`, `cultivar_references`, `seedlings`, `seedling_identifiers`, `seedling_parentage` and `provenance_events` tables, their RLS and grants, the triggers that protect identity, and the domain functions listed under "Seedling core".
 
-Phase 1 and 2 create **no** Capture, Observation, media, Update, comment, follow, message or notification tables.
+Phase 3 adds `20261101010325_capture_observations`: the `media`, `observations` and `observation_media` tables, their RLS, grants and triggers, the private `private-media` storage bucket and its policies, and the functions listed under "Capture and observations".
+
+Phases 1 and 2 create **no** Capture, Observation, media, Update, comment, follow, message or notification tables.
 
 ### Database conventions
 
@@ -261,6 +263,90 @@ Clients update only `working_name`, `first_grown_year` and `visibility`, and onl
 
 Seedlings are addressed by uuid. Human identifiers are not used in URLs, because the specifications do not define a public slug, and a uuid reveals nothing.
 
+## Capture and observations (Phase 3)
+
+**Capture** is the fast path: media goes straight to private storage and is saved. No form has to be completed first. An **Observation** is one dated moment, made of up to six photos or short videos, with an optional note. Observations are the record. Seedlings are the things they are about.
+
+### Capture journey
+
+1. The Capture screen opens with **Take photo** dominant, then **Record video** and **Choose a file**. The default seedling choice is **New seedling**.
+2. The grower selects media. Each file is checked in the browser first, for a clear message.
+3. **Save privately** uploads the files straight to private storage, then creates the Observation in one database call. The result opens with the confirmation "Saved privately. Added to Seedling #n. Nothing is shared."
+
+A **New seedling** capture creates the seedling with its automatic number only. It never invents a Series identifier. The grower can add one later from the seedling page.
+
+An **existing seedling** is chosen from the seedlings the grower holds, or by a known identifier (for example `JV-26-001` or `#4`). A manual attachment only ever resolves within the grower's own namespace. An unknown identifier gets the same message whether or not it exists, so the screen cannot be used to probe for other growers' seedlings.
+
+### Observation model
+
+| Field                         | Rule                                                                                                                                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `observed_at`                 | When the thing was seen. Defaults to the time of capture, can be adjusted, and may not be more than 5 minutes ahead of the server clock. Upload time and record time are kept separately. |
+| `visibility`                  | Always `private` in Phase 3. The column accepts no other value until Phase 4.                                                                                                             |
+| `note` and `voice_transcript` | Up to 2000 characters each. Only the author can change the note.                                                                                                                          |
+| `seedling_id`                 | The seedling the Observation is about. It can be changed later without re-uploading any media (see Correction).                                                                           |
+| `deleted_at`                  | Soft delete. The Observation and its media are hidden, and the rows remain for audit.                                                                                                     |
+
+**Privacy is separate from the seedling's.** An Observation about a **public** seedling is still private. Only its author can see it. Making a seedling public does not expose its Observations, and making an Observation public is not possible in Phase 3.
+
+### Media
+
+Originals are stored in the private `private-media` bucket, under a folder named after the uploader's user id. The bucket is not public, and no permanent or public URL is ever produced.
+
+| Limit                 | Value                                                               |
+| --------------------- | ------------------------------------------------------------------- |
+| Files per Observation | 1 to 6, all distinct                                                |
+| Image size            | 15 MB                                                               |
+| Video size            | 50 MB                                                               |
+| Video length          | 60 seconds. Checked in the browser only. See the limitations below. |
+| Note length           | 2000 characters                                                     |
+| Observed time skew    | At most 5 minutes ahead of the server clock                         |
+
+Supported types: `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `image/heif` (images); `video/mp4`, `video/quicktime`, `video/webm` (videos). Anything else is refused by the bucket and by the database.
+
+The limits are defined in `src/modules/capture/limits.ts`. The database enforces the same size and type limits in `_register_media_object` and in the bucket configuration, so a bypassed form still cannot store an oversize or unknown file.
+
+**Delivery.** Media is never linked by storage path. `GET /media/<id>` checks the media row with the caller's own session. Only the owner receives a redirect to a signed URL that lasts 60 seconds. Every other request gets a 404, and the response is marked `Cache-Control: private, no-store`.
+
+### Upload and retry
+
+- The browser asks the server for upload paths first. The server issues the names, so a client cannot choose where a file lands.
+- Uploads go directly from the browser to private storage. If one fails, the page keeps every selected file and says so: "Your photos are still here, so try again."
+- The database capture call is idempotent. It is keyed by the first storage path, so a retry after a timeout returns the Observation already created, with no duplicate.
+- Capture is atomic. If registering any file fails, the Observation and the media rows created so far are rolled back. No orphaned seedling or media row is left behind.
+
+### Correction and move
+
+- **Note:** the author can edit the note and the observed time.
+- **Change seedling:** `move_observation` changes which seedling an Observation belongs to. The media rows keep their ids and storage paths, so **nothing is re-uploaded**. The move is only allowed for the author, and only to a seedling the author holds.
+- **Delete:** `delete_observation` is a soft delete of the Observation and its media. Hard deletion is refused by triggers.
+
+### Notes and voice
+
+- The note is typed, and always available.
+- **Dictation** uses the browser's speech recognition where it exists. Where it does not, the screen says "Dictation is not available in this browser. Type your note instead." Nothing else depends on it, so a failed or missing voice service never blocks a save.
+- A dictated phrase of "new seedling" selects **New seedling**. Voice is plumbing only: it does not run any recognition or AI of its own.
+
+### Share
+
+**Share** is shown but disabled, with the label "Share (coming with Updates)". Sharing is a Phase 4 concern. Nothing in Phase 3 creates a public Update, and no Observation can be made public.
+
+### Access and privacy
+
+- Observations and their media are visible to their author only (RLS). Other growers, visitors and the seedling's holder get a 404 for an Observation they did not author.
+- A suspended grower can sign in and view their own Observations, but cannot capture, change, move, or delete anything. This is enforced by the database policies, not only by the interface.
+- The seedling page shows "Your private observations" to the author only.
+- **Capture authority belongs to the current holder.** Only the current holder of a Seedling can add Observations to it, or move one onto it. Public visibility does not grant this. Neither does originator read access, knowing the uuid, or knowing an identifier. A former originator who is no longer holder keeps read access to the Seedling, but cannot add, move or edit Observations on it. Another grower cannot capture onto a public Seedling they do not hold, and a suspended holder cannot capture at all. These rules are tested in `tests/db/observations.rls.test.ts`.
+- **Deletion respects the media boundary.** A soft-deleted Observation's media is no longer served. `/media/<id>` returns 404 to its owner, and storage refuses the owner a read or a removal of the object, as well as refusing visitors and other growers. The object stays in private storage. Nothing is purged in Phase 3. The rules in `_media_object_unregistered` treat a soft-deleted original as registered, so RLS on `media` cannot make it look unregistered.
+
+### Known limitations
+
+- **Metadata is not stripped in Phase 3.** Private originals are stored as uploaded, so any EXIF data, including GPS coordinates, is kept. Access is limited to the author, but the originals are not sanitised. No image-processing dependency was added for this. **Metadata stripping or sanitisation is required before any public derivative is introduced in Phase 4.** Public derivatives must not expose unnecessary metadata, especially precise location.
+- **HEIC and HEIF previews depend on the browser.** Those files may be uploaded wherever they are allowed, even if the browser cannot render them. The page then shows "Preview not available in this browser. The file is still saved." No HEIC conversion service is used in Phase 3.
+- **The 60-second video limit is a client-side UX constraint, not a server-enforced security invariant.** The browser checks the duration. A modified client could upload a longer video, as long as it stays within the server and storage size and MIME limits (50 MB, and the allowed types). No FFmpeg or transcoding is used in Phase 3. Server-side media inspection may be added later if real use justifies it.
+- **Soft-deleted media is retained, not purged.** Deleting an Observation hides it and its media from every application path, and the object stays in private storage. No purge job exists in Phase 3. Physical storage reclamation and retention cleanup belong to later lifecycle and launch hardening.
+- **Share is not available.** It is shown as disabled, and it creates no Update and no public media. Phase 4 adds deliberate publication.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |
@@ -315,6 +401,16 @@ npm run test:e2e         # browser journeys, phone and desktop
 
 The concurrency tests (`tests/db/seedlings.concurrency.test.ts`) send parallel requests through the API: 20 creations for one Series and year, two years in parallel, a yearless Series, mixed automatic numbers, and parallel attachments.
 
+## Phase 3 verification
+
+```bash
+npm test                 # unit tests, including capture validation, limits and voice matching
+npm run test:db          # media and storage protections, and Observation RLS (tests/db)
+npm run test:e2e         # capture journeys, phone and desktop (tests/e2e/capture.spec.ts)
+```
+
+The storage tests (`tests/db/media.storage.test.ts`) check the bucket policies directly against `storage.objects`. The Observation tests (`tests/db/observations.rls.test.ts`) check visibility, correction, move, delete and suspension.
+
 ## Manual verification
 
 1. Run `npm run supabase:start`, then `npm run db:reset`.
@@ -325,6 +421,9 @@ The concurrency tests (`tests/db/seedlings.concurrency.test.ts`) send parallel r
 6. Open View public profile, then open that URL in a private window. The bio is visible there, with no edit controls.
 7. Sign out from Profile. Tap Profile again: you should be asked to sign in.
 8. Try a wrong password. The message is generic and announced to screen readers.
+9. As a signed-in grower, open Capture at about 390 × 844. Take or choose a photo and tap **Save privately**. The result shows the private confirmation, the photo, and the seedling it was added to.
+10. Open the seedling. The Observation is listed under "Your private observations". Open it in a private window: the visitor sees the public seedling, but not the Observation.
+11. On the Observation, choose **Change seedling**. The media stays the same, and no upload happens.
 
 ## Deployment
 

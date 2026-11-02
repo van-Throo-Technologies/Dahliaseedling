@@ -57,6 +57,78 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"media": {
+                  Row: {
+                    "byte_size": number,"created_at": string,"deleted_at": string | null,"duration_seconds": number | null,"height": number | null,"id": string,"kind": Database["public"]['Enums']["media_kind"],"mime_type": string,"owner_id": string,"public_derivative_path": string | null,"storage_path": string,"visibility": Database["public"]['Enums']["media_visibility"],"width": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "byte_size": number,"created_at"?: string,"deleted_at"?: string | null,"duration_seconds"?: number | null,"height"?: number | null,"id"?: string,"kind": Database["public"]['Enums']["media_kind"],"mime_type": string,"owner_id": string,"public_derivative_path"?: string | null,"storage_path": string,"visibility"?: Database["public"]['Enums']["media_visibility"],"width"?: number | null
+                  }
+                  Update: {
+                    "byte_size"?: number,"created_at"?: string,"deleted_at"?: string | null,"duration_seconds"?: number | null,"height"?: number | null,"id"?: string,"kind"?: Database["public"]['Enums']["media_kind"],"mime_type"?: string,"owner_id"?: string,"public_derivative_path"?: string | null,"storage_path"?: string,"visibility"?: Database["public"]['Enums']["media_visibility"],"width"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "media_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"observation_media": {
+                  Row: {
+                    "media_id": string,"observation_id": string,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "media_id": string,"observation_id": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "media_id"?: string,"observation_id"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "observation_media_media_id_fkey"
+      columns: ["media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "observation_media_observation_id_fkey"
+      columns: ["observation_id"]
+isOneToOne: false
+      referencedRelation: "observations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"observations": {
+                  Row: {
+                    "author_id": string,"created_at": string,"deleted_at": string | null,"id": string,"note": string | null,"observed_at": string,"seedling_id": string,"structured_data": NonNullable<Json>,"updated_at": string,"visibility": Database["public"]['Enums']["observation_visibility"],"voice_transcript": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"created_at"?: string,"deleted_at"?: string | null,"id"?: string,"note"?: string | null,"observed_at": string,"seedling_id": string,"structured_data"?: NonNullable<Json>,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["observation_visibility"],"voice_transcript"?: string | null
+                  }
+                  Update: {
+                    "author_id"?: string,"created_at"?: string,"deleted_at"?: string | null,"id"?: string,"note"?: string | null,"observed_at"?: string,"seedling_id"?: string,"structured_data"?: NonNullable<Json>,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["observation_visibility"],"voice_transcript"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "observations_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "observations_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "account_type_label": string | null,"avatar_path": string | null,"bio": string | null,"country_code": string,"created_at": string,"display_name": string,"id": string,"is_suspended": boolean,"region_city": string | null,"updated_at": string
@@ -225,7 +297,13 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "admin_set_suspended":
+            "_media_object_unregistered":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"_register_media_object":
+{ Args: { "p_path": string }; Returns: string
+                           },
+"admin_set_suspended":
 { Args: { "suspended": boolean,"target_profile_id": string }; Returns: {
               "account_type_label": string | null,
 "avatar_path": string | null,
@@ -265,6 +343,26 @@ isOneToOne: false
 "caller_can_participate":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"capture_observation":
+{ Args: { "p_new_seedling"?: boolean,"p_note"?: string,"p_observed_at"?: string,"p_paths"?: (string)[],"p_seedling_id"?: string,"p_voice_transcript"?: string }; Returns: {
+              "author_id": string,
+"created_at": string,
+"deleted_at": string | null,
+"id": string,
+"note": string | null,
+"observed_at": string,
+"seedling_id": string,
+"structured_data": NonNullable<Json>,
+"updated_at": string,
+"visibility": Database["public"]['Enums']["observation_visibility"],
+"voice_transcript": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "observations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "create_seedling":
 { Args: { "p_first_grown_year"?: number,"p_series_id"?: string,"p_visibility"?: Database["public"]['Enums']["seedling_visibility"],"p_working_name"?: string }; Returns: {
               "created_at": string,
@@ -299,9 +397,32 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"delete_observation":
+{ Args: { "p_observation_id": string }; Returns: undefined
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"move_observation":
+{ Args: { "p_new_seedling"?: boolean,"p_observation_id": string,"p_target_seedling_id"?: string }; Returns: {
+              "author_id": string,
+"created_at": string,
+"deleted_at": string | null,
+"id": string,
+"note": string | null,
+"observed_at": string,
+"seedling_id": string,
+"structured_data": NonNullable<Json>,
+"updated_at": string,
+"visibility": Database["public"]['Enums']["observation_visibility"],
+"voice_transcript": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "observations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "next_series_identifier":
 { Args: { "p_first_grown_year": number,"p_series_id": string }; Returns: string
                            },
@@ -330,7 +451,7 @@ isOneToOne: false
       } }
           }
           Enums: {
-            "identifier_kind": "automatic"|"series"|"originator"|"local"|"working_alias","parent_role": "seed_parent"|"pollen_parent"|"parent_unknown_role","seedling_visibility": "private"|"public"
+            "identifier_kind": "automatic"|"series"|"originator"|"local"|"working_alias","media_kind": "image"|"video","media_visibility": "private"|"public","observation_visibility": "private"|"public","parent_role": "seed_parent"|"pollen_parent"|"parent_unknown_role","seedling_visibility": "private"|"public"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -450,7 +571,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "identifier_kind": ["automatic", "series", "originator", "local", "working_alias"],"parent_role": ["seed_parent", "pollen_parent", "parent_unknown_role"],"seedling_visibility": ["private", "public"]
+            "identifier_kind": ["automatic", "series", "originator", "local", "working_alias"],"media_kind": ["image", "video"],"media_visibility": ["private", "public"],"observation_visibility": ["private", "public"],"parent_role": ["seed_parent", "pollen_parent", "parent_unknown_role"],"seedling_visibility": ["private", "public"]
           }
         }
 } as const

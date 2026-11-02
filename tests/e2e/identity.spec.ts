@@ -58,10 +58,10 @@ test("visitor can browse, is prompted to sign in only when participating, and ca
   await page.getByLabel("Country").selectOption("NL");
   await page.getByRole("button", { name: "Continue" }).click();
 
-  // Back at the intended destination (Capture is a placeholder until Phase 3).
+  // Back at the intended destination: Capture, where the first photo can be taken.
   await expect(page).toHaveURL(/\/capture$/);
   await expect(page.getByRole("heading", { name: "Capture" })).toBeVisible();
-  await expect(page.getByText("Capture is not available yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Take photo" })).toBeVisible();
   await expect(primary.getByRole("link", { name: "Capture" })).toHaveAttribute(
     "aria-current",
     "page",

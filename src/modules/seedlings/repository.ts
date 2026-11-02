@@ -404,3 +404,17 @@ export async function workingNames(
   for (const row of data) names.set(row.id, row.working_name);
   return names;
 }
+
+/**
+ * Resolves an identifier in the caller's own namespace to a seedling the caller can see. The RPC applies
+ * RLS, so an identifier of a seedling the caller cannot see resolves to nothing, which is indistinguishable
+ * from an identifier that does not exist.
+ */
+export async function resolveOwnIdentifier(
+  client: Client,
+  identifier: string,
+): Promise<string | null> {
+  const { data, error } = await client.rpc("resolve_own_identifier", { p_identifier: identifier });
+  if (error) throw new SeedlingError("Could not look up that identifier.");
+  return data?.[0]?.seedling_id ?? null;
+}
