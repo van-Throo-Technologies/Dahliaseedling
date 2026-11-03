@@ -611,6 +611,103 @@ Only the words around results are translated. Queries are never translated, and 
 
 Typo tolerance (no trigram), Explore, popularity or behavioural ranking, recommendations, AI or semantic search, external search engines, and duplicate merging.
 
+## Continuation and rehome (Phase 6)
+
+A grower may decide not to keep growing a Seedling. That is not a judgement that it is not worth growing: another grower can continue it. The Seedling keeps its uuid, its working name, its identifiers, its originator and its history. Only its current holder changes, and only when the chosen recipient confirms receipt.
+
+### Terminology
+
+| Concept      | English                  | Dutch                        | French                            |
+| ------------ | ------------------------ | ---------------------------- | --------------------------------- |
+| The decision | Not keeping this one     | Ik kweek deze niet verder    | Je ne poursuis pas ce semis       |
+| Availability | Looking for a new grower | Zoekt een nieuwe kweker      | Recherche un nouveau cultivateur  |
+| Terms        | Donate / Sell / Trade    | Schenken / Verkopen / Ruilen | Donner / Vendre / Échanger        |
+| Choosing     | Choose as new grower     | Kies als nieuwe kweker       | Choisir comme nouveau cultivateur |
+| Confirming   | Confirm receipt          | Ontvangst bevestigen         | Confirmer la réception            |
+
+"Cull" is an internal concept only and is never shown. It is never translated as "afgekeurd" or "rejeté".
+
+### State
+
+Canonical states live in `rehome_cases.status`: `available`, `arranged` (a recipient is chosen), `sent`, `completed` (receipt confirmed, holder changed), `cancelled`, and reopening returns `arranged` or `sent` to `available`. The labels are translated; the states are not.
+
+- **One active continuation per Seedling.** A partial unique index allows at most one row in `available`, `arranged` or `sent` for each Seedling. Concurrent starts are rejected by the database.
+- **Only the current holder starts a continuation.** The holder may withdraw availability, choose one recipient, mark the Seedling sent, or reopen it.
+- **Interest does not transfer anything.** Expressing interest records a private row. It is withdrawable and does not change the holder.
+- **One whole clump, one recipient.** The holder chooses exactly one interested grower.
+
+### Holder, originator and recipient
+
+- The **originator** is set when the Seedling is created and never changes.
+- The **current holder** changes only through `confirm_rehome_received`. That function locks the case, requires the caller to be the chosen recipient, sets the transaction flag `dahlia.holder_transfer`, appends one `continuation_received` provenance event, and withdraws the remaining interests. It runs as one transaction.
+- A second confirmation returns `already_completed` and changes nothing. A sender whose case no longer matches the current state gets `stale`, and the continuation closes without a transfer.
+- After a transfer, the old holder loses holder authority and the new holder gains it. The originator keeps origin, not authority, unless they become holder again through a later completed continuation.
+
+### Visibility and privacy
+
+- A Seedling must be public before it can be offered. The start form asks for an explicit confirmation of this, and that step does not change the private observations or media. Its private observations, notes and photos stay author-only, and a new holder cannot read them.
+- Visitors see only that the Seedling is available, its terms, and its note. They see no interests. A visitor is shown a sign-in link to express interest.
+- Interests are private: the holder sees who is interested, each interested grower sees only their own interest, and nobody else sees them. Interests are separate from comments.
+- `rehome_panel` returns nothing for a Seedling the caller cannot see. Suspended holders are hidden from public reads.
+
+### Donate, Sell and Trade are information
+
+Terms, prices and handover methods are free text and enumerations shown for information. DahliaSeedling processes no payment, arranges no shipping, issues no plant passport and collects no health declaration. Payment and handover happen between the two growers, outside the app. The form says so.
+
+### Search availability filter
+
+Search has an availability checkbox (`available=1`). It reads canonical continuation state, not the Feed: only an `available` case on a public Seedling matches. Pending, arranged, sent, completed, cancelled and withdrawn cases never match. The filter combines with a name or identifier query and with the country filter, which follows the current holder. The availability filter is bound to the pagination cursor, so a cursor from one filter cannot be replayed under another.
+
+### Provenance link
+
+A completed continuation's holder-transfer provenance event (`continuation_received`) references the exact Rehome case that caused it, through `provenance_events.rehome_case_id`. Only one transfer event can name a case, and a transfer event must name one. Origin events keep a null reference. The link is domain integrity, not a public field: anon and authenticated readers may not select it, and it does not change who can read a case.
+
+### Visibility is not availability
+
+Two decisions are separate, and the database keeps them separate:
+
+- **Visibility** (`seedlings.visibility`) decides whether the Seedling is public. Starting availability on a private Seedling is a deliberate step that makes it public, and nothing else changes that.
+- **Availability** (the continuation state) decides whether another grower may take it on.
+
+Withdrawing availability, cancelling, or completing a continuation changes the continuation state only. None of them makes a Seedling private again. A change back to private is an ordinary Seedling privacy change, made by the holder through the usual Seedling settings.
+
+### Active interests and the holder's list
+
+The holder's selection list shows active interests only. A withdrawn interest is kept in `rehome_interests` for integrity but is not offered as a choice, and `choose_rehome_recipient` refuses any grower without an active interest. The list therefore stays bounded by the growers who are actionable now, not by everyone who ever withdrew.
+
+### Recipient decline
+
+Source documents do not define recipient decline. The MVP rule used here is:
+
+- Only the selected recipient may decline, and only while the case is `arranged` (not `sent`, never after receipt).
+- The case returns to `available`, the selected recipient is cleared, and the holder is unchanged. No provenance event is written.
+- The decliner's own interest is withdrawn but kept, so the history of interest stays intact. They may express interest again.
+- A repeat decline, a suspended recipient, a non-recipient, and a completed or sent case are all refused.
+
+Recovery from a failed arrangement after it is `sent` remains the holder's action (reopen or withdraw). No shipping dispute workflow exists.
+
+### Notifications and messaging
+
+Deferred to Phase 8. Phase 6 sends no notifications and provides no messaging between growers. Moderation is not expanded.
+
+### Verification
+
+- `tests/db/rehome.test.ts` covers authority, terms, the absence of health fields, interest privacy, the choice and confirmation boundary, double confirmation, a competing choice, a stale sender, authority after transfer, private observations after transfer, identifiers persisting, an A to B to C chain, returning to the originator, withdrawal, cancellation, reopening, and suspension.
+- `tests/db/rehome.search.test.ts` covers the availability filter, the country after a transfer, pagination with the filter, and identifier and name search after a transfer.
+- `tests/db/rehome.decision.test.ts` covers the active-interest holder list, withdrawn records kept, and recipient decline.
+- `tests/db/rehome.closure.test.ts` covers historical private Observation and media privacy after a real transfer, old and new holder authority, races on separate connections, pending-recipient privacy, suspension, and the A → B → C → A chain.
+- `tests/db/rehome.provenance.test.ts` covers the provenance link to the originating case, double confirmation, non-completed cases, the integrity constraints, and the privacy of the link.
+- `tests/e2e/rehome-closure.spec.ts` follows a Seedling through Search across a real transfer, and checks the Dutch and French states during a live continuation.
+- `tests/e2e/rehome-keyboard.spec.ts` operates the Phase 6 controls from the keyboard, with a visible focus ring and touch targets of at least 44 px.
+- `tests/e2e/rehome.spec.ts` runs the principal journey on phone and desktop: a holder makes a private Seedling available, a visitor sees availability and the sign-in gate, a second grower expresses interest, the holder chooses, the recipient confirms, and the same Seedling keeps its address and history.
+- Security mutation: breaking the recipient check in `confirm_rehome_received` fails the boundary test; the restored migration passes.
+
+### Known limitations
+
+- Pickup and shipping details are free text and are not validated.
+- Notifications and messaging are not provided; growers learn about a chosen recipient only from the Seedling page.
+- The Search availability filter is covered by database tests and by a browser journey that follows the Seedling through Search.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

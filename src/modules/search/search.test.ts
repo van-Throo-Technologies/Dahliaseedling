@@ -43,12 +43,15 @@ describe("validateSearch", () => {
   it("accepts a query and an optional country, normalising blank input to null", () => {
     expect(validateSearch({ q: "  Wizard  of Oz ", country: "be" })).toEqual({
       ok: true,
-      value: { query: "Wizard of Oz", country: "BE" },
+      value: { query: "Wizard of Oz", country: "BE", available: false },
     });
-    expect(validateSearch({})).toEqual({ ok: true, value: { query: null, country: null } });
+    expect(validateSearch({})).toEqual({
+      ok: true,
+      value: { query: null, country: null, available: false },
+    });
     expect(validateSearch({ q: "   ", country: "" })).toEqual({
       ok: true,
-      value: { query: null, country: null },
+      value: { query: null, country: null, available: false },
     });
   });
 
@@ -73,7 +76,7 @@ describe("validateSearch", () => {
   it("uses only the first value when a parameter is repeated", () => {
     expect(validateSearch({ q: ["Sunset", "Other"] })).toEqual({
       ok: true,
-      value: { query: "Sunset", country: null },
+      value: { query: "Sunset", country: null, available: false },
     });
   });
 });

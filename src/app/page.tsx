@@ -39,13 +39,16 @@ export default async function HomePage({
     seedlings?: string | string[];
     cultivars?: string | string[];
     growers?: string | string[];
+    available?: string | string[];
   }>;
 }) {
   const query = await searchParams;
   const { t } = await getTranslation();
   const viewer = await getCurrentUser();
-  const search = validateSearch({ q: query.q, country: query.country });
-  const searchActive = search.ok && (search.value.query !== null || search.value.country !== null);
+  const search = validateSearch({ q: query.q, country: query.country, available: query.available });
+  const searchActive =
+    search.ok &&
+    (search.value.query !== null || search.value.country !== null || search.value.available);
   const followingView = !searchActive && query.view === "following" && viewer !== null;
   const cursor = validateFeedCursor(query.cursor);
 
@@ -82,11 +85,17 @@ export default async function HomePage({
     return (
       <div className="flex flex-col gap-6">
         {heading}
-        <SearchForm query={search.value.query} country={search.value.country} />
+        <SearchForm
+          key={`${search.value.query ?? ""}|${search.value.country ?? ""}|${search.value.available}`}
+          query={search.value.query}
+          country={search.value.country}
+          available={search.value.available}
+        />
         <SearchResultsView
           results={results}
           query={search.value.query}
           country={search.value.country}
+          available={search.value.available}
         />
       </div>
     );
@@ -125,7 +134,7 @@ export default async function HomePage({
         <p className="text-base text-text-muted">{t("publication.feed.intro")}</p>
       </header>
 
-      <SearchForm query={null} country={null} />
+      <SearchForm key="feed" query={null} country={null} />
 
       {viewer ? (
         <nav aria-label={t("publication.feed.viewLabel")}>

@@ -13,6 +13,9 @@ export const en = {
   clear: "Clear search",
   resultsFor: "Results for {query}",
   resultsInCountry: "Results in {country}",
+  resultsAvailable: "Seedlings looking for a new grower",
+  availableLabel: "Looking for a new grower",
+  availableHint: "Only seedlings whose current grower has made them available.",
   inactive: "Search by identifier, working name, cultivar or grower. The Feed is shown below.",
   groups: {
     seedlings: "Seedlings",
@@ -25,6 +28,7 @@ export const en = {
     parentCultivar: "Recorded parent: this cultivar",
     parentSeedling: "Descends from a matching seedling",
     country: "In this country",
+    available: "Looking for a new grower",
   },
   seedling: {
     grownBy: "Currently grown by {name}",
@@ -55,6 +59,7 @@ export const en = {
   validation: {
     tooLong: "Use {max} characters or fewer.",
     country: "Choose a country from the list.",
+    available: "Looking for a new grower",
   },
 };
 
@@ -68,6 +73,9 @@ export const nl: typeof en = {
   clear: "Zoekopdracht wissen",
   resultsFor: "Resultaten voor {query}",
   resultsInCountry: "Resultaten in {country}",
+  resultsAvailable: "Zaailingen die een nieuwe kweker zoeken",
+  availableLabel: "Zoekt een nieuwe kweker",
+  availableHint: "Alleen zaailingen waarvan de huidige kweker ze beschikbaar heeft gemaakt.",
   inactive: "Zoek op identificatie, werknaam, cultivar of kweker. Hieronder zie je de Start-feed.",
   groups: {
     seedlings: "Zaailingen",
@@ -80,6 +88,7 @@ export const nl: typeof en = {
     parentCultivar: "Vastgelegde ouder: deze cultivar",
     parentSeedling: "Afstammeling van een gevonden zaailing",
     country: "In dit land",
+    available: "Zoekt een nieuwe kweker",
   },
   seedling: {
     grownBy: "Momenteel gekweekt door {name}",
@@ -110,6 +119,7 @@ export const nl: typeof en = {
   validation: {
     tooLong: "Gebruik {max} tekens of minder.",
     country: "Kies een land uit de lijst.",
+    available: "Zoekt een nieuwe kweker",
   },
 };
 
@@ -123,6 +133,9 @@ export const fr: typeof en = {
   clear: "Effacer la recherche",
   resultsFor: "Résultats pour {query}",
   resultsInCountry: "Résultats dans {country}",
+  resultsAvailable: "Semis qui cherchent un nouveau cultivateur",
+  availableLabel: "Recherche un nouveau cultivateur",
+  availableHint: "Seulement les semis que leur cultivateur actuel a rendus disponibles.",
   inactive:
     "Recherchez par identifiant, nom de travail, cultivar ou cultivateur. Le fil d'actualité s'affiche ci-dessous.",
   groups: {
@@ -136,6 +149,7 @@ export const fr: typeof en = {
     parentCultivar: "Parent enregistré : ce cultivar",
     parentSeedling: "Descend d'un semis trouvé",
     country: "Dans ce pays",
+    available: "Recherche un nouveau cultivateur",
   },
   seedling: {
     grownBy: "Actuellement cultivé par {name}",
@@ -166,5 +180,6 @@ export const fr: typeof en = {
   validation: {
     tooLong: "Utilisez {max} caractères maximum.",
     country: "Choisissez un pays dans la liste.",
+    available: "Recherche un nouveau cultivateur",
   },
 };

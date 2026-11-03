@@ -27,19 +27,26 @@ export interface CursorPosition {
 export interface CursorBinding {
   readonly query: string | null;
   readonly country: string | null;
+  /** The availability filter: a cursor from the filtered list cannot move the unfiltered one, or the reverse. */
+  readonly available?: boolean;
 }
 
 interface Envelope {
   readonly q: string;
   readonly c: string;
+  readonly a: number;
   readonly t: number;
   readonly s: string;
   readonly i: string;
 }
 
 /** The text a cursor is bound to: the normalised query, and the country code or nothing. */
-function bindingKey(binding: CursorBinding): { q: string; c: string } {
-  return { q: normalizeSearchText(binding.query ?? "") ?? "", c: binding.country ?? "" };
+function bindingKey(binding: CursorBinding): { q: string; c: string; a: number } {
+  return {
+    q: normalizeSearchText(binding.query ?? "") ?? "",
+    c: binding.country ?? "",
+    a: binding.available ? 1 : 0,
+  };
 }
 
 export function encodeCursor(binding: CursorBinding, position: CursorPosition): string {
@@ -73,7 +80,9 @@ export function readCursor(raw: string | undefined, binding: CursorBinding): Cur
   const envelope = parsed as Partial<Record<keyof Envelope, unknown>>;
 
   const expected = bindingKey(binding);
-  if (envelope.q !== expected.q || envelope.c !== expected.c) return { ok: false };
+  if (envelope.q !== expected.q || envelope.c !== expected.c || envelope.a !== expected.a) {
+    return { ok: false };
+  }
   if (typeof envelope.t !== "number" || !(TIERS as readonly number[]).includes(envelope.t)) {
     return { ok: false };
   }

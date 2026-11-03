@@ -229,14 +229,14 @@ isOneToOne: false
                   ]
                 },"provenance_events": {
                   Row: {
-                    "event_type": string,"from_holder_id": string | null,"id": string,"metadata": NonNullable<Json>,"occurred_at": string,"seedling_id": string,"to_holder_id": string | null
+                    "event_type": string,"from_holder_id": string | null,"id": string,"metadata": NonNullable<Json>,"occurred_at": string,"rehome_case_id": string | null,"seedling_id": string,"to_holder_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "event_type": string,"from_holder_id"?: string | null,"id"?: string,"metadata"?: NonNullable<Json>,"occurred_at"?: string,"seedling_id": string,"to_holder_id"?: string | null
+                    "event_type": string,"from_holder_id"?: string | null,"id"?: string,"metadata"?: NonNullable<Json>,"occurred_at"?: string,"rehome_case_id"?: string | null,"seedling_id": string,"to_holder_id"?: string | null
                   }
                   Update: {
-                    "event_type"?: string,"from_holder_id"?: string | null,"id"?: string,"metadata"?: NonNullable<Json>,"occurred_at"?: string,"seedling_id"?: string,"to_holder_id"?: string | null
+                    "event_type"?: string,"from_holder_id"?: string | null,"id"?: string,"metadata"?: NonNullable<Json>,"occurred_at"?: string,"rehome_case_id"?: string | null,"seedling_id"?: string,"to_holder_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -244,6 +244,12 @@ isOneToOne: false
       columns: ["from_holder_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "provenance_events_rehome_case_id_fkey"
+      columns: ["rehome_case_id"]
+isOneToOne: false
+      referencedRelation: "rehome_cases"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "provenance_events_seedling_id_fkey"
@@ -282,6 +288,64 @@ isOneToOne: false
       columns: ["source_media_id"]
 isOneToOne: false
       referencedRelation: "media"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"rehome_cases": {
+                  Row: {
+                    "chosen_recipient_id": string | null,"closed_at": string | null,"created_at": string,"handover_method": string | null,"id": string,"note": string | null,"offering_holder_id": string,"price_text": string | null,"received_at": string | null,"seedling_id": string,"sent_at": string | null,"status": string,"term": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "chosen_recipient_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"handover_method"?: string | null,"id"?: string,"note"?: string | null,"offering_holder_id": string,"price_text"?: string | null,"received_at"?: string | null,"seedling_id": string,"sent_at"?: string | null,"status"?: string,"term"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "chosen_recipient_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"handover_method"?: string | null,"id"?: string,"note"?: string | null,"offering_holder_id"?: string,"price_text"?: string | null,"received_at"?: string | null,"seedling_id"?: string,"sent_at"?: string | null,"status"?: string,"term"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "rehome_cases_chosen_recipient_id_fkey"
+      columns: ["chosen_recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "rehome_cases_offering_holder_id_fkey"
+      columns: ["offering_holder_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "rehome_cases_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"rehome_interests": {
+                  Row: {
+                    "created_at": string,"id": string,"interested_user_id": string,"rehome_case_id": string,"withdrawn_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"interested_user_id": string,"rehome_case_id": string,"withdrawn_at"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"interested_user_id"?: string,"rehome_case_id"?: string,"withdrawn_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "rehome_interests_interested_user_id_fkey"
+      columns: ["interested_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "rehome_interests_rehome_case_id_fkey"
+      columns: ["rehome_case_id"]
+isOneToOne: false
+      referencedRelation: "rehome_cases"
       referencedColumns: ["id"]
     }
                   ]
@@ -584,6 +648,9 @@ isOneToOne: false
 "caller_can_participate":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"cancel_rehome":
+{ Args: { "p_case_id": string }; Returns: boolean
+                           },
 "capture_observation":
 { Args: { "p_new_seedling"?: boolean,"p_note"?: string,"p_observed_at"?: string,"p_paths"?: (string)[],"p_seedling_id"?: string,"p_voice_transcript"?: string }; Returns: {
               "author_id": string,
@@ -604,6 +671,12 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"choose_rehome_recipient":
+{ Args: { "p_case_id": string,"p_recipient_id": string }; Returns: string
+                           },
+"confirm_rehome_received":
+{ Args: { "p_case_id": string }; Returns: string
+                           },
 "create_seedling":
 { Args: { "p_first_grown_year"?: number,"p_series_id"?: string,"p_visibility"?: Database["public"]['Enums']["seedling_visibility"],"p_working_name"?: string }; Returns: {
               "cover_derivative_id": string | null,
@@ -639,6 +712,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"decline_rehome":
+{ Args: { "p_case_id": string }; Returns: string
+                           },
 "delete_comment":
 { Args: { "p_comment_id": string }; Returns: undefined
                            },
@@ -650,6 +726,9 @@ isOneToOne: false
                            },
 "edit_comment":
 { Args: { "p_body": string,"p_comment_id": string }; Returns: undefined
+                           },
+"express_rehome_interest":
+{ Args: { "p_case_id": string }; Returns: string
                            },
 "get_public_update":
 { Args: { "p_update_id": string }; Returns: {
@@ -673,6 +752,9 @@ isOneToOne: false
 { Args: { "p_update_id": string }; Returns: {
               "author_id": string,"author_name": string,"body": string,"comment_id": string,"created_at": string,"edited_at": string,"is_mine": boolean,"is_removed": boolean,"parent_comment_id": string
             }[]
+                           },
+"mark_rehome_sent":
+{ Args: { "p_case_id": string }; Returns: boolean
                            },
 "move_observation":
 { Args: { "p_new_seedling"?: boolean,"p_observation_id": string,"p_target_seedling_id"?: string }; Returns: {
@@ -700,6 +782,12 @@ isOneToOne: false
 "publish_update":
 { Args: { "p_caption"?: string,"p_client_key": string,"p_items": Json,"p_observation_id": string }; Returns: Json
                            },
+"rehome_panel":
+{ Args: { "p_seedling_id": string }; Returns: Json
+                           },
+"reopen_rehome":
+{ Args: { "p_case_id": string }; Returns: boolean
+                           },
 "resolve_own_identifier":
 { Args: { "p_identifier": string }; Returns: {
               "is_retired_alias": boolean,"seedling_id": string
@@ -719,7 +807,7 @@ isOneToOne: false
 { Args: { "p_query": string }; Returns: string
                            },
 "search_seedlings":
-{ Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_country"?: string,"p_limit"?: number,"p_query": string }; Returns: {
+{ Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_available"?: boolean,"p_country"?: string,"p_limit"?: number,"p_query": string }; Returns: {
               "holder_country": string,"holder_id": string,"holder_name": string,"match_reason": string,"match_tier": number,"primary_identifier": string,"primary_kind": Database["public"]['Enums']["identifier_kind"],"seedling_id": string,"sort_text": string,"working_name": string
             }[]
                            },
@@ -761,6 +849,12 @@ isOneToOne: false
       } },
 "set_seedling_save":
 { Args: { "p_on": boolean,"p_seedling_id": string }; Returns: undefined
+                           },
+"start_rehome":
+{ Args: { "p_handover"?: string,"p_make_public"?: boolean,"p_note"?: string,"p_price_text"?: string,"p_seedling_id": string,"p_term": string }; Returns: string
+                           },
+"withdraw_rehome_interest":
+{ Args: { "p_case_id": string }; Returns: boolean
                            }
           }
           Enums: {

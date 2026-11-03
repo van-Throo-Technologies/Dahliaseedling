@@ -12,16 +12,18 @@ import { COUNTRY_CODES, type CountryCode } from "@/modules/identity/country-code
 export async function SearchForm({
   query,
   country,
+  available = false,
 }: {
   readonly query: string | null;
   readonly country: CountryCode | null;
+  readonly available?: boolean;
 }) {
   const { t, locale } = await getTranslation();
   const collator = new Intl.Collator(locale);
   const countries = COUNTRY_CODES.map((code) => ({ code, name: formatCountry(code, locale) })).sort(
     (a, b) => collator.compare(a.name, b.name),
   );
-  const active = query !== null || country !== null;
+  const active = query !== null || country !== null || available;
 
   return (
     <form role="search" method="get" action="/" className="flex flex-col gap-3">
@@ -68,6 +70,19 @@ export async function SearchForm({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="inline-flex min-h-11 items-center gap-3 text-base text-text">
+            <input
+              type="checkbox"
+              name="available"
+              value="1"
+              defaultChecked={available}
+              className="h-6 w-6 shrink-0 accent-[var(--color-text-brand)]"
+            />
+            <span>{t("search.availableLabel")}</span>
+          </label>
+          <p className="text-sm text-text-muted">{t("search.availableHint")}</p>
         </div>
         {active ? (
           <Link href="/" className="inline-flex min-h-11 items-center text-base text-text-brand">

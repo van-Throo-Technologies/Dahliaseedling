@@ -21,7 +21,7 @@ type Client = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 export const SEARCH_PAGE_SIZE = SEARCH_RESULT_LIMIT;
 
 export type SeedlingReason =
-  "identifier" | "working_name" | "parent_cultivar" | "parent_seedling" | "country";
+  "identifier" | "working_name" | "parent_cultivar" | "parent_seedling" | "country" | "available";
 
 export interface SeedlingResult {
   readonly seedlingId: string;
@@ -81,6 +81,7 @@ const REASONS: readonly SeedlingReason[] = [
   "parent_cultivar",
   "parent_seedling",
   "country",
+  "available",
 ];
 
 function reasonOf(value: string): SeedlingReason {
@@ -111,10 +112,14 @@ export async function searchPublic(
   input: SearchInput,
   cursors: SearchCursors = {},
 ): Promise<SearchResults> {
-  const active = input.query !== null || input.country !== null;
+  const active = input.query !== null || input.country !== null || input.available;
   if (!active) return EMPTY;
 
-  const binding: CursorBinding = { query: input.query, country: input.country };
+  const binding: CursorBinding = {
+    query: input.query,
+    country: input.country,
+    available: input.available,
+  };
   const readSeedlings = readCursor(cursors.seedlings, binding);
   const readCultivars = readCursor(cursors.cultivars, binding);
   const readGrowers = readCursor(cursors.growers, binding);
@@ -122,7 +127,7 @@ export async function searchPublic(
 
   const query = input.query ?? "";
   const country = input.country ?? undefined;
-  const searchCultivars = input.query !== null && input.country === null;
+  const searchCultivars = input.query !== null && input.country === null && !input.available;
   const probe = SEARCH_PAGE_SIZE + 1;
 
   const seedlingAfter = readSeedlings.ok ? readSeedlings.position : null;
@@ -134,6 +139,7 @@ export async function searchPublic(
       p_query: query,
       p_country: country,
       p_limit: probe,
+      p_available: input.available,
       ...afterArgs(seedlingAfter),
     }),
     searchCultivars
@@ -143,12 +149,14 @@ export async function searchPublic(
           ...afterArgs(cultivarAfter),
         })
       : Promise.resolve({ data: [], error: null }),
-    client.rpc("search_growers", {
-      p_query: query,
-      p_country: country,
-      p_limit: probe,
-      ...afterArgs(growerAfter),
-    }),
+    input.available
+      ? Promise.resolve({ data: [], error: null })
+      : client.rpc("search_growers", {
+          p_query: query,
+          p_country: country,
+          p_limit: probe,
+          ...afterArgs(growerAfter),
+        }),
   ]);
 
   if (seedlings.error || cultivars.error || growers.error) {

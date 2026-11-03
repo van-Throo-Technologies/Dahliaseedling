@@ -6,6 +6,8 @@ import { SEARCH_QUERY_MAX } from "./normalize";
 export interface SearchInput {
   readonly query: string | null;
   readonly country: CountryCode | null;
+  /** Only Seedlings genuinely looking for a new grower. Canonical state, never a display label. */
+  readonly available: boolean;
 }
 
 export type SearchValidation =
@@ -24,6 +26,7 @@ function first(value: string | string[] | undefined): string {
 export function validateSearch(params: {
   readonly q?: string | string[];
   readonly country?: string | string[];
+  readonly available?: string | string[];
 }): SearchValidation {
   const query = first(params.q).replace(/\s+/g, " ").trim();
   if (query.length > SEARCH_QUERY_MAX) {
@@ -43,6 +46,7 @@ export function validateSearch(params: {
     value: {
       query: query === "" ? null : query,
       country: country === "" ? null : (country as CountryCode),
+      available: first(params.available) === "1",
     },
   };
 }

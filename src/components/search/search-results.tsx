@@ -30,6 +30,7 @@ const REASON_KEY: Record<SeedlingReason, MessageKey> = {
   parent_cultivar: "search.reason.parentCultivar",
   parent_seedling: "search.reason.parentSeedling",
   country: "search.reason.country",
+  available: "search.reason.available",
 };
 
 const CONTROL =
@@ -236,10 +237,12 @@ export async function SearchResultsView({
   results,
   query,
   country,
+  available = false,
 }: {
   readonly results: SearchResults;
   readonly query: string | null;
   readonly country: string | null;
+  readonly available?: boolean;
 }) {
   const { t, locale } = await getTranslation();
   const words = labelWords(t);
@@ -255,7 +258,9 @@ export async function SearchResultsView({
   const headline =
     query !== null
       ? t("search.resultsFor", { query })
-      : t("search.resultsInCountry", { country: formatCountry(country ?? "", locale) });
+      : available
+        ? t("search.resultsAvailable")
+        : t("search.resultsInCountry", { country: formatCountry(country ?? "", locale) });
 
   // The cursors each group is on now, so a link for one group keeps the others where they are.
   const here = {

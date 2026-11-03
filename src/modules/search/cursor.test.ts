@@ -59,4 +59,13 @@ describe("search cursors", () => {
       ok: false,
     });
   });
+
+  it("refuses a cursor from the availability-filtered list under the unfiltered one, and the reverse", () => {
+    const filtered = encodeCursor({ ...binding, available: true }, position);
+    expect(readCursor(filtered, { ...binding, available: true })).toEqual({ ok: true, position });
+    expect(readCursor(filtered, { ...binding, available: false })).toEqual({ ok: false });
+    expect(readCursor(encodeCursor(binding, position), { ...binding, available: true })).toEqual({
+      ok: false,
+    });
+  });
 });

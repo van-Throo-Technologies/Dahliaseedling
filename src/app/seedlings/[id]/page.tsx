@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AttachSeriesForm } from "@/components/seedlings/attach-series-form";
 import { ParentForm } from "@/components/seedlings/parent-form";
+import { RehomePanel } from "@/components/rehome/rehome-panel";
 import { SeedlingEditForm } from "@/components/seedlings/seedling-edit-form";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
@@ -50,10 +51,13 @@ export async function generateMetadata({
 
 export default async function SeedlingPage({
   params,
+  searchParams,
 }: {
   readonly params: Promise<{ id: string }>;
+  readonly searchParams: Promise<{ rehome?: string; rehomeError?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
   if (!isUuid(id)) notFound();
   const { t, locale } = await getTranslation();
   const words = labelWords(t);
@@ -85,6 +89,10 @@ export default async function SeedlingPage({
     listProvenance(supabase, id),
     displayNames(supabase, [seedling.originatorId, seedling.currentHolderId]),
   ]);
+  const transferNames = await displayNames(
+    supabase,
+    provenance.flatMap((event) => (event.toHolderId ? [event.toHolderId] : [])),
+  );
   const parentLabels = await displayLabels(
     supabase,
     parentage.flatMap((link) => (link.parentSeedlingId ? [link.parentSeedlingId] : [])),
@@ -281,25 +289,36 @@ export default async function SeedlingPage({
         </section>
       ) : null}
 
+      <RehomePanel seedlingId={id} notice={query.rehome} failure={query.rehomeError} />
+
       <section aria-labelledby="history-title" className="flex flex-col gap-3">
         <h2 id="history-title" className="text-lg font-medium text-text">
           {t("seedlings.page.history")}
         </h2>
         <ul className="flex flex-col gap-2 text-base text-text">
-          {provenance.map((event) => (
-            <li key={event.occurredAt}>
-              {t("seedlings.page.onDate", {
-                event:
-                  event.eventType === "originated"
-                    ? t("seedlings.page.originated")
-                    : t("seedlings.page.recorded"),
-                date: formatDate(event.occurredAt, locale),
-              })}
-              {event.eventType === "originated" && originator
-                ? ` ${t("seedlings.page.byName", { name: originator })}`
-                : ""}
-            </li>
-          ))}
+          {provenance.map((event) =>
+            event.eventType === "continuation_received" ? (
+              <li key={event.occurredAt}>
+                {t("rehome.provenance.continued", {
+                  date: formatDate(event.occurredAt, locale),
+                  name: transferNames.get(event.toHolderId ?? "") ?? t("rehome.provenance.someone"),
+                })}
+              </li>
+            ) : (
+              <li key={event.occurredAt}>
+                {t("seedlings.page.onDate", {
+                  event:
+                    event.eventType === "originated"
+                      ? t("seedlings.page.originated")
+                      : t("seedlings.page.recorded"),
+                  date: formatDate(event.occurredAt, locale),
+                })}
+                {event.eventType === "originated" && originator
+                  ? ` ${t("seedlings.page.byName", { name: originator })}`
+                  : ""}
+              </li>
+            ),
+          )}
         </ul>
         <p className="text-sm text-text-muted">
           {t("seedlings.page.addedOn", { date: formatDate(seedling.createdAt, locale) })}
