@@ -53,6 +53,7 @@ export interface ParentLink {
   readonly role: "seed_parent" | "pollen_parent";
   readonly isUnknown: boolean;
   readonly parentSeedlingId: string | null;
+  readonly unidentifiedSourceId: string | null;
   readonly cultivarName: string | null;
   readonly notes: string | null;
 }
@@ -227,13 +228,16 @@ export async function createSeriesRecord(
 export async function listParentage(client: Client, seedlingId: string): Promise<ParentLink[]> {
   const { data, error } = await client
     .from("seedling_parentage")
-    .select("role, is_unknown, parent_seedling_id, notes, cultivar_references(name)")
+    .select(
+      "role, is_unknown, parent_seedling_id, parent_unidentified_source_id, notes, cultivar_references(name)",
+    )
     .eq("child_seedling_id", seedlingId);
   if (error) throw new SeedlingError("errors.readFailed");
   return data.map((row) => ({
     role: row.role === "pollen_parent" ? "pollen_parent" : "seed_parent",
     isUnknown: row.is_unknown,
     parentSeedlingId: row.parent_seedling_id,
+    unidentifiedSourceId: row.parent_unidentified_source_id,
     cultivarName: row.cultivar_references?.name ?? null,
     notes: row.notes,
   }));

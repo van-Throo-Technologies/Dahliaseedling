@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GrowerFollowForm } from "@/components/publications/social-buttons";
 import { UpdateCard } from "@/components/publications/update-card";
+import { SeedOfferList } from "@/components/seeds/seed-offer-list";
+import { liveOffersBySeller } from "@/modules/seeds/repository";
 import { PublicPhoto } from "@/components/publications/public-photo";
 import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,7 +50,7 @@ export default async function PublicProfilePage({
   searchParams,
 }: {
   readonly params: Promise<{ id: string }>;
-  readonly searchParams: Promise<{ tab?: string }>;
+  readonly searchParams: Promise<{ tab?: string; seedNotice?: string; seedError?: string }>;
 }) {
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) notFound();
@@ -66,6 +68,7 @@ export default async function PublicProfilePage({
   const isSelf = viewer !== null && viewer.id === profile.id;
   const supabase = await createSupabaseServerClient();
   const returnTo = `/profiles/${profile.id}?tab=${tab}`;
+  const offers = await liveOffersBySeller(supabase, profile.id, viewer?.id ?? null);
 
   const following =
     viewer !== null && !isSelf
@@ -136,6 +139,19 @@ export default async function PublicProfilePage({
           ))}
         </ul>
       </nav>
+
+      {offers.length > 0 || query.seedNotice || query.seedError ? (
+        <div className="mt-6">
+          <SeedOfferList
+            offers={offers}
+            viewerId={viewer?.id ?? null}
+            returnTo={`/profiles/${profile.id}`}
+            signInHref={`/sign-in?next=${encodeURIComponent(`/profiles/${profile.id}`)}`}
+            notice={query.seedNotice}
+            failure={query.seedError}
+          />
+        </div>
+      ) : null}
 
       {tab === "updates" ? (
         updates.length === 0 ? (

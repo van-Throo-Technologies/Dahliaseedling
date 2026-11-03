@@ -708,6 +708,81 @@ Deferred to Phase 8. Phase 6 sends no notifications and provides no messaging be
 - Notifications and messaging are not provided; growers learn about a chosen recipient only from the Seedling page.
 - The Search availability filter is covered by database tests and by a browser journey that follows the Seedling through Search.
 
+## Seeds and seedheads (Phase 7)
+
+Seeds and seedheads are offspring material. They offer genetic potential, not the same plant. They never receive a Seedling identity, and a Seedling is created only for a plant that is actually recorded after germination. Sharing seed material never transfers a Seedling, its holder, its originator or its UUID.
+
+Migration: `supabase/migrations/20261104090000_seeds_and_seedheads.sql`. The Phase 2 parentage constraint is replaced by a four-way exactly-one constraint. Existing rows keep their meaning, and the Phase 2 function is untouched.
+
+### Four source states
+
+A seed source has exactly one maternal reference, enforced by `seed_source_exactly_one_reference`. Parentage has the same rule through `parentage_exactly_one_reference`.
+
+| State               | Stored as                                         | Meaning                                                       |
+| ------------------- | ------------------------------------------------- | ------------------------------------------------------------- |
+| Seedling            | `seed_sources.source_seedling_id`                 | The exact parent is a persistent Seedling.                    |
+| Named cultivar      | `source_cultivar_id`                              | The exact parent is a known cultivar (`cultivar_references`). |
+| Unidentified dahlia | `source_unidentified_id` → `unidentified_sources` | One exact physical plant is known; its name is not.           |
+| Unknown or mixed    | `source_unknown_mixed = true`                     | The maternal plant cannot be identified.                      |
+
+### Unidentified dahlia
+
+- It is an internal record with its own identity. It is not a Cultivar Reference and not a Seedling. No cultivar or Seedling is created when it is recorded, and the tests check this.
+- Its photographs are the uploader's private originals, linked through `unidentified_source_photos`, up to four. A source cannot be created without at least one, and a seedling cannot name one as parent without one.
+- Its optional description is the grower's own words, shown as written and never translated. It is not a name and not an identity.
+- Only the creator may add photographs or record it as a parent. Public readers see its description only through a live public offer.
+- Resolution is possible later without touching offspring. `set_seedling_parent` can replace the parent row with a cultivar or a Seedling, and the Seedling UUID is unchanged. A test proves this. No resolution workflow is built.
+
+### Offers
+
+- `seed_offers` records material (`loose_seeds` or `seedheads`), quantity (packet size or seedhead count, never both), mode (`free`, `for_sale`, `trade`), an informational `price_text` for a sale only, handover (pickup, shipping or both), and an optional note.
+- Closing is a state change (`is_active = false`, `closed_at` set). The source and its history stay. Closing is idempotent.
+- There is no stock, reservation, payment, checkout, shipping label or tracking. The schema has no such columns, and a test checks this.
+
+### Image rules
+
+- **Named cultivar:** a photograph of the actual parent plant is required before publication. The photograph is recorded on the source (`set_cultivar_parent_photo`).
+- **Unidentified dahlia:** a photograph of the actual source plant is required. The database refuses a publication without one.
+- **Known Seedling parent:** the seed parent must be a public seedling the caller holds, with a public photograph already on its record. Private originals are never used.
+- **Unknown or mixed:** no photograph is required, and none may be attached.
+- Every image shown with an offer is a public derivative (WebP, EXIF and GPS stripped by the Phase 4 pipeline). The original is never linked from an offer. `_derivative_is_public` now also accepts a derivative shown by a live public offer. The original is still never public.
+
+### Visibility, authority and interest
+
+- An offer is public while it is active, its seller is not suspended, and a seedling source is itself public. Closing or suspension hides it at once. The source's owner id and the private parent photograph are never granted to anonymous readers.
+- Only the seller creates, closes and manages an offer. A grower cannot create an offer in another's name, and a suspended grower can do none of these.
+- Interest is structured, with an optional quantity. It is one active row per grower and offer, withdrawable, and never opens a conversation. The seller alone sees who is interested. The seller cannot express interest in their own offer.
+- Interest is refused once the offer closes. The race is tested across two database connections: a late interest waits for the close and is then refused.
+
+### Where offers appear
+
+Offers from a Seedling appear on that Seedling's page. Other offers appear on the seller's profile. There is no Explore destination, no marketplace tab and no storefront. A visitor sees the same live offers and must sign in to express interest.
+
+### Off-platform arrangements, no guarantees
+
+Payment and shipping are arranged between the growers. DahliaSeedling does not certify the material, does not promise germination, and has no health declaration, phytosanitary, plant-passport or shipping-eligibility workflow. There is no mandatory germination test.
+
+### Notifications and messaging
+
+Deferred to Phase 8. Interest is the Phase 7 bridge. A `seed_offer_interests` row can later carry a conversation, and the source and offer are its context.
+
+### Search and the parentage form
+
+- **Search.** Live Seed and Seedhead Offers are found through the one Home Search, with a "Seeds or seedheads available" filter (`seeds=1`). The filter reads canonical offer state: only active offers of public seedlings and non-suspended sellers match. The offers appear as their own group, with their own cursor. Matching is on public text only: the cultivar name, the seedling's working name, the grower's own description of an unidentified dahlia (descriptive text, never identity), and the seller's display name. Country is the seller's country, which is discovery geography, not shipping eligibility. The Seedling availability filter and the seeds filter stay separate, and combining them returns nothing.
+- **Parentage form.** The seed or pollen parent can be an unidentified dahlia. The holder reuses a source they own, or adds a new one with a photograph of the actual plant. The database requires the photograph and the holder's authority; a bypassed form cannot record one without it.
+
+### Deliberately deferred
+
+- Creating a Seedling from germinated material as an action. A grower records the Seedling with the existing Create Seedling flow and sets its parent.
+- A resolution workflow for an unidentified dahlia. The schema permits re-recording the parent as a cultivar or a Seedling without changing the offspring UUID; a test proves it. No correction UI is built.
+
+### Verification
+
+- `tests/db/seeds.test.ts`: the four source states, the photograph rules, quantities and prices, closing, interest and its privacy, visibility and privacy of photographs, parentage, Phase 2 regression, offspring and holder invariance, suspension, resolution readiness and the close-versus-interest race.
+- `src/modules/seeds/validation.test.ts`: input rules for each source state, quantities, prices, photographs and interest.
+- `tests/e2e/seeds.spec.ts`: the unidentified path (refused without its photograph, then published), the visitor view, interest and the seller's view, the Dutch labels, and keyboard operation with touch targets.
+- Security mutation: disabling the photograph requirement at source creation fails the database test for it. The migration was restored byte-for-byte.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

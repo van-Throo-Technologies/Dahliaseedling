@@ -23,7 +23,7 @@ export type Visibility = (typeof VISIBILITIES)[number];
 export const PARENT_ROLES = ["seed_parent", "pollen_parent"] as const;
 export type ParentRole = (typeof PARENT_ROLES)[number];
 
-export const PARENT_KINDS = ["none", "unknown", "seedling", "cultivar"] as const;
+export const PARENT_KINDS = ["none", "unknown", "seedling", "cultivar", "unidentified"] as const;
 export type ParentKind = (typeof PARENT_KINDS)[number];
 
 export type ValidationResult<T> =
@@ -127,6 +127,9 @@ export interface ParentInput {
   readonly parentSeedlingId: string | null;
   readonly cultivarName: string;
   readonly notes: string | null;
+  /** An existing unidentified source the grower owns, or null for a new one with its photograph. */
+  readonly unidentifiedSourceId: string | null;
+  readonly unidentifiedDescription: string | null;
 }
 
 export function validateParentInput(form: FormData): ValidationResult<ParentInput> {
@@ -154,6 +157,15 @@ export function validateParentInput(form: FormData): ValidationResult<ParentInpu
     );
   }
 
+  const unidentifiedRaw = text(form.get("unidentifiedSourceId"));
+  if (kind === "unidentified" && unidentifiedRaw !== "" && !isUuid(unidentifiedRaw)) {
+    return fail("unidentifiedSourceId", msg("validation.seedling.kind"));
+  }
+  const description = text(form.get("description")).replace(/\s+/g, " ").trim();
+  if (kind === "unidentified" && description.length > 280) {
+    return fail("description", msg("validation.seedling.notes", { max: 280 }));
+  }
+
   const notes = text(form.get("notes"));
   if (notes.length > SEEDLING_LIMITS.notesMax) {
     return fail("notes", msg("validation.seedling.notes", { max: SEEDLING_LIMITS.notesMax }));
@@ -167,6 +179,9 @@ export function validateParentInput(form: FormData): ValidationResult<ParentInpu
       parentSeedlingId: kind === "seedling" ? parentSeedling : null,
       cultivarName: kind === "cultivar" ? cultivarRaw : "",
       notes: notes === "" ? null : notes,
+      unidentifiedSourceId:
+        kind === "unidentified" && unidentifiedRaw !== "" ? unidentifiedRaw : null,
+      unidentifiedDescription: kind === "unidentified" && description !== "" ? description : null,
     },
   };
 }

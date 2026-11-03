@@ -9,6 +9,7 @@ import * as validation from "./validation";
 import * as errors from "./errors";
 import * as search from "./search";
 import * as rehome from "./rehome";
+import * as seeds from "./seeds";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -27,6 +28,7 @@ export const MESSAGES = {
     errors: errors.en,
     search: search.en,
     rehome: rehome.en,
+    seeds: seeds.en,
   },
   nl: {
     app: app.nl,
@@ -40,6 +42,7 @@ export const MESSAGES = {
     errors: errors.nl,
     search: search.nl,
     rehome: rehome.nl,
+    seeds: seeds.nl,
   },
   fr: {
     app: app.fr,
@@ -53,6 +56,7 @@ export const MESSAGES = {
     errors: errors.fr,
     search: search.fr,
     rehome: rehome.fr,
+    seeds: seeds.fr,
   },
 };
 

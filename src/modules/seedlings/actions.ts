@@ -8,6 +8,8 @@ import type { MessageKey } from "@/i18n/translator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FormState } from "@/modules/identity/form-state";
 import { requireParticipant } from "@/modules/identity/gate";
+import { recordUnidentifiedParent } from "@/modules/seeds/parentage";
+import { SeedFailure } from "@/modules/seeds/photos";
 import { labelWords } from "./labels";
 import {
   attachSeriesRecord,
@@ -226,15 +228,28 @@ export async function setParentAction(
   const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
   if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
-  await requireParticipant(`/seedlings/${id}`);
+  const { userId } = await requireParticipant(`/seedlings/${id}`);
 
   const parent = validateParentInput(formData);
   if (!parent.ok) return invalid(parent.fieldErrors);
 
   const supabase = await createSupabaseServerClient();
   try {
-    await setParentRecord(supabase, id, parent.value);
+    if (parent.value.kind === "unidentified") {
+      const photo = formData.get("sourcePhoto");
+      await recordUnidentifiedParent(
+        supabase,
+        userId,
+        id,
+        parent.value.role,
+        parent.value,
+        photo instanceof File && photo.size > 0 ? photo : null,
+      );
+    } else {
+      await setParentRecord(supabase, id, parent.value);
+    }
   } catch (error) {
+    if (error instanceof SeedFailure) return failure(t(error.key as MessageKey));
     return failed(error, "errors.seedling.parentageFailed");
   }
 

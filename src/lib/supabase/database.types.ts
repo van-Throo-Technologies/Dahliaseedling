@@ -375,6 +375,128 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"seed_offer_interests": {
+                  Row: {
+                    "created_at": string,"id": string,"interested_user_id": string,"requested_quantity": string | null,"seed_offer_id": string,"withdrawn_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"interested_user_id": string,"requested_quantity"?: string | null,"seed_offer_id": string,"withdrawn_at"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"interested_user_id"?: string,"requested_quantity"?: string | null,"seed_offer_id"?: string,"withdrawn_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seed_offer_interests_interested_user_id_fkey"
+      columns: ["interested_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_offer_interests_seed_offer_id_fkey"
+      columns: ["seed_offer_id"]
+isOneToOne: false
+      referencedRelation: "seed_offers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"seed_offer_media": {
+                  Row: {
+                    "derivative_id": string,"offer_id": string,"role": string,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "derivative_id": string,"offer_id": string,"role": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "derivative_id"?: string,"offer_id"?: string,"role"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seed_offer_media_derivative_id_fkey"
+      columns: ["derivative_id"]
+isOneToOne: false
+      referencedRelation: "public_derivatives"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_offer_media_offer_id_fkey"
+      columns: ["offer_id"]
+isOneToOne: false
+      referencedRelation: "seed_offers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"seed_offers": {
+                  Row: {
+                    "closed_at": string | null,"created_at": string,"handover_method": string,"id": string,"is_active": boolean,"material_type": string,"mode": string,"note": string | null,"packet_size": number | null,"price_text": string | null,"seed_source_id": string,"seedhead_count": number | null,"seller_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "closed_at"?: string | null,"created_at"?: string,"handover_method": string,"id"?: string,"is_active"?: boolean,"material_type": string,"mode": string,"note"?: string | null,"packet_size"?: number | null,"price_text"?: string | null,"seed_source_id": string,"seedhead_count"?: number | null,"seller_id": string
+                  }
+                  Update: {
+                    "closed_at"?: string | null,"created_at"?: string,"handover_method"?: string,"id"?: string,"is_active"?: boolean,"material_type"?: string,"mode"?: string,"note"?: string | null,"packet_size"?: number | null,"price_text"?: string | null,"seed_source_id"?: string,"seedhead_count"?: number | null,"seller_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seed_offers_seed_source_id_fkey"
+      columns: ["seed_source_id"]
+isOneToOne: false
+      referencedRelation: "seed_sources"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_offers_seller_id_fkey"
+      columns: ["seller_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"seed_sources": {
+                  Row: {
+                    "actual_parent_media_id": string | null,"collection_year": number | null,"created_at": string,"id": string,"notes": string | null,"owner_id": string,"source_cultivar_id": string | null,"source_seedling_id": string | null,"source_unidentified_id": string | null,"source_unknown_mixed": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actual_parent_media_id"?: string | null,"collection_year"?: number | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"owner_id": string,"source_cultivar_id"?: string | null,"source_seedling_id"?: string | null,"source_unidentified_id"?: string | null,"source_unknown_mixed"?: boolean
+                  }
+                  Update: {
+                    "actual_parent_media_id"?: string | null,"collection_year"?: number | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"owner_id"?: string,"source_cultivar_id"?: string | null,"source_seedling_id"?: string | null,"source_unidentified_id"?: string | null,"source_unknown_mixed"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seed_sources_actual_parent_media_id_fkey"
+      columns: ["actual_parent_media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_sources_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_sources_source_cultivar_id_fkey"
+      columns: ["source_cultivar_id"]
+isOneToOne: false
+      referencedRelation: "cultivar_references"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_sources_source_seedling_id_fkey"
+      columns: ["source_seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seed_sources_source_unidentified_id_fkey"
+      columns: ["source_unidentified_id"]
+isOneToOne: false
+      referencedRelation: "unidentified_sources"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"seedling_follows": {
                   Row: {
                     "created_at": string,"seedling_id": string,"user_id": string
@@ -435,14 +557,14 @@ isOneToOne: false
                   ]
                 },"seedling_parentage": {
                   Row: {
-                    "child_seedling_id": string,"created_at": string,"created_by": string,"id": string,"is_unknown": boolean,"notes": string | null,"parent_cultivar_id": string | null,"parent_seedling_id": string | null,"role": Database["public"]['Enums']["parent_role"]
+                    "child_seedling_id": string,"created_at": string,"created_by": string,"id": string,"is_unknown": boolean,"notes": string | null,"parent_cultivar_id": string | null,"parent_seedling_id": string | null,"parent_unidentified_source_id": string | null,"role": Database["public"]['Enums']["parent_role"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "child_seedling_id": string,"created_at"?: string,"created_by": string,"id"?: string,"is_unknown"?: boolean,"notes"?: string | null,"parent_cultivar_id"?: string | null,"parent_seedling_id"?: string | null,"role": Database["public"]['Enums']["parent_role"]
+                    "child_seedling_id": string,"created_at"?: string,"created_by": string,"id"?: string,"is_unknown"?: boolean,"notes"?: string | null,"parent_cultivar_id"?: string | null,"parent_seedling_id"?: string | null,"parent_unidentified_source_id"?: string | null,"role": Database["public"]['Enums']["parent_role"]
                   }
                   Update: {
-                    "child_seedling_id"?: string,"created_at"?: string,"created_by"?: string,"id"?: string,"is_unknown"?: boolean,"notes"?: string | null,"parent_cultivar_id"?: string | null,"parent_seedling_id"?: string | null,"role"?: Database["public"]['Enums']["parent_role"]
+                    "child_seedling_id"?: string,"created_at"?: string,"created_by"?: string,"id"?: string,"is_unknown"?: boolean,"notes"?: string | null,"parent_cultivar_id"?: string | null,"parent_seedling_id"?: string | null,"parent_unidentified_source_id"?: string | null,"role"?: Database["public"]['Enums']["parent_role"]
                   }
                   Relationships: [
                     {
@@ -468,6 +590,12 @@ isOneToOne: false
       columns: ["parent_seedling_id"]
 isOneToOne: false
       referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seedling_parentage_parent_unidentified_source_id_fkey"
+      columns: ["parent_unidentified_source_id"]
+isOneToOne: false
+      referencedRelation: "unidentified_sources"
       referencedColumns: ["id"]
     }
                   ]
@@ -518,6 +646,52 @@ isOneToOne: false
                     {
       foreignKeyName: "series_owner_id_fkey"
       columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"unidentified_source_photos": {
+                  Row: {
+                    "media_id": string,"sort_order": number,"source_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "media_id": string,"sort_order"?: number,"source_id": string
+                  }
+                  Update: {
+                    "media_id"?: string,"sort_order"?: number,"source_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "unidentified_source_photos_media_id_fkey"
+      columns: ["media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "unidentified_source_photos_source_id_fkey"
+      columns: ["source_id"]
+isOneToOne: false
+      referencedRelation: "unidentified_sources"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"unidentified_sources": {
+                  Row: {
+                    "created_at": string,"created_by": string,"description": string | null,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by": string,"description"?: string | null,"id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string,"description"?: string | null,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "unidentified_sources_created_by_fkey"
+      columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -602,11 +776,26 @@ isOneToOne: false
 "_register_media_object":
 { Args: { "p_path": string }; Returns: string
                            },
+"_seed_offer_is_public":
+{ Args: { "p_offer_id": string }; Returns: boolean
+                           },
+"_seed_source_is_public":
+{ Args: { "p_source_id": string }; Returns: boolean
+                           },
+"_unidentified_source_is_owned":
+{ Args: { "p_source_id": string }; Returns: boolean
+                           },
+"_unidentified_source_is_public":
+{ Args: { "p_source_id": string }; Returns: boolean
+                           },
 "_update_is_public":
 { Args: { "p_update_id": string }; Returns: boolean
                            },
 "add_comment":
 { Args: { "p_body": string,"p_parent_comment_id"?: string,"p_update_id": string }; Returns: string
+                           },
+"add_unidentified_source_photo":
+{ Args: { "p_media_id": string,"p_source_id": string }; Returns: undefined
                            },
 "admin_set_suspended":
 { Args: { "suspended": boolean,"target_profile_id": string }; Returns: {
@@ -674,8 +863,14 @@ isOneToOne: false
 "choose_rehome_recipient":
 { Args: { "p_case_id": string,"p_recipient_id": string }; Returns: string
                            },
+"close_seed_offer":
+{ Args: { "p_offer_id": string }; Returns: boolean
+                           },
 "confirm_rehome_received":
 { Args: { "p_case_id": string }; Returns: string
+                           },
+"create_seed_source":
+{ Args: { "p_collection_year"?: number,"p_cultivar_name"?: string,"p_kind": string,"p_notes"?: string,"p_seedling_id"?: string,"p_unidentified_source_id"?: string }; Returns: string
                            },
 "create_seedling":
 { Args: { "p_first_grown_year"?: number,"p_series_id"?: string,"p_visibility"?: Database["public"]['Enums']["seedling_visibility"],"p_working_name"?: string }; Returns: {
@@ -712,6 +907,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"create_unidentified_source":
+{ Args: { "p_description": string }; Returns: string
+                           },
 "decline_rehome":
 { Args: { "p_case_id": string }; Returns: string
                            },
@@ -730,6 +928,9 @@ isOneToOne: false
 "express_rehome_interest":
 { Args: { "p_case_id": string }; Returns: string
                            },
+"express_seed_offer_interest":
+{ Args: { "p_offer_id": string,"p_requested_quantity"?: string }; Returns: string
+                           },
 "get_public_update":
 { Args: { "p_update_id": string }; Returns: {
               "author_has_avatar": boolean,"author_id": string,"author_name": string,"caption": string,"comment_count": number,"like_count": number,"liked_by_me": boolean,"media": Json,"observed_at": string,"published_at": string,"seedling_id": string,"seedling_name": string,"update_id": string
@@ -737,6 +938,11 @@ isOneToOne: false
                            },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"list_my_unidentified_sources":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "description": string,"photo_count": number,"source_id": string
+            }[]
                            },
 "list_public_updates":
 { Args: { "p_before_id"?: string,"p_before_published"?: string,"p_following_only"?: boolean,"p_limit": number }; Returns: {
@@ -779,8 +985,14 @@ isOneToOne: false
 "next_series_identifier":
 { Args: { "p_first_grown_year": number,"p_series_id": string }; Returns: string
                            },
+"publish_seed_offer":
+{ Args: { "p_handover_method"?: string,"p_items"?: Json,"p_material_type": string,"p_mode"?: string,"p_note"?: string,"p_packet_size"?: number,"p_price_text"?: string,"p_seedhead_count"?: number,"p_source_id": string }; Returns: string
+                           },
 "publish_update":
 { Args: { "p_caption"?: string,"p_client_key": string,"p_items": Json,"p_observation_id": string }; Returns: Json
+                           },
+"register_source_photo":
+{ Args: { "p_path": string }; Returns: string
                            },
 "rehome_panel":
 { Args: { "p_seedling_id": string }; Returns: Json
@@ -806,6 +1018,11 @@ isOneToOne: false
 "search_identifier":
 { Args: { "p_query": string }; Returns: string
                            },
+"search_seed_offers":
+{ Args: { "p_after_id"?: string,"p_after_text"?: string,"p_country"?: string,"p_limit"?: number,"p_query"?: string }; Returns: {
+              "handover_method": string,"match_tier": number,"material_type": string,"mode": string,"offer_id": string,"packet_size": number,"photo_path": string,"price_text": string,"seedhead_count": number,"seller_country": string,"seller_name": string,"sort_text": string,"source_cultivar_name": string,"source_description": string,"source_kind": string,"source_seedling_id": string,"source_seedling_name": string
+            }[]
+                           },
 "search_seedlings":
 { Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_available"?: boolean,"p_country"?: string,"p_limit"?: number,"p_query": string }; Returns: {
               "holder_country": string,"holder_id": string,"holder_name": string,"match_reason": string,"match_tier": number,"primary_identifier": string,"primary_kind": Database["public"]['Enums']["identifier_kind"],"seedling_id": string,"sort_text": string,"working_name": string
@@ -816,6 +1033,9 @@ isOneToOne: false
                            },
 "seedling_cover":
 { Args: { "p_seedling_id": string }; Returns: string
+                           },
+"set_cultivar_parent_photo":
+{ Args: { "p_media_id": string,"p_source_id": string }; Returns: undefined
                            },
 "set_grower_follow":
 { Args: { "p_on": boolean,"p_profile_id": string }; Returns: undefined
@@ -839,6 +1059,26 @@ isOneToOne: false
 "notes": string | null,
 "parent_cultivar_id": string | null,
 "parent_seedling_id": string | null,
+"parent_unidentified_source_id": string | null,
+"role": Database["public"]['Enums']["parent_role"]
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "seedling_parentage"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"set_seedling_parent_unidentified":
+{ Args: { "p_notes"?: string,"p_role": Database["public"]['Enums']["parent_role"],"p_seedling_id": string,"p_source_id": string }; Returns: {
+              "child_seedling_id": string,
+"created_at": string,
+"created_by": string,
+"id": string,
+"is_unknown": boolean,
+"notes": string | null,
+"parent_cultivar_id": string | null,
+"parent_seedling_id": string | null,
+"parent_unidentified_source_id": string | null,
 "role": Database["public"]['Enums']["parent_role"]
             }
                           SetofOptions: {
@@ -855,6 +1095,9 @@ isOneToOne: false
                            },
 "withdraw_rehome_interest":
 { Args: { "p_case_id": string }; Returns: boolean
+                           },
+"withdraw_seed_offer_interest":
+{ Args: { "p_offer_id": string }; Returns: undefined
                            }
           }
           Enums: {

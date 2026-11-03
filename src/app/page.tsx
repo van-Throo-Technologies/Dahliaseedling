@@ -40,15 +40,25 @@ export default async function HomePage({
     cultivars?: string | string[];
     growers?: string | string[];
     available?: string | string[];
+    seeds?: string | string[];
+    seedOffers?: string | string[];
   }>;
 }) {
   const query = await searchParams;
   const { t } = await getTranslation();
   const viewer = await getCurrentUser();
-  const search = validateSearch({ q: query.q, country: query.country, available: query.available });
+  const search = validateSearch({
+    q: query.q,
+    country: query.country,
+    available: query.available,
+    seeds: query.seeds,
+  });
   const searchActive =
     search.ok &&
-    (search.value.query !== null || search.value.country !== null || search.value.available);
+    (search.value.query !== null ||
+      search.value.country !== null ||
+      search.value.available ||
+      search.value.seeds);
   const followingView = !searchActive && query.view === "following" && viewer !== null;
   const cursor = validateFeedCursor(query.cursor);
 
@@ -81,6 +91,7 @@ export default async function HomePage({
       seedlings: firstValue(query.seedlings),
       cultivars: firstValue(query.cultivars),
       growers: firstValue(query.growers),
+      seedOffers: firstValue(query.seedOffers),
     });
     return (
       <div className="flex flex-col gap-6">
@@ -90,12 +101,14 @@ export default async function HomePage({
           query={search.value.query}
           country={search.value.country}
           available={search.value.available}
+          seeds={search.value.seeds}
         />
         <SearchResultsView
           results={results}
           query={search.value.query}
           country={search.value.country}
           available={search.value.available}
+          seeds={search.value.seeds}
         />
       </div>
     );

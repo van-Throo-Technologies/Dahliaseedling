@@ -13,17 +13,19 @@ export async function SearchForm({
   query,
   country,
   available = false,
+  seeds = false,
 }: {
   readonly query: string | null;
   readonly country: CountryCode | null;
   readonly available?: boolean;
+  readonly seeds?: boolean;
 }) {
   const { t, locale } = await getTranslation();
   const collator = new Intl.Collator(locale);
   const countries = COUNTRY_CODES.map((code) => ({ code, name: formatCountry(code, locale) })).sort(
     (a, b) => collator.compare(a.name, b.name),
   );
-  const active = query !== null || country !== null || available;
+  const active = query !== null || country !== null || available || seeds;
 
   return (
     <form role="search" method="get" action="/" className="flex flex-col gap-3">
@@ -83,6 +85,19 @@ export async function SearchForm({
             <span>{t("search.availableLabel")}</span>
           </label>
           <p className="text-sm text-text-muted">{t("search.availableHint")}</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="inline-flex min-h-11 items-center gap-3 text-base text-text">
+            <input
+              type="checkbox"
+              name="seeds"
+              value="1"
+              defaultChecked={seeds}
+              className="h-6 w-6 shrink-0 accent-[var(--color-text-brand)]"
+            />
+            <span>{t("search.seedsLabel")}</span>
+          </label>
+          <p className="text-sm text-text-muted">{t("search.seedsHint")}</p>
         </div>
         {active ? (
           <Link href="/" className="inline-flex min-h-11 items-center text-base text-text-brand">

@@ -8,6 +8,8 @@ export interface SearchInput {
   readonly country: CountryCode | null;
   /** Only Seedlings genuinely looking for a new grower. Canonical state, never a display label. */
   readonly available: boolean;
+  /** Only Seed and Seedhead Offers that are genuinely public and live. Canonical state, never a display label. */
+  readonly seeds: boolean;
 }
 
 export type SearchValidation =
@@ -27,6 +29,7 @@ export function validateSearch(params: {
   readonly q?: string | string[];
   readonly country?: string | string[];
   readonly available?: string | string[];
+  readonly seeds?: string | string[];
 }): SearchValidation {
   const query = first(params.q).replace(/\s+/g, " ").trim();
   if (query.length > SEARCH_QUERY_MAX) {
@@ -47,6 +50,7 @@ export function validateSearch(params: {
       query: query === "" ? null : query,
       country: country === "" ? null : (country as CountryCode),
       available: first(params.available) === "1",
+      seeds: first(params.seeds) === "1",
     },
   };
 }

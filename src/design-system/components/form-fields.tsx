@@ -57,8 +57,9 @@ export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   readonly hint?: string;
 }
 
-export function TextField({ label, name, error, hint, ...input }: TextFieldProps) {
-  const id = `field-${name}`;
+export function TextField({ id: idOverride, label, name, error, hint, ...input }: TextFieldProps) {
+  // An explicit id keeps two forms on one page from sharing a label target. Without one, the id comes from the name.
+  const id = idOverride ?? `field-${name}`;
   return (
     <FieldFrame id={id} label={label} hint={hint} error={error}>
       {(describedBy) => (
@@ -82,8 +83,16 @@ export interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaE
   readonly hint?: string;
 }
 
-export function TextAreaField({ label, name, error, hint, ...textarea }: TextAreaFieldProps) {
-  const id = `field-${name}`;
+export function TextAreaField({
+  id: idOverride,
+  label,
+  name,
+  error,
+  hint,
+  ...textarea
+}: TextAreaFieldProps) {
+  // An explicit id keeps two forms on one page from sharing a label target. Without one, the id comes from the name.
+  const id = idOverride ?? `field-${name}`;
   return (
     <FieldFrame id={id} label={label} hint={hint} error={error}>
       {(describedBy) => (
@@ -179,8 +188,17 @@ export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement
   readonly hint?: string;
 }
 
-export function SelectField({ label, name, options, error, hint, ...select }: SelectFieldProps) {
-  const id = `field-${name}`;
+export function SelectField({
+  id: idOverride,
+  label,
+  name,
+  options,
+  error,
+  hint,
+  ...select
+}: SelectFieldProps) {
+  // An explicit id keeps two forms on one page from sharing a label target. Without one, the id comes from the name.
+  const id = idOverride ?? `field-${name}`;
   return (
     <FieldFrame id={id} label={label} hint={hint} error={error}>
       {(describedBy) => (

@@ -43,15 +43,15 @@ describe("validateSearch", () => {
   it("accepts a query and an optional country, normalising blank input to null", () => {
     expect(validateSearch({ q: "  Wizard  of Oz ", country: "be" })).toEqual({
       ok: true,
-      value: { query: "Wizard of Oz", country: "BE", available: false },
+      value: { query: "Wizard of Oz", country: "BE", available: false, seeds: false },
     });
     expect(validateSearch({})).toEqual({
       ok: true,
-      value: { query: null, country: null, available: false },
+      value: { query: null, country: null, available: false, seeds: false },
     });
     expect(validateSearch({ q: "   ", country: "" })).toEqual({
       ok: true,
-      value: { query: null, country: null, available: false },
+      value: { query: null, country: null, available: false, seeds: false },
     });
   });
 
@@ -76,7 +76,7 @@ describe("validateSearch", () => {
   it("uses only the first value when a parameter is repeated", () => {
     expect(validateSearch({ q: ["Sunset", "Other"] })).toEqual({
       ok: true,
-      value: { query: "Sunset", country: null, available: false },
+      value: { query: "Sunset", country: null, available: false, seeds: false },
     });
   });
 });
@@ -87,5 +87,20 @@ describe("search dictionaries", () => {
     const sentence = t("search.resultsFor", { query: "Wizard of Oz" });
     expect(sentence).toContain("Wizard of Oz");
     expect(MESSAGES.fr.search.resultsFor).not.toContain("Wizard");
+  });
+
+  it("reads the seeds and seedheads filter from its own parameter, and keeps it separate from the Seedling availability filter", () => {
+    expect(validateSearch({ seeds: "1" })).toEqual({
+      ok: true,
+      value: { query: null, country: null, available: false, seeds: true },
+    });
+    expect(validateSearch({ available: "1" })).toEqual({
+      ok: true,
+      value: { query: null, country: null, available: true, seeds: false },
+    });
+    expect(validateSearch({ seeds: "0" })).toEqual({
+      ok: true,
+      value: { query: null, country: null, available: false, seeds: false },
+    });
   });
 });

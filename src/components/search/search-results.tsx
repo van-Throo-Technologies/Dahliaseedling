@@ -7,6 +7,7 @@ import { getTranslation } from "@/i18n/server";
 import type { MessageKey, Translator } from "@/i18n/translator";
 import { countryName } from "@/modules/identity/presentation";
 import { labelWords, type LabelWords } from "@/modules/seedlings/labels";
+import type { SeedOfferResult } from "@/modules/search/repository";
 import type {
   CultivarResult,
   GrowerResult,
@@ -66,6 +67,9 @@ function searchHref(state: {
   readonly seedlings: string | null;
   readonly cultivars: string | null;
   readonly growers: string | null;
+  readonly seedOffers: string | null;
+  readonly available: boolean;
+  readonly seeds: boolean;
 }): string {
   const params = new URLSearchParams();
   if (state.query !== null) params.set("q", state.query);
@@ -73,6 +77,9 @@ function searchHref(state: {
   if (state.seedlings) params.set("seedlings", state.seedlings);
   if (state.cultivars) params.set("cultivars", state.cultivars);
   if (state.growers) params.set("growers", state.growers);
+  if (state.seedOffers) params.set("seedOffers", state.seedOffers);
+  if (state.available) params.set("available", "1");
+  if (state.seeds) params.set("seeds", "1");
   const text = params.toString();
   return text ? `/?${text}` : "/";
 }
@@ -233,16 +240,84 @@ function GroupPager({
   );
 }
 
+/** A live Seed or Seedhead Offer. It is informational: the source is shown as it is known, and no purchase control appears. */
+function SeedOfferCard({
+  offer,
+  t,
+  locale,
+}: {
+  readonly offer: SeedOfferResult;
+  readonly t: Translator;
+  readonly locale: Locale;
+}) {
+  const modeKey = offer.mode === "for_sale" ? "forSale" : offer.mode;
+  const sourceName =
+    offer.sourceKind === "seedling"
+      ? (offer.sourceSeedlingName ?? t("seeds.sourceName.seedling"))
+      : offer.sourceKind === "cultivar"
+        ? (offer.sourceCultivarName ?? t("seeds.sourceName.cultivar"))
+        : offer.sourceKind === "unidentified"
+          ? t("seeds.sourceName.unidentified")
+          : t("seeds.sourceName.unknownMixed");
+  return (
+    <li className="flex flex-col gap-2 rounded-surface border border-border bg-surface p-4">
+      {offer.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={offer.photoUrl}
+          alt={t("seeds.sourcePhoto")}
+          className="h-40 w-full rounded-control object-cover"
+        />
+      ) : null}
+      <h4 className="text-base font-medium text-text">
+        {offer.materialType === "loose_seeds"
+          ? t("seeds.material.seeds")
+          : t("seeds.material.seedheads")}
+      </h4>
+      <p className="text-sm text-text-muted">
+        {offer.materialType === "loose_seeds"
+          ? `${t("seeds.packetSize")}: ${offer.packetSize}`
+          : `${t("seeds.seedheadCount")}: ${offer.seedheadCount}`}
+      </p>
+      <p className="text-sm text-text">
+        {t(`seeds.mode.${modeKey}` as MessageKey)}
+        {offer.priceText ? ` · ${offer.priceText}` : ""}
+        {" · "}
+        {t(`seeds.handover.${offer.handover}` as MessageKey)}
+      </p>
+      {offer.sourceKind === "seedling" && offer.sourceSeedlingId ? (
+        <Link
+          href={`/seedlings/${offer.sourceSeedlingId}`}
+          className="text-base text-text-brand underline underline-offset-4"
+        >
+          {sourceName}
+        </Link>
+      ) : (
+        <p className="text-base text-text">{sourceName}</p>
+      )}
+      {offer.sourceKind === "unidentified" && offer.sourceDescription ? (
+        <p className="text-sm text-text">{offer.sourceDescription}</p>
+      ) : null}
+      <p className="text-sm text-text-muted">
+        {t("search.seedOffer.by", { name: offer.sellerName })}
+        {offer.sellerCountry ? ` · ${formatCountry(offer.sellerCountry, locale)}` : ""}
+      </p>
+    </li>
+  );
+}
+
 export async function SearchResultsView({
   results,
   query,
   country,
   available = false,
+  seeds = false,
 }: {
   readonly results: SearchResults;
   readonly query: string | null;
   readonly country: string | null;
   readonly available?: boolean;
+  readonly seeds?: boolean;
 }) {
   const { t, locale } = await getTranslation();
   const words = labelWords(t);
@@ -254,13 +329,16 @@ export async function SearchResultsView({
   const seedlings = results.seedlings.items;
   const cultivars = results.cultivars.items;
   const growers = results.growers.items;
-  const total = seedlings.length + cultivars.length + growers.length;
+  const offers = results.seedOffers.items;
+  const total = seedlings.length + cultivars.length + growers.length + offers.length;
   const headline =
     query !== null
       ? t("search.resultsFor", { query })
-      : available
-        ? t("search.resultsAvailable")
-        : t("search.resultsInCountry", { country: formatCountry(country ?? "", locale) });
+      : seeds
+        ? t("search.resultsSeeds")
+        : available
+          ? t("search.resultsAvailable")
+          : t("search.resultsInCountry", { country: formatCountry(country ?? "", locale) });
 
   // The cursors each group is on now, so a link for one group keeps the others where they are.
   const here = {
@@ -269,6 +347,9 @@ export async function SearchResultsView({
     seedlings: results.seedlings.current,
     cultivars: results.cultivars.current,
     growers: results.growers.current,
+    seedOffers: results.seedOffers.current,
+    available,
+    seeds,
   };
   const seedlingsNext = results.seedlings.next
     ? searchHref({ ...here, seedlings: results.seedlings.next })
@@ -286,6 +367,10 @@ export async function SearchResultsView({
     ? searchHref({ ...here, growers: results.growers.next })
     : null;
   const growersFirst = results.growers.current ? searchHref({ ...here, growers: null }) : null;
+  const offersNext = results.seedOffers.next
+    ? searchHref({ ...here, seedOffers: results.seedOffers.next })
+    : null;
+  const offersFirst = results.seedOffers.current ? searchHref({ ...here, seedOffers: null }) : null;
 
   return (
     <div className="flex flex-col gap-8" aria-live="polite">
@@ -365,6 +450,24 @@ export async function SearchResultsView({
             next={growersNext}
             first={growersFirst}
             label={t("search.more.growers")}
+            t={t}
+          />
+        </section>
+      ) : null}
+      {offers.length > 0 || results.seedOffers.current ? (
+        <section aria-labelledby="group-seed-offers" className="flex flex-col gap-3">
+          <h3 id="group-seed-offers" className="text-lg font-medium text-text">
+            {t("search.groups.seedOffers")}
+          </h3>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {offers.map((offer) => (
+              <SeedOfferCard key={offer.offerId} offer={offer} t={t} locale={locale} />
+            ))}
+          </ul>
+          <GroupPager
+            next={offersNext}
+            first={offersFirst}
+            label={t("search.more.seedOffers")}
             t={t}
           />
         </section>

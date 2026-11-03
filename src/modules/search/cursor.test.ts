@@ -68,4 +68,18 @@ describe("search cursors", () => {
       ok: false,
     });
   });
+
+  it("refuses a cursor from the seeds-and-seedheads list under a different filter state, and the reverse", () => {
+    const position = {
+      tier: 1 as const,
+      sortText: "2026-11-03 08:00:00.000001+00",
+      id: ID,
+    };
+    const offers = encodeCursor({ ...binding, seeds: true }, position);
+    expect(readCursor(offers, { ...binding, seeds: true })).toEqual({ ok: true, position });
+    expect(readCursor(offers, { ...binding, seeds: false })).toEqual({ ok: false });
+    expect(readCursor(encodeCursor(binding, position), { ...binding, seeds: true })).toEqual({
+      ok: false,
+    });
+  });
 });

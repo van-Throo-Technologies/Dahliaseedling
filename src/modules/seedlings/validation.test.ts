@@ -103,6 +103,8 @@ describe("parent input", () => {
         parentSeedlingId: null,
         cultivarName: "",
         notes: null,
+        unidentifiedSourceId: null,
+        unidentifiedDescription: null,
       },
     });
   });

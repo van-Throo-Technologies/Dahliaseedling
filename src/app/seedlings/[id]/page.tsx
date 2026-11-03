@@ -4,6 +4,12 @@ import { notFound } from "next/navigation";
 import { AttachSeriesForm } from "@/components/seedlings/attach-series-form";
 import { ParentForm } from "@/components/seedlings/parent-form";
 import { RehomePanel } from "@/components/rehome/rehome-panel";
+import { SeedOfferList } from "@/components/seeds/seed-offer-list";
+import {
+  listMyUnidentifiedSources,
+  offersForSeedling,
+  unidentifiedDescription,
+} from "@/modules/seeds/repository";
 import { SeedlingEditForm } from "@/components/seedlings/seedling-edit-form";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
@@ -54,7 +60,12 @@ export default async function SeedlingPage({
   searchParams,
 }: {
   readonly params: Promise<{ id: string }>;
-  readonly searchParams: Promise<{ rehome?: string; rehomeError?: string }>;
+  readonly searchParams: Promise<{
+    rehome?: string;
+    rehomeError?: string;
+    seedNotice?: string;
+    seedError?: string;
+  }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -93,6 +104,18 @@ export default async function SeedlingPage({
     supabase,
     provenance.flatMap((event) => (event.toHolderId ? [event.toHolderId] : [])),
   );
+  // The unidentified dahlia's description is shown only where the reader may see it; otherwise the bare label.
+  const unidentifiedTexts = new Map(
+    await Promise.all(
+      parentage
+        .flatMap((link) => (link.unidentifiedSourceId ? [link.unidentifiedSourceId] : []))
+        .map(
+          async (sourceId) =>
+            [sourceId, await unidentifiedDescription(supabase, sourceId)] as const,
+        ),
+    ),
+  );
+  const seedOffers = await offersForSeedling(supabase, id, viewer?.id ?? null);
   const parentLabels = await displayLabels(
     supabase,
     parentage.flatMap((link) => (link.parentSeedlingId ? [link.parentSeedlingId] : [])),
@@ -123,6 +146,13 @@ export default async function SeedlingPage({
 
   // Management data is loaded only for the holder.
   const series = canEdit ? (await listSeries(supabase)).filter((item) => item.active) : [];
+  // The grower's own unidentified sources, offered for reuse in the parentage form. Only the holder can change parentage.
+  const unidentifiedChoices = canEdit
+    ? (await listMyUnidentifiedSources(supabase)).map((source) => ({
+        id: source.id,
+        label: source.description ?? t("seeds.parentage.noDescription"),
+      }))
+    : [];
   const attached = canEdit ? new Set(await attachedSeriesIds(supabase, id)) : new Set<string>();
   const attachable = series.filter((item) => !attached.has(item.id));
   const yearNeeded = attachable.some((item) => patternUsesYear(item.pattern));
@@ -131,15 +161,18 @@ export default async function SeedlingPage({
     const parentSeedlingId = current?.parentSeedlingId ?? "";
     return {
       kind: current
-        ? current.isUnknown
-          ? ("unknown" as const)
-          : parentSeedlingId
-            ? ("seedling" as const)
-            : ("cultivar" as const)
+        ? current.unidentifiedSourceId
+          ? ("unidentified" as const)
+          : current.isUnknown
+            ? ("unknown" as const)
+            : parentSeedlingId
+              ? ("seedling" as const)
+              : ("cultivar" as const)
         : ("none" as const),
       parentSeedlingId,
       parentLabel: parentSeedlingId ? parentDisplay(parentSeedlingId) : "",
       cultivarName: current?.cultivarName ?? "",
+      unidentifiedSourceId: current?.unidentifiedSourceId ?? "",
       notes: current?.notes ?? "",
     };
   };
@@ -276,6 +309,14 @@ export default async function SeedlingPage({
                     >
                       {parentDisplay(link.parentSeedlingId)}
                     </Link>
+                  ) : link.unidentifiedSourceId ? (
+                    <span>
+                      {unidentifiedTexts.get(link.unidentifiedSourceId)
+                        ? t("seeds.parentage.description", {
+                            description: unidentifiedTexts.get(link.unidentifiedSourceId) ?? "",
+                          })
+                        : t("seeds.parentage.unidentified")}
+                    </span>
                   ) : (
                     <span>{link.cultivarName}</span>
                   )}
@@ -287,6 +328,27 @@ export default async function SeedlingPage({
             </ul>
           )}
         </section>
+      ) : null}
+
+      {seedOffers.length > 0 || canEdit || query.seedNotice || query.seedError ? (
+        <div className="flex flex-col gap-4">
+          {canEdit ? (
+            <Link
+              href={`/offers/new?seedling=${id}`}
+              className="inline-flex min-h-11 items-center justify-center self-start rounded-control border border-border bg-surface px-4 text-base text-text-brand"
+            >
+              {t("seeds.offerNew")}
+            </Link>
+          ) : null}
+          <SeedOfferList
+            offers={seedOffers}
+            viewerId={viewer?.id ?? null}
+            returnTo={`/seedlings/${id}`}
+            signInHref={`/sign-in?next=${encodeURIComponent(`/seedlings/${id}`)}`}
+            notice={query.seedNotice}
+            failure={query.seedError}
+          />
+        </div>
       ) : null}
 
       <RehomePanel seedlingId={id} notice={query.rehome} failure={query.rehomeError} />
@@ -402,12 +464,14 @@ export default async function SeedlingPage({
             role="seed_parent"
             heading={t("seedlings.page.seedParent")}
             defaults={parentDefaults("seed_parent")}
+            unidentifiedChoices={unidentifiedChoices}
           />
           <ParentForm
             seedlingId={id}
             role="pollen_parent"
             heading={t("seedlings.page.pollenParent")}
             defaults={parentDefaults("pollen_parent")}
+            unidentifiedChoices={unidentifiedChoices}
           />
         </section>
       ) : null}

@@ -10,7 +10,8 @@ import { findParentCandidatesAction, setParentAction } from "@/modules/seedlings
 import type { ParentCandidate } from "@/modules/seedlings/repository";
 
 export interface ParentDefaults {
-  readonly kind: "none" | "unknown" | "seedling" | "cultivar";
+  readonly kind: "none" | "unknown" | "seedling" | "cultivar" | "unidentified";
+  readonly unidentifiedSourceId?: string;
   readonly parentSeedlingId: string;
   readonly parentLabel: string;
   readonly cultivarName: string;
@@ -27,11 +28,14 @@ export function ParentForm({
   role,
   heading,
   defaults,
+  unidentifiedChoices = [],
 }: {
   readonly seedlingId: string;
   readonly role: "seed_parent" | "pollen_parent";
   readonly heading: string;
   readonly defaults: ParentDefaults;
+  /** The grower's own unidentified sources, offered for reuse. */
+  readonly unidentifiedChoices?: readonly { readonly id: string; readonly label: string }[];
 }) {
   const t = useT();
   const locale = useLocale();
@@ -76,6 +80,7 @@ export function ParentForm({
   return (
     <form
       action={action}
+      encType="multipart/form-data"
       noValidate
       className="flex flex-col gap-4 rounded-surface border border-border bg-surface p-4"
     >
@@ -95,6 +100,7 @@ export function ParentForm({
       <SelectField
         label={t("seedlings.parent.howKnown")}
         name="kind"
+        id={`${role}-kind`}
         value={kind}
         onChange={(event) => setKind(event.target.value as ParentDefaults["kind"])}
         error={errors.kind}
@@ -103,6 +109,7 @@ export function ParentForm({
           { value: "unknown", label: t("glossary.unknownParent") },
           { value: "seedling", label: t("glossary.aSeedling") },
           { value: "cultivar", label: t("glossary.namedCultivar") },
+          { value: "unidentified", label: t("seeds.parentage.unidentified") },
         ]}
       />
 
@@ -123,6 +130,7 @@ export function ParentForm({
           <TextField
             label={t("seedlings.parent.findSeedling")}
             name="parentSearch"
+            id={`${role}-parent-search`}
             autoComplete="off"
             hint={t("seedlings.parent.findHint")}
             value={term}
@@ -161,6 +169,7 @@ export function ParentForm({
         <TextField
           label={t("seedlings.parent.cultivarName")}
           name="cultivarName"
+          id={`${role}-cultivar-name`}
           maxLength={80}
           defaultValue={defaults.cultivarName}
           error={errors.cultivarName}
@@ -168,9 +177,48 @@ export function ParentForm({
         />
       ) : null}
 
+      {kind === "unidentified" ? (
+        <>
+          <SelectField
+            label={t("seeds.parentage.source")}
+            name="unidentifiedSourceId"
+            id={`${role}-unidentified-source`}
+            defaultValue={defaults.unidentifiedSourceId ?? ""}
+            error={errors.unidentifiedSourceId}
+            options={[
+              { value: "", label: t("seeds.parentage.newSource") },
+              ...unidentifiedChoices.map((choice) => ({ value: choice.id, label: choice.label })),
+            ]}
+          />
+          <TextAreaField
+            label={t("seeds.description")}
+            name="description"
+            id={`${role}-description`}
+            rows={2}
+            maxLength={280}
+            error={errors.description}
+            hint={t("seeds.descriptionHint")}
+          />
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`${role}-source-photo`} className="text-sm font-medium text-text">
+              {t("seeds.sourcePhoto")}
+            </label>
+            <p className="text-sm text-text-muted">{t("seeds.sourcePhotoHint")}</p>
+            <input
+              id={`${role}-source-photo`}
+              name="sourcePhoto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="min-h-11 w-full rounded-control border border-border bg-surface px-3 text-base text-text"
+            />
+          </div>
+        </>
+      ) : null}
+
       <TextAreaField
         label={t("seedlings.parent.note")}
         name="notes"
+        id={`${role}-notes`}
         rows={2}
         maxLength={280}
         defaultValue={defaults.notes}
