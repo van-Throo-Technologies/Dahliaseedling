@@ -7,6 +7,7 @@ import * as capture from "./capture";
 import * as publication from "./publication";
 import * as validation from "./validation";
 import * as errors from "./errors";
+import * as search from "./search";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -23,6 +24,7 @@ export const MESSAGES = {
     publication: publication.en,
     validation: validation.en,
     errors: errors.en,
+    search: search.en,
   },
   nl: {
     app: app.nl,
@@ -34,6 +36,7 @@ export const MESSAGES = {
     publication: publication.nl,
     validation: validation.nl,
     errors: errors.nl,
+    search: search.nl,
   },
   fr: {
     app: app.fr,
@@ -45,6 +48,7 @@ export const MESSAGES = {
     publication: publication.fr,
     validation: validation.fr,
     errors: errors.fr,
+    search: search.fr,
   },
 };
 

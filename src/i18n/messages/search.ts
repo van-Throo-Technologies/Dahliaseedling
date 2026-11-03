@@ -1,0 +1,170 @@
+/*
+ * Search & Discovery on Home. Only the words around a result are translated. Identifiers, working names,
+ * cultivar names and grower names are stored as authored and are never passed through this dictionary.
+ */
+
+export const en = {
+  label: "Search",
+  placeholder: "Name, identifier or cultivar",
+  help: "Find a public Seedling by its identifier or working name, a cultivar, or a grower. Private Seedlings are never shown.",
+  country: "Country",
+  anyCountry: "Any country",
+  submit: "Search",
+  clear: "Clear search",
+  resultsFor: "Results for {query}",
+  resultsInCountry: "Results in {country}",
+  inactive: "Search by identifier, working name, cultivar or grower. The Feed is shown below.",
+  groups: {
+    seedlings: "Seedlings",
+    cultivars: "Cultivars",
+    growers: "Growers",
+  },
+  reason: {
+    identifier: "Matches the identifier",
+    workingName: "Matches the working name",
+    parentCultivar: "Recorded parent: this cultivar",
+    parentSeedling: "Descends from a matching seedling",
+    country: "In this country",
+  },
+  seedling: {
+    grownBy: "Currently grown by {name}",
+    noImage: "No public photo yet.",
+  },
+  cultivar: {
+    seedParentOne: "One public seedling has it as its seed parent.",
+    seedParentMany: "{count} public seedlings have it as their seed parent.",
+    pollenParentOne: "One public seedling has it as its pollen parent.",
+    pollenParentMany: "{count} public seedlings have it as their pollen parent.",
+    none: "No public seedling records it yet.",
+    findSeedlings: "See seedlings with this cultivar",
+  },
+  grower: {
+    open: "View profile",
+  },
+  empty: {
+    title: "No public results found.",
+    text: "Check the spelling, or search for part of a name or identifier.",
+  },
+  more: {
+    seedlings: "Show more seedlings",
+    cultivars: "Show more cultivars",
+    growers: "Show more growers",
+  },
+  first: "Back to the first results",
+  cursorInvalid: "Those results are out of date, so the first results are shown.",
+  validation: {
+    tooLong: "Use {max} characters or fewer.",
+    country: "Choose a country from the list.",
+  },
+};
+
+export const nl: typeof en = {
+  label: "Zoeken",
+  placeholder: "Naam, identificatie of cultivar",
+  help: "Zoek een openbare zaailing op identificatie of werknaam, een cultivar of een kweker. Privézaailingen worden nooit getoond.",
+  country: "Land",
+  anyCountry: "Alle landen",
+  submit: "Zoeken",
+  clear: "Zoekopdracht wissen",
+  resultsFor: "Resultaten voor {query}",
+  resultsInCountry: "Resultaten in {country}",
+  inactive: "Zoek op identificatie, werknaam, cultivar of kweker. Hieronder zie je de Start-feed.",
+  groups: {
+    seedlings: "Zaailingen",
+    cultivars: "Cultivars",
+    growers: "Kwekers",
+  },
+  reason: {
+    identifier: "Komt overeen met de identificatie",
+    workingName: "Komt overeen met de werknaam",
+    parentCultivar: "Vastgelegde ouder: deze cultivar",
+    parentSeedling: "Afstammeling van een gevonden zaailing",
+    country: "In dit land",
+  },
+  seedling: {
+    grownBy: "Momenteel gekweekt door {name}",
+    noImage: "Nog geen openbare foto.",
+  },
+  cultivar: {
+    seedParentOne: "Eén openbare zaailing heeft deze als zaadouder.",
+    seedParentMany: "{count} openbare zaailingen hebben deze als zaadouder.",
+    pollenParentOne: "Eén openbare zaailing heeft deze als stuifmeelouder.",
+    pollenParentMany: "{count} openbare zaailingen hebben deze als stuifmeelouder.",
+    none: "Nog geen openbare zaailing vermeldt deze cultivar.",
+    findSeedlings: "Zaailingen met deze cultivar bekijken",
+  },
+  grower: {
+    open: "Profiel bekijken",
+  },
+  empty: {
+    title: "Geen openbare resultaten gevonden.",
+    text: "Controleer de spelling, of zoek op een deel van de naam of identificatie.",
+  },
+  more: {
+    seedlings: "Meer zaailingen tonen",
+    cultivars: "Meer cultivars tonen",
+    growers: "Meer kwekers tonen",
+  },
+  first: "Terug naar de eerste resultaten",
+  cursorInvalid: "Die resultaten zijn verouderd, dus je ziet de eerste resultaten.",
+  validation: {
+    tooLong: "Gebruik {max} tekens of minder.",
+    country: "Kies een land uit de lijst.",
+  },
+};
+
+export const fr: typeof en = {
+  label: "Rechercher",
+  placeholder: "Nom, identifiant ou cultivar",
+  help: "Recherchez un semis public par son identifiant ou son nom de travail, un cultivar ou un cultivateur. Les semis privés ne sont jamais affichés.",
+  country: "Pays",
+  anyCountry: "Tous les pays",
+  submit: "Rechercher",
+  clear: "Effacer la recherche",
+  resultsFor: "Résultats pour {query}",
+  resultsInCountry: "Résultats dans {country}",
+  inactive:
+    "Recherchez par identifiant, nom de travail, cultivar ou cultivateur. Le fil d'actualité s'affiche ci-dessous.",
+  groups: {
+    seedlings: "Semis",
+    cultivars: "Cultivars",
+    growers: "Cultivateurs",
+  },
+  reason: {
+    identifier: "Correspond à l'identifiant",
+    workingName: "Correspond au nom de travail",
+    parentCultivar: "Parent enregistré : ce cultivar",
+    parentSeedling: "Descend d'un semis trouvé",
+    country: "Dans ce pays",
+  },
+  seedling: {
+    grownBy: "Actuellement cultivé par {name}",
+    noImage: "Pas encore de photo publique.",
+  },
+  cultivar: {
+    seedParentOne: "Un semis public a ce cultivar comme parent porte-graines.",
+    seedParentMany: "{count} semis publics ont ce cultivar comme parent porte-graines.",
+    pollenParentOne: "Un semis public a ce cultivar comme parent pollinisateur.",
+    pollenParentMany: "{count} semis publics ont ce cultivar comme parent pollinisateur.",
+    none: "Aucun semis public n'enregistre encore ce cultivar.",
+    findSeedlings: "Voir les semis de ce cultivar",
+  },
+  grower: {
+    open: "Voir le profil",
+  },
+  empty: {
+    title: "Aucun résultat public trouvé.",
+    text: "Vérifiez l'orthographe, ou cherchez une partie du nom ou de l'identifiant.",
+  },
+  more: {
+    seedlings: "Afficher plus de semis",
+    cultivars: "Afficher plus de cultivars",
+    growers: "Afficher plus de cultivateurs",
+  },
+  first: "Retour aux premiers résultats",
+  cursorInvalid: "Ces résultats ne sont plus à jour, vous voyez donc les premiers résultats.",
+  validation: {
+    tooLong: "Utilisez {max} caractères maximum.",
+    country: "Choisissez un pays dans la liste.",
+  },
+};

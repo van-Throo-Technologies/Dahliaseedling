@@ -543,6 +543,74 @@ Every new user-visible string is added to English, Dutch and French in the same 
 - Browser tests: `tests/e2e/language.spec.ts` covers the saved choice, the unchanged address, the browser language and the English fallback.
 - Layout: checked at 390×844 and 1280×800 in English, Dutch and French. On narrow screens the header wraps so the longer translated labels fit.
 
+## Search & Discovery (Phase 5)
+
+Home contains the public Feed and one Search box. There is no separate Explore destination, and no marketplace navigation. Visitors can search without an account. With no query and no country, Home shows the Feed as before.
+
+### What is searched
+
+- **Seedlings:** the automatic number and any Series identifier (current or retired) resolve to the Seedling. The working name is matched. A Seedling whose recorded seed or pollen parent is a matching cultivar, or a matching public Seedling, is also returned as a related match, one hop only.
+- **Cultivar References:** the cultivar name. Each result shows the number of public Seedlings that record it as seed parent and as pollen parent, and links to a search for that name.
+- **Growers:** the display name, and the account presentation label as its canonical value (`breeder`, `farm`, `individual`). Only this English token is matched; localised label text is not parsed.
+- **Not yet:** Seed and Seedhead Offers (Phase 7).
+
+### Privacy boundary
+
+Every search function is `SECURITY INVOKER`, so row-level security decides which rows a reader may see. The functions repeat the public rules as explicit predicates as a second layer. Private Seedlings, private parents and suspended growers never appear. A zero-result search reveals nothing about private matches. Search reads no Observations, media, notes, transcripts, Saves or account data. Images come only from public derivatives, through the existing cover path.
+
+### Identifiers
+
+Automatic numbers belong to one grower, and a Series belongs to one grower, so the same identifier can legitimately match several Seedlings. Search returns every legitimate match with its grower, country and identifier context. It never picks one arbitrary Seedling. A retired identifier resolves to its canonical Seedling once. The current model has no workflow that retires an identifier, so that case is tested with a directly inserted row.
+
+### Normalisation
+
+Text is trimmed, internal whitespace is collapsed, and comparison ignores case. An identifier also drops one leading `#` and ignores case. Punctuation is kept, so `JV-26-014` and `JV-26-41` stay different. Accents are not folded. Stored values are never changed. The TypeScript and SQL normalisers mirror each other.
+
+### Ranking
+
+Deterministic, in this order:
+
+1. identifier exact match;
+2. working name exact match;
+3. identifier or working name prefix (identifiers need at least two characters);
+4. working name contains the query;
+5. related match: a recorded cultivar parent matches, or a recorded parent Seedling matched directly;
+6. country only, when no query is given.
+
+Within a tier, results sort by display text, then by id. Likes, follows, Saves, comments and recency never affect ranking. A Seedling appears once, with its strongest reason.
+
+### Filters
+
+- **Country** uses the current holder's canonical ISO code. The list shows names in the reader's language, and the stored code is what is compared. A query and a country combine with AND. Cultivar References have no country, so with a country filter the cultivar group is not shown.
+- **Deferred:** Cull available (Phase 6, when continuation state exists), Seeds and seedheads (Phase 7, when offer state exists), colour and form. The schema has no authoritative public colour or form field, so no taxonomy was invented.
+
+### Bounds and pagination
+
+Each group returns 12 results per page. The database returns one extra row, so the page knows whether a further page exists without a separate count. Continuation is cursor-based and per group: Seedlings, Cultivars and Growers each keep their own position, so continuing one never moves another.
+
+A cursor is the position of the last row shown, in the total order (match tier, sort text, id). The next page resumes exactly after that row, so no result repeats or is skipped while the data does not change. The cursor holds only the normalised query, the country code and the ordering values, all of them public, and it is bound to the query and country it was issued for. A cursor from another search, or a malformed one, is refused: the first results are shown, with a notice.
+
+Continuation does not change the Search privacy boundary. Private Seedlings, private parents and suspended growers are absent from every page. The database does the continuation: the application receives at most one page of rows at a time. The database still evaluates the matching set for each page before it skips to the position, so a continuation costs about the same as a first page.
+
+### Performance and indexes
+
+No extension is enabled and no trigram or other search index exists. Substring Seedling search scans the public rows; that is the known characteristic. On a scratch development dataset of about 6,100 Seedlings, 446 profiles, 830 cultivars and 3,030 parentage rows, measured as the `anon` role (median of three runs):
+
+- a first page of a name substring search (`sunset`) took about 59 ms;
+- a continuation page of the same search took about 57 ms, and returned 13 rows;
+- a country-only Seedling search took about 2 ms, for both the first and a continuation page;
+- a cultivar search took about 4 ms, and a grower search about 9 ms (first page) and 15 ms (continuation).
+
+A continuation is bounded to 13 rows returned, but the database still evaluates the matching set before it applies the cursor position, so a continuation costs about the same as a first page. These are measurements on development data, not production guarantees. Reconsider a trigram or other index only when realistic scale shows that the substring path is too slow.
+
+### Multilingual behaviour
+
+Only the words around results are translated. Queries are never translated, and identifiers, working names, cultivar names and grower names are shown exactly as stored. Switching language keeps the query and the address. Canonical values, such as the country code and the visibility, stay language-neutral in the database and in every filter; the locale changes only how they are shown.
+
+### Not implemented
+
+Typo tolerance (no trigram), Explore, popularity or behavioural ranking, recommendations, AI or semantic search, external search engines, and duplicate merging.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

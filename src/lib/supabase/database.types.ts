@@ -705,6 +705,27 @@ isOneToOne: false
               "is_retired_alias": boolean,"seedling_id": string
             }[]
                            },
+"search_cultivars":
+{ Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_limit"?: number,"p_query": string }; Returns: {
+              "cultivar_id": string,"cultivar_name": string,"match_tier": number,"pollen_parent_count": number,"seed_parent_count": number,"sort_text": string
+            }[]
+                           },
+"search_growers":
+{ Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_country"?: string,"p_limit"?: number,"p_query": string }; Returns: {
+              "account_type_label": string,"country_code": string,"display_name": string,"match_tier": number,"profile_id": string,"sort_text": string
+            }[]
+                           },
+"search_identifier":
+{ Args: { "p_query": string }; Returns: string
+                           },
+"search_seedlings":
+{ Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_country"?: string,"p_limit"?: number,"p_query": string }; Returns: {
+              "holder_country": string,"holder_id": string,"holder_name": string,"match_reason": string,"match_tier": number,"primary_identifier": string,"primary_kind": Database["public"]['Enums']["identifier_kind"],"seedling_id": string,"sort_text": string,"working_name": string
+            }[]
+                           },
+"search_text":
+{ Args: { "p_query": string }; Returns: string
+                           },
 "seedling_cover":
 { Args: { "p_seedling_id": string }; Returns: string
                            },

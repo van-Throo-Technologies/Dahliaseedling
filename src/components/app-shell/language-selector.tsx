@@ -1,22 +1,25 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { setLocaleAction } from "@/i18n/actions";
 import { LOCALE_NAMES, LOCALES } from "@/i18n/locales";
 import { useLocale, useT } from "@/i18n/client";
 
 /**
- * A plain language choice. Each language is named in its own language. Changing it keeps you on the same page:
- * the address never carries a language. Without JavaScript the apply button submits the choice.
+ * A plain language choice. Each language is named in its own language. Changing it keeps you on the same page,
+ * including its search or filter, because the query string is part of where the visitor is. The address never
+ * carries a language. Without JavaScript the apply button submits the choice.
  */
 export function LanguageSelector() {
   const t = useT();
   const locale = useLocale();
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const returnTo = search ? `${pathname}?${search}` : pathname;
 
   return (
     <form action={setLocaleAction} className="flex items-center">
-      <input type="hidden" name="returnTo" value={pathname} />
+      <input type="hidden" name="returnTo" value={returnTo} />
       <label htmlFor="language-select" className="sr-only">
         {t("app.language.label")}
       </label>
