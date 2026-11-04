@@ -58,6 +58,8 @@ function publicationKey(error: { code?: string }): MessageKey {
       return "errors.publication.makePublicFirst";
     case "0A000":
       return "errors.publication.videoNotAvailable";
+    case "53400":
+      return "safety.errors.rateLimited";
     default:
       return "errors.publication.notPublished";
   }

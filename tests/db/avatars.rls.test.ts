@@ -45,9 +45,10 @@ async function setAvatarPath(user: TestUser, path: string) {
 }
 
 async function suspend(profileId: string, suspended: boolean) {
-  const { error } = await admin.client.rpc("admin_set_suspended", {
-    target_profile_id: profileId,
-    suspended,
+  const { error } = await admin.client.rpc("admin_suspend_profile", {
+    p_profile_id: profileId,
+    p_suspended: suspended,
+    p_reason: "Automated test suspension for the avatar visibility check",
   });
   expect(error).toBeNull();
 }

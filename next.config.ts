@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
-const securityHeaders = [
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "X-Frame-Options", value: "DENY" },
-];
+import { securityHeaders } from "./src/lib/security/headers";
+
+// One place builds every security header, so the policy can be unit tested. See src/lib/security/headers.ts.
+const headers = securityHeaders({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  development: process.env.NODE_ENV !== "production",
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -17,7 +19,7 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [{ source: "/:path*", headers }];
   },
 };
 

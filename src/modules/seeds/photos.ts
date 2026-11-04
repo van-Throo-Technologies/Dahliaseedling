@@ -7,6 +7,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { makePublicImage } from "@/modules/publications/derivatives";
 import { validatePhoto } from "./validation";
+import { isRateLimited } from "@/lib/errors/rate-limit";
 
 export type Client = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -28,6 +29,7 @@ export class SeedFailure extends Error {
 
 /** Turns a database error into a visitor message key. */
 export function keyOf(error: { code?: string; message?: string } | null): string {
+  if (isRateLimited(error)) return "safety.errors.rateLimited";
   const message = error?.message ?? "";
   if (message.includes("photograph of the actual source plant"))
     return "seeds.errors.sourcePhotoRequired";

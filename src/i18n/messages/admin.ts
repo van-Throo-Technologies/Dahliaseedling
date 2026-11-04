@@ -5,6 +5,29 @@
  */
 
 export const en = {
+  accounts: {
+    title: "Accounts",
+    link: "Accounts",
+    intro:
+      "Suspend or reinstate an account directly, with a reason. Every change is recorded in the administrator audit log. You cannot suspend your own account.",
+    profileId: "Profile identifier",
+    profileIdHint: "The identifier of the profile to change.",
+    reason: "Reason",
+    reasonHint: "Between 10 and 500 characters. Written for the audit record.",
+    suspend: "Suspend account",
+    restore: "Reinstate account",
+    notices: {
+      suspended: "The account is suspended.",
+      restored: "The account is reinstated.",
+    },
+    errors: {
+      notAllowed: "You cannot do that.",
+      notFound: "That profile could not be found.",
+      ownAccount: "You cannot suspend your own account.",
+      reason: "Give a reason of 10 to 500 characters.",
+      generic: "That could not be done. Try again.",
+    },
+  },
   reports: {
     title: "Reports",
     intro:
@@ -68,6 +91,29 @@ export const en = {
 };
 
 export const nl: typeof en = {
+  accounts: {
+    title: "Accounts",
+    link: "Accounts",
+    intro:
+      "Schort een account direct op of heft die op, met een reden. Elke wijziging wordt vastgelegd in het auditlogboek van beheerders. Je kunt je eigen account niet opschorten.",
+    profileId: "Profielidentificatie",
+    profileIdHint: "De identificatie van het profiel dat je wilt wijzigen.",
+    reason: "Reden",
+    reasonHint: "Tussen 10 en 500 tekens. Bedoeld voor het auditlogboek.",
+    suspend: "Account opschorten",
+    restore: "Account herstellen",
+    notices: {
+      suspended: "Het account is opgeschort.",
+      restored: "Het account is hersteld.",
+    },
+    errors: {
+      notAllowed: "Dat kun je niet doen.",
+      notFound: "Dat profiel kon niet worden gevonden.",
+      ownAccount: "Je kunt je eigen account niet opschorten.",
+      reason: "Geef een reden van 10 tot 500 tekens.",
+      generic: "Dat kon niet worden uitgevoerd. Probeer het opnieuw.",
+    },
+  },
   reports: {
     title: "Meldingen",
     intro:
@@ -132,6 +178,29 @@ export const nl: typeof en = {
 };
 
 export const fr: typeof en = {
+  accounts: {
+    title: "Comptes",
+    link: "Comptes",
+    intro:
+      "Suspendez ou rétablissez un compte directement, avec un motif. Chaque modification est consignée dans le journal d'audit des administrateurs. Vous ne pouvez pas suspendre votre propre compte.",
+    profileId: "Identifiant du profil",
+    profileIdHint: "L'identifiant du profil à modifier.",
+    reason: "Motif",
+    reasonHint: "Entre 10 et 500 caractères. Rédigé pour le journal d'audit.",
+    suspend: "Suspendre le compte",
+    restore: "Rétablir le compte",
+    notices: {
+      suspended: "Le compte est suspendu.",
+      restored: "Le compte est rétabli.",
+    },
+    errors: {
+      notAllowed: "Vous ne pouvez pas faire cela.",
+      notFound: "Ce profil est introuvable.",
+      ownAccount: "Vous ne pouvez pas suspendre votre propre compte.",
+      reason: "Indiquez un motif de 10 à 500 caractères.",
+      generic: "Cette action n'a pas pu aboutir. Réessayez.",
+    },
+  },
   reports: {
     title: "Signalements",
     intro:

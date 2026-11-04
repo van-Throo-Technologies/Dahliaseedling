@@ -559,6 +559,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"rate_counters": {
+                  Row: {
+                    "action": string,"hits": number,"user_id": string,"window_start": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"hits"?: number,"user_id": string,"window_start": string
+                  }
+                  Update: {
+                    "action"?: string,"hits"?: number,"user_id"?: string,"window_start"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "rate_counters_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"rehome_cases": {
                   Row: {
                     "chosen_recipient_id": string | null,"closed_at": string | null,"created_at": string,"handover_method": string | null,"id": string,"note": string | null,"offering_holder_id": string,"price_text": string | null,"received_at": string | null,"seedling_id": string,"sent_at": string | null,"status": string,"term": string | null,"updated_at": string,"_availability_alert": undefined | null
@@ -1150,6 +1170,9 @@ isOneToOne: false
 "_public_media_object_unregistered":
 { Args: { "p_name": string }; Returns: boolean
                            },
+"_rate_limit_consume":
+{ Args: { "p_action": string,"p_user": string }; Returns: undefined
+                           },
 "_register_media_object":
 { Args: { "p_path": string }; Returns: string
                            },
@@ -1204,6 +1227,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"admin_suspend_profile":
+{ Args: { "p_profile_id": string,"p_reason": string,"p_suspended": boolean }; Returns: undefined
+                           },
 "attach_series_identifier":
 { Args: { "p_seedling_id": string,"p_series_id": string }; Returns: {
               "assigned_by": string,

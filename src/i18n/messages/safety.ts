@@ -31,6 +31,7 @@ export const en = {
     sent: "Thank you. Your report has been sent for review. The grower is not told.",
   },
   errors: {
+    rateLimited: "You have reached the limit for this kind of action for now. Try again later.",
     reason: "Choose a reason for the report.",
     details: "Details are 1000 characters or fewer.",
     self: "You cannot report your own content or yourself.",
@@ -68,6 +69,8 @@ export const nl: typeof en = {
     sent: "Dank je. Je melding is naar de beoordelaar gestuurd. De kweker wordt niet op de hoogte gesteld.",
   },
   errors: {
+    rateLimited:
+      "Je hebt voor nu de limiet voor dit soort actie bereikt. Probeer het later opnieuw.",
     reason: "Kies een reden voor de melding.",
     details: "De toelichting is maximaal 1000 tekens.",
     self: "Je kunt je eigen inhoud of jezelf niet melden.",
@@ -105,6 +108,8 @@ export const fr: typeof en = {
     sent: "Merci. Votre signalement a été envoyé pour examen. Le cultivateur n'en est pas informé.",
   },
   errors: {
+    rateLimited:
+      "Vous avez atteint la limite pour ce type d'action pour le moment. Réessayez plus tard.",
     reason: "Choisissez un motif pour le signalement.",
     details: "Les précisions comptent 1000 caractères au maximum.",
     self: "Vous ne pouvez pas signaler votre propre contenu ni vous-même.",

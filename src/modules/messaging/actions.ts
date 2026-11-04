@@ -13,6 +13,7 @@ import {
   REPORT_TARGETS,
   safeReturnPath,
 } from "./validation";
+import { isRateLimited } from "@/lib/errors/rate-limit";
 
 /*
  * Messaging, reporting, blocking and availability subscriptions. Each action signs the caller in, checks the shape of its
@@ -32,6 +33,7 @@ function failureOf(error: { code?: string; message?: string } | null): string {
   if (message.includes("choose a reason")) return "reason";
   if (message.includes("details are")) return "details";
   if (message.includes("cannot report your own")) return "self";
+  if (isRateLimited(error)) return "rateLimited";
   if (error?.code === "42501") return "notAllowed";
   if (error?.code === "P0002") return "notFound";
   if (error?.code === "23514") return "unavailable";

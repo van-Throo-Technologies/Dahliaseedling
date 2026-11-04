@@ -1119,6 +1119,16 @@ These are local measurements on the development database, not production figures
 - Canonical identity resolution, median over 20 runs: about 4 ms.
 - Search with 200 retired records present, median over 10 runs: about 16 ms.
 
+## Security and launch foundations (Phase 10A)
+
+- **Privileges.** Trigger functions have no client EXECUTE grant. Helpers that row-level security needs keep theirs. A database test fixes the set of definer functions visitors may run to an exact allowlist.
+- **Abuse limits.** Comments, private messages, reports, Rehome interests, Seed Offer interests and availability subscriptions are limited per actor in fixed windows, by triggers at the table. A refusal is SQLSTATE 53400 and is shown as a plain sentence. The defaults and their rationale are in `docs/operations.md`.
+- **Direct suspension.** An administrator can suspend or reinstate a profile without a report. A reason of 10 to 500 characters is required, self-suspension is refused, and each change writes an `admin_actions` row. The report-linked path is unchanged. The unaudited `admin_set_suspended` is no longer callable by clients.
+- **Headers.** A Content-Security-Policy restricts loading to this origin and the configured Supabase origin, and refuses framing. Its known limit (inline bootstrap scripts) is recorded in `src/lib/security/headers.ts`.
+- **Logging.** Structured server log lines carry only allowlisted codes, counts and booleans. Free text, addresses and tokens are dropped, not truncated.
+- **Indexes.** Two indexes were added for retired identifier resolution and the merged-link walk, justified by measurement. Public Search is not indexed and its semantics are unchanged.
+- **Operations.** Inspection with existing infrastructure, the hosted security checklist, the unexecuted Resend test, scheduler, backup, restore and real-device voice checklists are in `docs/operations.md`.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

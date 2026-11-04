@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/modules/capture/validation";
+import { isRateLimited } from "@/lib/errors/rate-limit";
 
 /*
  * Continuation actions. Each one calls a database function, which decides who may do what and enforces the state
@@ -12,13 +13,15 @@ import { isUuid } from "@/modules/capture/validation";
  * compares the caller with the stored state.
  */
 
-export type RehomeFailure = "notAllowed" | "notAvailable" | "makePublicFirst" | "note" | "generic";
+export type RehomeFailure =
+  "notAllowed" | "notAvailable" | "makePublicFirst" | "note" | "rateLimited" | "generic";
 
 /** Turns a database error into one of the stable failure keys. The database text itself is never shown. */
 function failureOf(error: { code?: string; message?: string } | null): RehomeFailure {
   const message = error?.message ?? "";
   if (message.includes("make the seedling public")) return "makePublicFirst";
   if (message.includes("notes are")) return "note";
+  if (isRateLimited(error)) return "rateLimited";
   if (error?.code === "42501") return "notAllowed";
   if (error?.code === "P0001" || error?.code === "P0002" || error?.code === "23505")
     return "notAvailable";

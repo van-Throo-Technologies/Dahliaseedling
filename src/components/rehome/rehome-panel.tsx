@@ -44,6 +44,7 @@ const FAILURE: Record<string, MessageKey> = {
   notAllowed: "rehome.errors.notAllowed",
   notAvailable: "rehome.errors.notAvailable",
   makePublicFirst: "rehome.errors.makePublicFirst",
+  rateLimited: "safety.errors.rateLimited",
   note: "rehome.errors.note",
   generic: "rehome.errors.generic",
 };

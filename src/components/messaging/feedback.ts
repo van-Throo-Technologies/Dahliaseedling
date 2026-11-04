@@ -14,6 +14,7 @@ export const MESSAGING_ERRORS: Record<string, MessageKey> = {
   photoType: "messaging.errors.photoType",
   photoSize: "messaging.errors.photoSize",
   unavailable: "messaging.errors.unavailable",
+  rateLimited: "safety.errors.rateLimited",
   generic: "messaging.errors.generic",
   reason: "safety.errors.reason",
   details: "safety.errors.details",

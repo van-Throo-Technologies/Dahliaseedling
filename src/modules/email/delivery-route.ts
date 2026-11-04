@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { logEvent } from "@/lib/logging/log";
 import type { DeliverySummary } from "./delivery";
 
 /*
@@ -26,15 +27,39 @@ export async function handleDeliveryRequest(
   },
 ): Promise<Response> {
   if (!isAuthorizedScheduler(request.headers.get("authorization"), deps.secret)) {
+    logEvent("warn", "email_delivery_refused", {
+      outcome: "unauthorized",
+      status: 401,
+      route: "email.deliver",
+    });
     return Response.json({ error: "unauthorized" }, { status: 401, headers: NO_STORE });
   }
   if (deps.notConfigured()) {
+    logEvent("warn", "email_delivery_refused", {
+      outcome: "not_configured",
+      status: 503,
+      route: "email.deliver",
+    });
     return Response.json({ error: "not_configured" }, { status: 503, headers: NO_STORE });
   }
   try {
     const summary = await deps.run();
+    // Counts only. No address, body, claim token or provider detail reaches the log.
+    logEvent("info", "email_delivery_run", {
+      outcome: "completed",
+      route: "email.deliver",
+      count: summary.claimed,
+      status: 200,
+    });
     return Response.json({ ok: true, ...summary }, { headers: NO_STORE });
   } catch {
+    // The thrown error is deliberately not logged: it can carry provider or database detail.
+    logEvent("error", "email_delivery_run", {
+      outcome: "failed",
+      code: "delivery_failed",
+      route: "email.deliver",
+      status: 500,
+    });
     return Response.json({ error: "delivery_failed" }, { status: 500, headers: NO_STORE });
   }
 }

@@ -196,38 +196,47 @@ describe("writing profiles", () => {
 
 describe("admin and suspension", () => {
   it("refuses a normal user calling the suspension function on themselves", async () => {
-    const { error } = await alice.client.rpc("admin_set_suspended", {
-      target_profile_id: alice.id,
-      suspended: true,
+    const { error } = await alice.client.rpc("admin_suspend_profile", {
+      p_profile_id: alice.id,
+      p_suspended: true,
+      p_reason: "Automated test suspension for the visibility check",
     });
     expect(errorCode(error)).toBe("42501");
     expect((await profileRow(alice.id))?.is_suspended).toBe(false);
   });
 
   it("refuses a normal user suspending another user", async () => {
-    const { error } = await alice.client.rpc("admin_set_suspended", {
-      target_profile_id: bob.id,
-      suspended: true,
+    const { error } = await alice.client.rpc("admin_suspend_profile", {
+      p_profile_id: bob.id,
+      p_suspended: true,
+      p_reason: "Automated test suspension for the visibility check",
     });
     expect(errorCode(error)).toBe("42501");
     expect((await profileRow(bob.id))?.is_suspended).toBe(false);
   });
 
   it("refuses a visitor calling the suspension function", async () => {
-    const { error } = await visitor.rpc("admin_set_suspended", {
-      target_profile_id: bob.id,
-      suspended: true,
+    const { error } = await visitor.rpc("admin_suspend_profile", {
+      p_profile_id: bob.id,
+      p_suspended: true,
+      p_reason: "Automated test suspension for the visibility check",
     });
     expect(errorCode(error)).toBe("42501");
   });
 
   it("lets an admin suspend a profile, which hides it from visitors", async () => {
-    const { data, error } = await admin.client.rpc("admin_set_suspended", {
-      target_profile_id: bob.id,
-      suspended: true,
+    const { error } = await admin.client.rpc("admin_suspend_profile", {
+      p_profile_id: bob.id,
+      p_suspended: true,
+      p_reason: "Automated test suspension for the visibility check",
     });
     expect(error).toBeNull();
-    expect(data).toMatchObject({ id: bob.id, is_suspended: true });
+    const [state] = (
+      await withSuperuser((db) =>
+        db.query("select is_suspended from public.profiles where id = $1", [bob.id]),
+      )
+    ).rows;
+    expect(state).toEqual({ is_suspended: true });
 
     const visitorView = await visitor.from("profiles").select("id").eq("id", bob.id);
     expect(visitorView.data).toEqual([]);
@@ -251,9 +260,10 @@ describe("admin and suspension", () => {
   });
 
   it("lets an admin reinstate a profile, which restores public visibility", async () => {
-    const { error } = await admin.client.rpc("admin_set_suspended", {
-      target_profile_id: bob.id,
-      suspended: false,
+    const { error } = await admin.client.rpc("admin_suspend_profile", {
+      p_profile_id: bob.id,
+      p_suspended: false,
+      p_reason: "Automated test suspension for the visibility check",
     });
     expect(error).toBeNull();
     const visitorView = await visitor.from("profiles").select("id").eq("id", bob.id);

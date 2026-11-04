@@ -66,6 +66,12 @@ export default async function AdminReportsPage({
           {t("admin.reports.filterOpen")}
         </Link>
         <Link
+          href="/admin/accounts"
+          className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand"
+        >
+          {t("admin.accounts.link")}
+        </Link>
+        <Link
           href="/admin/reports?status=all"
           aria-current={status === "all" ? "page" : undefined}
           className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"

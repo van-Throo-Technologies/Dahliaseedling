@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/modules/capture/validation";
 import { safeReturnPath } from "@/modules/messaging/validation";
+import { accountFailure } from "@/modules/admin/account-failure";
 
 /*
  * Administrator actions on a report. Each one names a report, not a free-form target, and the database checks is_admin() and
@@ -73,4 +74,26 @@ export async function setReportedSuspensionAction(formData: FormData): Promise<n
   });
   if (error) back(returnTo, `adminError=${failureOf(error)}`);
   back(returnTo, `adminNotice=${suspend ? "suspended" : "restored"}`);
+}
+
+const ACCOUNTS = "/admin/accounts";
+
+/*
+ * Direct suspension of an account, without a report. The database requires an administrator, refuses a self-suspension, requires a
+ * reason of 10 to 500 characters, and writes the audit row in the same transaction. The reason is not logged or echoed in the address.
+ */
+export async function suspendProfileAction(formData: FormData): Promise<never> {
+  const profileId = String(formData.get("profileId") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "");
+  const suspend = String(formData.get("suspend") ?? "") === "1";
+  if (!isUuid(profileId)) redirect(`${ACCOUNTS}?adminError=notFound`);
+  const client = await createSupabaseServerClient();
+  const { error } = await client.rpc("admin_suspend_profile", {
+    p_profile_id: profileId,
+    p_suspended: suspend,
+    p_reason: reason,
+  });
+  revalidatePath(ACCOUNTS);
+  if (error) redirect(`${ACCOUNTS}?adminError=${accountFailure(error)}`);
+  redirect(`${ACCOUNTS}?adminNotice=${suspend ? "suspended" : "restored"}`);
 }
