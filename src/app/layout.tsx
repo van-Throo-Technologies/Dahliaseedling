@@ -13,7 +13,13 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslation();
-  return { title: APP_NAME, description: t("app.description") };
+  return {
+    title: APP_NAME,
+    description: t("app.description"),
+    manifest: "/manifest.webmanifest",
+    icons: { apple: "/icons/apple-touch-icon.png" },
+    appleWebApp: { capable: true, title: "Dahlia", statusBarStyle: "default" },
+  };
 }
 
 export const viewport: Viewport = {

@@ -17,6 +17,8 @@ import * as admin from "./admin";
 import * as email from "./email";
 import * as assistive from "./assistive";
 import * as privacy from "./privacy";
+import * as feedback from "./feedback";
+import * as launch from "./launch";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -43,6 +45,8 @@ export const MESSAGES = {
     email: email.en,
     assistive: assistive.en,
     privacy: privacy.en,
+    feedback: feedback.en,
+    launch: launch.en,
   },
   nl: {
     app: app.nl,
@@ -64,6 +68,8 @@ export const MESSAGES = {
     email: email.nl,
     assistive: assistive.nl,
     privacy: privacy.nl,
+    feedback: feedback.nl,
+    launch: launch.nl,
   },
   fr: {
     app: app.fr,
@@ -85,6 +91,8 @@ export const MESSAGES = {
     email: email.fr,
     assistive: assistive.fr,
     privacy: privacy.fr,
+    feedback: feedback.fr,
+    launch: launch.fr,
   },
 };
 

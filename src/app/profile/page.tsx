@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { InstallGuidance } from "@/components/pwa/install-guidance";
 import { ButtonLink } from "@/design-system/components/button-link";
 import { FormMessage } from "@/design-system/components/form-message";
 import { requireAccount } from "@/modules/identity/gate";
@@ -72,7 +73,11 @@ export default async function ProfilePage({
           <ButtonLink href="/privacy" variant="secondary">
             {t("privacy.link")}
           </ButtonLink>
+          <ButtonLink href="/feedback" variant="secondary">
+            {t("feedback.title")}
+          </ButtonLink>
         </div>
+        <InstallGuidance />
       </section>
 
       <SeedlingsSection userId={userId} suspended={profile.isSuspended} />

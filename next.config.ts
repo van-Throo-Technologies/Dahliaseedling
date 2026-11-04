@@ -19,7 +19,24 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/:path*", headers }];
+    // Pages that show a grower's own data, or depend on their session, are never stored by a browser or a shared cache.
+    const personal = [
+      "/profile/:path*",
+      "/profiles/:path*",
+      "/privacy/:path*",
+      "/feedback/:path*",
+      "/inbox/:path*",
+      "/notifications/:path*",
+      "/capture/:path*",
+      "/observations/:path*",
+      "/media/:path*",
+      "/admin/:path*",
+      "/api/account/:path*",
+    ].map((source) => ({
+      source,
+      headers: [{ key: "Cache-Control", value: "private, no-store" }],
+    }));
+    return [{ source: "/:path*", headers }, ...personal];
   },
 };
 

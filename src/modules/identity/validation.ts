@@ -1,3 +1,4 @@
+import { FORMER_GROWER_NAME } from "@/modules/identity/former-grower";
 import { msg, type Msg } from "@/i18n/message";
 import { COUNTRY_CODES } from "./country-codes";
 
@@ -70,6 +71,8 @@ export function validateProfileInput(form: FormData): ValidationResult<ProfileIn
       min: LIMITS.displayNameMin,
       max: LIMITS.displayNameMax,
     });
+  } else if (displayName.toLowerCase() === FORMER_GROWER_NAME.toLowerCase()) {
+    errors.displayName = msg("validation.displayName.reserved");
   }
 
   const countryCode = clean(form.get("countryCode")).toUpperCase();

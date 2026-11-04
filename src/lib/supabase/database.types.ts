@@ -283,6 +283,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"feedback": {
+                  Row: {
+                    "app_version": string | null,"author_id": string,"category": string,"client_key": string,"created_at": string,"id": string,"message": string,"page_context": string | null,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "app_version"?: string | null,"author_id": string,"category": string,"client_key": string,"created_at"?: string,"id"?: string,"message": string,"page_context"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "app_version"?: string | null,"author_id"?: string,"category"?: string,"client_key"?: string,"created_at"?: string,"id"?: string,"message"?: string,"page_context"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "feedback_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"grower_follows": {
                   Row: {
                     "created_at": string,"followed_profile_id": string,"follower_id": string
@@ -1252,6 +1272,9 @@ isOneToOne: false
 "_derivative_is_public":
 { Args: { "p_derivative_id": string }; Returns: boolean
                            },
+"_feedback_context":
+{ Args: { "p_raw": string }; Returns: string
+                           },
 "_guard_seedling_for_new_work":
 { Args: { "p_seedling_id": string }; Returns: undefined
                            },
@@ -1316,6 +1339,9 @@ isOneToOne: false
                            },
 "admin_remove_content":
 { Args: { "p_reason"?: string,"p_report_id": string }; Returns: undefined
+                           },
+"admin_set_feedback_status":
+{ Args: { "p_feedback_id": string,"p_status": string }; Returns: undefined
                            },
 "admin_set_reported_suspension":
 { Args: { "p_reason"?: string,"p_report_id": string,"p_suspended": boolean }; Returns: undefined
@@ -1728,6 +1754,9 @@ isOneToOne: false
 { Args: { "p_limit"?: number }; Returns: {
               "bucket": string,"id": string,"object_path": string,"owner_id": string,"queued_at": string
             }[]
+                           },
+"submit_feedback":
+{ Args: { "p_app_version"?: string,"p_category": string,"p_client_key": string,"p_message": string,"p_page_context"?: string }; Returns: string
                            },
 "subscribe_availability":
 { Args: { "p_locale"?: string,"p_seedling_id": string }; Returns: undefined

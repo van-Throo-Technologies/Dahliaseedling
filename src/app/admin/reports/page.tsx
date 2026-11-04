@@ -66,6 +66,12 @@ export default async function AdminReportsPage({
           {t("admin.reports.filterOpen")}
         </Link>
         <Link
+          href="/admin/feedback"
+          className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand"
+        >
+          {t("feedback.admin.title")}
+        </Link>
+        <Link
           href="/admin/accounts"
           className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand"
         >
