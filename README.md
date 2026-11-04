@@ -783,6 +783,240 @@ Deferred to Phase 8. Interest is the Phase 7 bridge. A `seed_offer_interests` ro
 - `tests/e2e/seeds.spec.ts`: the unidentified path (refused without its photograph, then published), the visitor view, interest and the seller's view, the Dutch labels, and keyboard operation with touch targets.
 - Security mutation: disabling the photograph requirement at source creation fails the database test for it. The migration was restored byte-for-byte.
 
+## Messaging, notifications and moderation (Phase 8)
+
+Messages and notifications are two separate systems. A **message** is private text in a conversation that only its two participants can read. A **notification** is an attention signal: a typed row that names what happened and links to it. A notification never carries message text, and a message never appears as a notification.
+
+### Conversations and context
+
+A conversation is one-to-one. Its two participants are stored in order, so a pair has one identity. It is always about a context: a direct message, a public Seedling, a continuation (Rehome case), or a seed offer. A conversation is unique for a pair and context, so repeated presses open the same thread.
+
+- A Rehome conversation is between the holder and one interested grower. It exists from the moment of interest, so the Inbox lists it straight away. The database creates it in the same transaction as the interest.
+- A seed-offer conversation is between the seller and one interested grower, created the same way.
+- A direct or Seedling conversation is opened by a button, and only for a live public Seedling or a grower who is not suspended.
+
+Context is typed and structural: each context reference is a real foreign key, and a check ties the type to exactly one of them.
+
+### Messages
+
+- Text up to 2000 characters, and at most one photograph (JPEG, PNG or WebP, 2.5 MB, the seed photograph limit so requests stay within the server action size limit).
+- A photograph is stored in the sender's private folder. Its media row and storage object are readable only by the two participants, through an extra row-level policy. The private media route serves it through a short-lived signed URL. No public derivative is made.
+- **Messages are immutable after sending.** No edit or delete path exists. See "Message edit and deletion" below.
+- Sending is idempotent. Each send carries a client key, and a repeated submission returns the message already written.
+- Read state is one marker per participant. A message is unread when the other participant wrote it after that marker. Sending advances the sender's own marker.
+
+### Notifications
+
+Each notification has a type, an actor, the references it needs, a read time and a stable dedupe key. The database creates them with triggers, in the same transaction as the event, so an interest or a selection never exists without its notification. The types are:
+
+- `comment` and `reply` on an Update;
+- `message`, bundled: one unread notification per conversation, however many messages arrive;
+- `rehome_interest`, `rehome_selected`, `rehome_sent` and `rehome_received`;
+- `seed_offer_interest`;
+- `followed_seedling_update`, for followers of that exact Seedling;
+- `availability_trigger`.
+
+The Notifications page lists them newest first with read and unread state, and marking read changes only the reader's own rows. Each sentence is written in the reader's language, names the actor, and falls back to a neutral phrase when the actor cannot be read. A notification never states who reported anything: reports create no notifications at all.
+
+### Notify me if available
+
+A signed-in grower who is not the holder can subscribe to one public Seedling. When that Seedling's continuation becomes available again, each subscriber receives one notification and one availability email, once per case and subscriber. The email is delivered as described under "Availability email". Completing a continuation closes the alerts for that Seedling.
+
+### Blocks
+
+A block is one directional row, and it works in both directions for new private contact. While a block exists, neither grower can send a message, start a conversation, or express interest in the other's continuation or seed offer. Existing history stays readable on both sides. A block list is visible to its owner only.
+
+Every path that reads or changes block state for a pair takes a per-pair advisory lock first: starting a conversation, sending, expressing interest, blocking and unblocking. A send that races a block is therefore either written before the block or refused after it.
+
+**Blocking and reporting are separate actions.** Blocking does not report anyone, and reporting does not block anyone. A grower chooses each one independently.
+
+### Reporting
+
+A grower can report four targets, as the locked moderation baseline requires:
+
+| Target          | Where the control is                                           | Eligibility                                                                       |
+| --------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Public Update   | Under the Update, for signed-in readers who are not its author | The Update must be live and public; its author must not be suspended.             |
+| Comment         | On each comment that is not removed and not the reader's own   | The comment must be live and its Update public; its author must not be suspended. |
+| Profile         | On another grower's public profile                             | The profile must not be suspended.                                                |
+| Private message | On a message from the other participant in a conversation      | The reporter must be a participant in that conversation.                          |
+
+Rules enforced in the database, not by the page:
+
+- Visitors cannot report. Suspended growers cannot report.
+- A grower cannot report their own content or themselves. This is refused for every target.
+- Targets are resolved from their identifiers and the database's visibility rules, so a browser cannot name a grower or a target it may not see.
+- The report records the reported grower and a copy of the content at the moment of reporting: the Update's caption, the comment's text, or the message's text. A private message's photograph is referenced but not shown to the reviewer.
+- While a report is open, the same reporter cannot create a second report for the same target. The first one is returned.
+- Reporting never deletes or hides anything, and it never notifies the reported grower.
+
+The reporter can read their own report. The reported grower cannot read it, and neither can an unrelated grower or a visitor. The reported grower's identity is not granted to clients at all, so a reporter also cannot read it directly from the table.
+
+### Administrator review
+
+The review surface is a single protected page, `/admin/reports`. It lists reports waiting for review by default, or all reports. Only an administrator sees it; anyone else gets the same not-found page as any missing resource. It is excluded from search indexing. It is not in the primary navigation, because access is granted by an administrator row and not by a profile setting.
+
+For each report the page shows the target type, the reporter, the reported grower and whether they are suspended, the reason and details the reporter gave, the time, the saved content, and a link to the public page when that page still shows the content. Every action goes through a function that checks administrator status again:
+
+- **Mark as reviewed, mark as actioned, dismiss.** `resolve_report` changes an open report once. A resolved report cannot change again, so each decision is recorded exactly once.
+- **Remove from public view.** Offered for a public Update or comment. It is a soft delete, the same as the author's own delete, which clears a Seedling's cover image if the Update was the cover. Seedling identity and provenance are never touched. Removing content that is already removed records nothing new.
+- **Suspend account, lift suspension.** Uses the Phase 1 authority, `admin_set_suspended`. It adds no flag and deletes nothing. A suspended grower cannot take part, and their public profile and content follow the existing visibility rules. An administrator cannot suspend their own account from a report.
+
+Administrators do not browse conversations. The page never opens a conversation, and a private message's text is shown only as it was saved when it was reported.
+
+Each administrator decision is recorded in `admin_actions`: the report resolution, the removal, and the suspension or restoration, with the administrator, the target and the reason where one was given.
+
+### Message edit and deletion
+
+**Not required for MVP. Sent messages are immutable.** The sources give edit and delete semantics only to comments and to the author's own ordinary Updates. The Data Permissions document says "User-facing deletion policy to be finalized" for messages, and it does not define an edit rule for them. Messages therefore have no edit, unsend, delete-for-me or delete-for-everyone path, no tombstones and no edit history. A grower who wants a message dealt with can report it, and a reviewer sees the text saved at the time of reporting.
+
+The Data Permissions table for messages lists a `deleted_at` column. It is not in the schema, because adding a column with no policy behind it would be speculative. If a deletion policy is defined later, the column is added with it.
+
+### Notification navigation badge
+
+**Not required for MVP.** The PRD fixes the authenticated primary navigation as Home, Capture, Notifications and Profile, and says the inbox is reached by an icon. No source asks for an unread count. Notifications have a real page with read and unread state, and the Inbox shows which conversations are new. The navigation is unchanged, and the absence of a count is deliberate.
+
+### Availability email
+
+The Notify-me availability alert is the only event sent by email in the MVP. Comments, replies, likes, follows, private messages, continuation and seed interest, moderation and digests stay in the app. The provider is Resend.
+
+**Flow.** An availability event writes the in-app notification and one `email_outbox` row per subscriber, in the same transaction as the event. Sending happens afterwards, in a separate request, so a Resend outage cannot roll back the availability itself.
+
+**Delivery.** A scheduled request to `/api/email/deliver` runs the worker:
+
+1. it claims due rows with `email_claim_due`, under a five-minute lease and a fresh claim token;
+2. it reads the context for each row with `email_delivery_context`, which decides whether the alert is still valid and reads the recipient's address at send time;
+3. it sends through the provider interface, or records a suppression;
+4. it records the outcome with the claim token it holds. A worker whose lease has expired cannot record an outcome for a row someone else now owns.
+
+**Outcomes.**
+
+- `sent`: the provider's message id is stored. The address and body are not.
+- Retry: a temporary failure (no response, rate limiting, or a server error) keeps the row pending, with a backoff of 1, 2, 4 … minutes capped at 60, for up to five attempts. The fifth failure marks it `failed` with `attempts_exhausted`.
+- `failed`: a permanent client rejection from the provider, or a suppression.
+- Suppressed, and never sent: the recipient is suspended or no longer exists, the subscription was closed by an unsubscribe or by completing the continuation, or the continuation is no longer available.
+
+No outcome changes the in-app notification, the subscription or any account. The provider's own error text is never stored, logged or returned.
+
+**Idempotency.** One logical email exists per availability event and subscriber, enforced by a unique key. A repeated event returns the same row. Each delivery attempt for one row sends the same provider idempotency key, `dahlia-availability:<outbox id>`, so a retry after a lost response is the same send at the provider, within the provider's idempotency window. Retries of delivery are allowed; a second logical email is never created.
+
+**Concurrency.** Claims are made in one statement with `for update skip locked`, so two workers never receive the same row. The due-row lookup uses the partial index `email_outbox_due_idx`; at 20,000 rows, the claim took about 0.2 ms with a plan that used that index, so no further index was added.
+
+**Provider boundary.** `src/modules/email/provider.ts` defines the interface that domain code depends on. `src/modules/email/resend-provider.ts` is the only module that imports the Resend SDK. Failures are classified as temporary (retryable) or rejected (final). The rest of the application does not depend on Resend.
+
+**Language.** Profiles store no language, so the language is captured when a grower subscribes, from the locale they are reading. An unknown value falls back to English. The subject and body are in English, Dutch and French. Seedling names and identifiers are shown exactly as stored.
+
+**Data sent to the provider.** Only what delivery needs, and nothing else:
+
+- the recipient's email address;
+- the subject and the body, in the recipient's language;
+- the Seedling's working name, as the grower stored it, when the grower set one (otherwise a sentence without a name);
+- the link to the Seedling page, which contains only the Seedling's identifier;
+- the sender address, the provider message id and the idempotency key, which is derived from the outbox row's identifier.
+
+Never sent: Observations, private messages, reports, source descriptions, interested-grower lists, private media paths, profile fields other than the address, and any health or compliance information. The email contains no recommendations, other Seedlings, promotions or social activity, and it does not reserve the Seedling or promise it.
+
+**Managing the alert.** The email links to the Seedling page, where the grower can choose "Stop notifying me". There is no unsubscribe token or one-click link, because the alert is a transactional message the grower requested, not a mailing list. Stopping the alert takes effect for any row not yet sent, because delivery checks the subscription at send time.
+
+**Tracking.** The product does not depend on open or click tracking. Disable open and click tracking for the sending domain in Resend.
+
+**Access.** Clients cannot read, write or call the outbox or its functions. The worker reaches the outbox only through the five delivery functions listed under "Worker privileges" below.
+
+### Deployment: availability email
+
+Production email needs these server-only values in the hosting environment, never in the repository:
+
+| Variable              | Purpose                                                                                      |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`      | Resend API key (secret).                                                                     |
+| `EMAIL_FROM_ADDRESS`  | Sender, for example `DahliaSeedling <notifications@your-verified-domain>`.                   |
+| `APP_BASE_URL`        | Public origin of the deployment, used in links. `https` in production.                       |
+| `CRON_SECRET`         | Bearer secret for the scheduler (secret). With none set, the endpoint refuses every request. |
+| `SUPABASE_SECRET_KEY` | Service credential used only by the delivery worker (secret).                                |
+
+**Sending domain.** Use a domain or subdomain that DahliaSeedling controls, and verify it in Resend. Add the DNS records Resend shows for that domain, including its DKIM and SPF records, as Resend supplies them. Add a DMARC policy at that domain's DNS where appropriate. `EMAIL_FROM_ADDRESS` must use the verified domain. The application never changes DNS, and no DNS values are kept in the source.
+
+**Scheduling.** `vercel.json` schedules `GET /api/email/deliver` every five minutes. The platform sends `Authorization: Bearer <CRON_SECRET>` when that variable is set. Check how often your plan allows scheduled requests, and adjust the schedule if needed.
+
+**Secret handling.** `RESEND_API_KEY`, `CRON_SECRET` and `SUPABASE_SECRET_KEY` are read only by the email modules and `src/lib/supabase/service.ts`. None of them is in a client bundle, a browser response, a database row or committed configuration.
+
+**Verification without the network.** Automated tests never call Resend. They use an injected provider at the adapter boundary, and a mocked SDK where the adapter itself is tested.
+
+### Worker privileges
+
+The scheduled worker authenticates to the database with `SUPABASE_SECRET_KEY`, a server-only credential. That key is the Supabase `service_role`, a platform role with `BYPASSRLS`. The platform fixes that attribute, and it cannot be changed here. **DahliaSeedling therefore does not rely on row-level security to constrain the worker.** The application's authorization boundary for this worker is the set of PostgreSQL object and function grants.
+
+- The worker holds no table privileges on application tables. It cannot `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES` or `TRIGGER` any of them, and the test suite attempts each prohibited operation as the worker's role inside a rolled-back transaction.
+- The worker executes exactly five functions, by exact signature: `email_claim_due(integer, integer)`, `email_delivery_context(uuid, uuid)`, `email_record_sent(uuid, uuid, text)`, `email_record_retry(uuid, uuid, text)` and `email_record_failed(uuid, uuid, text)`. Each is `SECURITY DEFINER` with `search_path` set to empty, checks its claim token where one applies, and touches only the outbox and the reads it needs. None accepts dynamic SQL.
+- The worker cannot execute any other application function, including report resolution, content removal, suspension administration, and messaging or block mutations.
+- Scheduled invocation is protected separately by `CRON_SECRET` as a bearer token, compared in constant time. Without it, the endpoint refuses every request, before any outbox row is touched.
+
+**Least-privilege repair.** The platform's default privileges had granted `TRUNCATE`, `REFERENCES`, `TRIGGER` and `MAINTAIN` on new application tables to `anon`, `authenticated` and `service_role`, and `EXECUTE` on functions to `PUBLIC`. The repair in `20261105100000_email_worker_least_privilege.sql` removes those privileges from the application schema only. It leaves `anon` and `authenticated` with the read and write grants their migrations name, and it preserves every function either role could already execute. `auth`, `storage` and the Supabase-managed schemas are not changed.
+
+**Future objects, and what cannot be automated.** Table defaults for objects created by the `postgres` migration role grant nothing to `anon`, `authenticated` or `service_role`; this was tested with a real table. Function defaults cannot be relied on here: a new function still receives implicit `PUBLIC` execute, so no default rule is set for functions. Enforcing one would affect Supabase-managed behaviour and the functions that legitimate clients use, so it is not attempted.
+
+**Convention for every privileged function.** When a migration introduces a function that a client or the worker must not call freely:
+
+1. revoke execution from `PUBLIC` and from every role that does not need it, by exact signature;
+2. grant execution only to the intended roles, by exact signature;
+3. add or update a security test that proves the intended roles can execute it and the others cannot.
+
+`tests/supabase/conventions.test.ts` enforces step 1 for every non-trigger function in every migration. Steps 2 and 3 are enforced by the regression tests named below. Review function privileges whenever a privileged DahliaSeedling function is introduced. The database does not protect future functions automatically.
+
+### Deployment verification gates
+
+Two checks are deployment gates, not implementation blockers. They need hosted credentials and cannot be run from the local environment.
+
+- **Production/staging verification pending:** verify the effective `service_role` table and function privileges against the hosted Supabase project after migrations are applied.
+- **Production verification pending:** send one availability email through the configured Resend account after the production or staging sending domain and credentials are installed.
+
+Checklist for the hosted project, after applying migrations:
+
+- `service_role` cannot `SELECT`, `INSERT`, `UPDATE`, `DELETE` or `TRUNCATE` application tables.
+- `service_role` can execute exactly these five functions: `email_claim_due(integer, integer)`, `email_delivery_context(uuid, uuid)`, `email_record_sent(uuid, uuid, text)`, `email_record_retry(uuid, uuid, text)` and `email_record_failed(uuid, uuid, text)`.
+- `service_role` cannot execute representative privileged functions, such as `resolve_report`, `admin_remove_content`, `admin_set_reported_suspension` and `send_message`.
+- `anon` and `authenticated` hold no `TRUNCATE`, `REFERENCES`, `TRIGGER` or `MAINTAIN` on application tables.
+- `GET /api/email/deliver` refuses a request without the `CRON_SECRET` bearer token.
+- `RESEND_API_KEY` and `SUPABASE_SECRET_KEY` appear in no client bundle and no response.
+- One availability email is delivered through the configured provider.
+
+### Security mutations
+
+- **Messaging (accepted in the earlier Phase 8 review):** the block check was removed from both `send_message` and the message trigger. The block test and the race test failed. The migration was restored byte for byte and the suite passed again.
+- **Moderation:** the administrator check was removed from `resolve_report`. Three administrator-only tests failed, one of them the reported grower's attempt to resolve their own report. The migration was restored byte for byte and the moderation suite passed again.
+- **Email delivery:** the scheduler's authorization was disabled in `delivery-route.ts`. Four authorization tests failed. The file was restored byte for byte and the tests passed again.
+- **Worker privileges:** a direct `TRUNCATE` on `profiles` was restored for the worker's role in the repair migration. Two privilege tests failed, one of them the attempted truncation. The migration was restored byte for byte and the suite passed again.
+
+### Verification
+
+- Database, messaging (`tests/db/messaging.test.ts`, 26 tests): conversation uniqueness and context authorization; idempotent sends; participant-only reads; bundled notifications; read state; photograph visibility; block enforcement in both directions, with history kept and a concurrent block-and-send round; suspension; direct table writes refused.
+- Database, moderation (`tests/db/moderation.test.ts`, 21 tests): reporting each target; the duplicate and self-report rules; target validation; a suspended reporter; a visitor; report privacy from the reported grower, an unrelated grower and a visitor; administrator-only functions; single resolution; soft removal that keeps Seedling provenance; removal of a private message refused; suspension through the existing authority, with restoration; an administrator's own account refused.
+- Database, email (`tests/db/email.test.ts`, 18 tests): one outbox row per subscriber and event; a repeated event adds nothing; unsubscribed and unrelated growers get none; the subscriber's language is stored and an unknown one falls back to English; clients cannot read, write or call the functions; two concurrent claims never share a row; success, retry, exhaustion, permanent rejection and lapsed-lease takeover, with a stale worker refused; suppression for unsubscribe, suspension and a closed continuation; the address is read only at send time.
+- Database, email delivery (`tests/db/email-delivery.test.ts`, 3 tests): the processor, running against the real database with only the provider replaced, moves a pending alert to `sent` once, leaves a second run with nothing to send, and keeps a temporary failure retryable with a code and no provider text.
+- Database, service-role privileges (`tests/db/service-role-privileges.test.ts`, 68 tests): the worker holds no table privilege, checked against the catalog and by attempting each prohibited operation; it executes exactly the five functions; it cannot execute the sensitive functions; anon and authenticated keep the access they need and lose the four dangerous privileges; a table and a function created with the convention grant nothing they should not.
+- Unit, email (`src/modules/email/*.test.ts`, 28 tests): the renderer in three languages with the English fallback, escaping and the content boundary; the Resend adapter's request shape and error classification; the processor's step order, suppression and idempotency key; the scheduler's authorization and the response that carries counts only.
+- Browser, messaging (`tests/e2e/messaging.spec.ts`, phone and desktop): a conversation from a profile, a message, the other grower's new state, a message report, a block, the refused send, the blocker's history, the notification sentence, and the Dutch Inbox.
+- Browser, moderation (`tests/e2e/moderation.spec.ts`): an Update and a profile reported on the phone project; a comment reported on the desktop project; an administrator reviewing a report, marking it reviewed and seeing the status change, with an ordinary grower refused by a not-found response. The administrator journey runs on both projects.
+
+### Performance
+
+Measured on a local dataset of one grower with 2,000 conversations and 10 messages in each, using `EXPLAIN ANALYZE`:
+
+- thread view (200 messages of one conversation) used the conversation index and took about 0.07 ms;
+- the Inbox (100 newest of 2,000 conversations) took about 1.1 ms, and the planner chose a sequential scan of the grower's conversations at this size;
+- the unread count took about 4.5 ms with a sequential scan of messages.
+
+The moderation changes do not alter these query paths. The administrator review list is bounded to 50 reports and is used only from the protected page. These are local measurements, not production guarantees.
+
+### Not implemented
+
+- Realtime updates. The Inbox and notifications refresh on navigation.
+- Message edit and deletion, which the sources do not require.
+- A notification count in the navigation, which the sources do not require.
+- Removal of private messages by administrators. The sources list removal for public content only.
+- Viewing a reported private message's photograph from the review page. The review shows its text as saved and records that a photograph was attached.
+- Restoration of removed content. No source defines a restore path.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AttachSeriesForm } from "@/components/seedlings/attach-series-form";
 import { ParentForm } from "@/components/seedlings/parent-form";
+import { AvailabilityControl } from "@/components/messaging/availability-control";
+import { MessagingFeedback } from "@/components/messaging/feedback-message";
+import { StartConversation } from "@/components/messaging/start-conversation";
 import { RehomePanel } from "@/components/rehome/rehome-panel";
 import { SeedOfferList } from "@/components/seeds/seed-offer-list";
 import {
@@ -63,6 +66,8 @@ export default async function SeedlingPage({
   readonly searchParams: Promise<{
     rehome?: string;
     rehomeError?: string;
+    messagingNotice?: string;
+    messagingError?: string;
     seedNotice?: string;
     seedError?: string;
   }>;
@@ -115,6 +120,17 @@ export default async function SeedlingPage({
         ),
     ),
   );
+  const subscribed =
+    viewer !== null && publicPart && !isHolder
+      ? (
+          await supabase
+            .from("availability_subscriptions")
+            .select("seedling_id")
+            .eq("seedling_id", id)
+            .is("closed_at", null)
+            .maybeSingle()
+        ).data !== null
+      : false;
   const seedOffers = await offersForSeedling(supabase, id, viewer?.id ?? null);
   const parentLabels = await displayLabels(
     supabase,
@@ -351,7 +367,35 @@ export default async function SeedlingPage({
         </div>
       ) : null}
 
-      <RehomePanel seedlingId={id} notice={query.rehome} failure={query.rehomeError} />
+      <MessagingFeedback error={query.messagingError} notice={query.messagingNotice} />
+      {publicPart ? (
+        <div className="flex flex-wrap items-center gap-3">
+          {viewer && !isHolder ? (
+            <StartConversation
+              kind="seedling"
+              target={id}
+              returnTo={`/seedlings/${id}`}
+              label={t("messaging.start.seedling")}
+              id="start-seedling"
+            />
+          ) : null}
+          <AvailabilityControl
+            seedlingId={id}
+            returnTo={`/seedlings/${id}`}
+            subscribed={subscribed}
+            signedIn={viewer !== null}
+            isHolder={isHolder}
+            id="availability"
+          />
+        </div>
+      ) : null}
+
+      <RehomePanel
+        seedlingId={id}
+        holderId={seedling.currentHolderId}
+        notice={query.rehome}
+        failure={query.rehomeError}
+      />
 
       <section aria-labelledby="history-title" className="flex flex-col gap-3">
         <h2 id="history-title" className="text-lg font-medium text-text">

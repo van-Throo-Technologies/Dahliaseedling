@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { MessagingFeedback } from "@/components/messaging/feedback-message";
+import { ReportControl } from "@/components/safety/report-control";
 import { CommentThread } from "@/components/publications/comment-thread";
 import { UpdateCard } from "@/components/publications/update-card";
 import { FormMessage } from "@/design-system/components/form-message";
@@ -24,7 +26,12 @@ export default async function UpdatePage({
   searchParams,
 }: {
   readonly params: Promise<{ id: string }>;
-  readonly searchParams: Promise<{ published?: string; error?: string }>;
+  readonly searchParams: Promise<{
+    published?: string;
+    error?: string;
+    messagingNotice?: string;
+    messagingError?: string;
+  }>;
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
@@ -48,6 +55,16 @@ export default async function UpdatePage({
 
       <UpdateCard update={update} />
 
+      <MessagingFeedback error={query.messagingError} notice={query.messagingNotice} />
+      {viewer && !isAuthor ? (
+        <ReportControl
+          targetType="update"
+          targetId={id}
+          returnTo={`/updates/${id}`}
+          id="report-update"
+        />
+      ) : null}
+
       {isAuthor ? (
         <section aria-labelledby="manage-title" className="flex flex-col gap-3">
           <h2 id="manage-title" className="text-lg font-medium text-text">
@@ -66,7 +83,7 @@ export default async function UpdatePage({
         </section>
       ) : null}
 
-      <CommentThread updateId={id} comments={comments} canPost />
+      <CommentThread updateId={id} comments={comments} canPost canReport={viewer !== null} />
     </article>
   );
 }

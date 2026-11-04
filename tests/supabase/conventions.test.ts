@@ -45,6 +45,24 @@ describe("migration conventions", () => {
     }
   });
 
+  it("revokes PUBLIC execute from every new non-trigger function in the migration that creates it", () => {
+    // Function defaults do not apply on this platform, so the explicit revoke is the only thing that keeps a new function from
+    // being callable by every role. Trigger functions are run by the table, not called, and are exempt.
+    for (const file of migrationFiles()) {
+      const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8").toLowerCase();
+      for (const match of sql.matchAll(/create function public\.([a-z_0-9]+)\s*\(/g)) {
+        const name = match[1]!;
+        const bodyEnd = sql.indexOf("$$;", match.index!);
+        const header = sql.slice(match.index!, bodyEnd === -1 ? match.index! + 800 : bodyEnd);
+        if (/returns\s+trigger/.test(header)) continue;
+        const revoke = new RegExp(
+          `revoke\\s[^;]*on\\s+function\\s+public\\.${name}\\s*\\([^)]*\\)[^;]*from[^;]*\\bpublic\\b`,
+        );
+        expect(sql, `${file}: ${name} must revoke PUBLIC execute`).toMatch(revoke);
+      }
+    }
+  });
+
   it("enables RLS and grants access in the same migration that creates each table", () => {
     for (const file of migrationFiles()) {
       const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8").toLowerCase();
@@ -53,8 +71,9 @@ describe("migration conventions", () => {
         const rlsPattern = new RegExp(
           `alter\\s+table\\s+(?:public\\.)?"?${table}"?\\s+enable\\s+row\\s+level\\s+security`,
         );
+        // A table that no client or worker may touch names an explicit revoke of service_role instead of a grant.
         const grantPattern = new RegExp(
-          `grant\\s[^;]*\\son\\s+table\\s+(?:public\\.)?"?${table}"?`,
+          `grant\\s[^;]*\\son\\s+table\\s+(?:public\\.)?"?${table}"?|revoke\\s+all\\s+on\\s+table\\s+(?:public\\.)?"?${table}"?\\s+from\\s[^;]*service_role`,
         );
 
         expect(sql, `${file}: RLS for ${table}`).toMatch(rlsPattern);

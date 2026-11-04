@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MessagingFeedback } from "@/components/messaging/feedback-message";
+import { StartConversation } from "@/components/messaging/start-conversation";
+import { BlockControl } from "@/components/safety/block-control";
+import { ReportControl } from "@/components/safety/report-control";
 import { GrowerFollowForm } from "@/components/publications/social-buttons";
 import { UpdateCard } from "@/components/publications/update-card";
 import { SeedOfferList } from "@/components/seeds/seed-offer-list";
@@ -50,7 +54,13 @@ export default async function PublicProfilePage({
   searchParams,
 }: {
   readonly params: Promise<{ id: string }>;
-  readonly searchParams: Promise<{ tab?: string; seedNotice?: string; seedError?: string }>;
+  readonly searchParams: Promise<{
+    tab?: string;
+    seedNotice?: string;
+    seedError?: string;
+    messagingNotice?: string;
+    messagingError?: string;
+  }>;
 }) {
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) notFound();
@@ -68,6 +78,17 @@ export default async function PublicProfilePage({
   const isSelf = viewer !== null && viewer.id === profile.id;
   const supabase = await createSupabaseServerClient();
   const returnTo = `/profiles/${profile.id}?tab=${tab}`;
+  // The reader's own block list is the only one they can see, so this asks about the pair from their side alone.
+  const blockedByMe =
+    viewer !== null && !isSelf
+      ? (
+          await supabase
+            .from("blocks")
+            .select("blocked_id")
+            .eq("blocked_id", profile.id)
+            .maybeSingle()
+        ).data !== null
+      : false;
   const offers = await liveOffersBySeller(supabase, profile.id, viewer?.id ?? null);
 
   const following =
@@ -121,6 +142,41 @@ export default async function PublicProfilePage({
         ) : null}
         {!isSelf ? (
           <GrowerFollowForm profileId={profile.id} following={following} returnTo={returnTo} />
+        ) : null}
+        <MessagingFeedback error={query.messagingError} notice={query.messagingNotice} />
+        {!isSelf ? (
+          viewer ? (
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-wrap gap-3">
+                <StartConversation
+                  kind="direct"
+                  target={profile.id}
+                  returnTo={returnTo}
+                  label={t("messaging.start.direct")}
+                  id="start-direct"
+                />
+              </div>
+              <BlockControl
+                targetId={profile.id}
+                returnTo={returnTo}
+                blocked={blockedByMe}
+                id="block-grower"
+              />
+              <ReportControl
+                targetType="profile"
+                targetId={profile.id}
+                returnTo={returnTo}
+                id="report-profile"
+              />
+            </div>
+          ) : (
+            <Link
+              href={`/sign-in?next=${encodeURIComponent(returnTo)}`}
+              className="inline-flex min-h-11 items-center text-text-brand underline underline-offset-4"
+            >
+              {t("messaging.start.signIn")}
+            </Link>
+          )
         ) : null}
       </header>
 

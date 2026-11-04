@@ -10,6 +10,11 @@ import * as errors from "./errors";
 import * as search from "./search";
 import * as rehome from "./rehome";
 import * as seeds from "./seeds";
+import * as messaging from "./messaging";
+import * as notifications from "./notifications";
+import * as safety from "./safety";
+import * as admin from "./admin";
+import * as email from "./email";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -29,6 +34,11 @@ export const MESSAGES = {
     search: search.en,
     rehome: rehome.en,
     seeds: seeds.en,
+    messaging: messaging.en,
+    notifications: notifications.en,
+    safety: safety.en,
+    admin: admin.en,
+    email: email.en,
   },
   nl: {
     app: app.nl,
@@ -43,6 +53,11 @@ export const MESSAGES = {
     search: search.nl,
     rehome: rehome.nl,
     seeds: seeds.nl,
+    messaging: messaging.nl,
+    notifications: notifications.nl,
+    safety: safety.nl,
+    admin: admin.nl,
+    email: email.nl,
   },
   fr: {
     app: app.fr,
@@ -57,6 +72,11 @@ export const MESSAGES = {
     search: search.fr,
     rehome: rehome.fr,
     seeds: seeds.fr,
+    messaging: messaging.fr,
+    notifications: notifications.fr,
+    safety: safety.fr,
+    admin: admin.fr,
+    email: email.fr,
   },
 };
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FormMessage } from "@/design-system/components/form-message";
+import { StartConversation } from "@/components/messaging/start-conversation";
 import { formatDate } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
 import type { MessageKey } from "@/i18n/translator";
@@ -103,10 +104,13 @@ function Terms({
 
 export async function RehomePanel({
   seedlingId,
+  holderId,
   notice,
   failure,
 }: {
   readonly seedlingId: string;
+  /** The current holder. Used only to open a conversation with them; the panel never shows it. */
+  readonly holderId?: string;
   readonly notice?: string;
   readonly failure?: string;
 }) {
@@ -257,6 +261,14 @@ export async function RehomePanel({
                     <span className="text-sm text-text-muted">
                       {formatDate(interest.createdAt, locale)}
                     </span>
+                    <StartConversation
+                      kind="rehome"
+                      target={item!.id}
+                      other={interest.userId}
+                      returnTo={`/seedlings/${seedlingId}`}
+                      label={t("messaging.start.rehome")}
+                      id={`start-rehome-${interest.userId}`}
+                    />
                     <form action={chooseRecipientAction}>
                       <input type="hidden" name="seedlingId" value={seedlingId} />
                       <input type="hidden" name="caseId" value={item!.id} />
@@ -282,6 +294,16 @@ export async function RehomePanel({
       {!isHolder && panel.hasInterest ? (
         <div className="flex flex-col gap-3">
           <p className="text-base text-text-muted">{t("rehome.panel.interestRecorded")}</p>
+          {holderId ? (
+            <StartConversation
+              kind="rehome"
+              target={item!.id}
+              other={holderId}
+              returnTo={`/seedlings/${seedlingId}`}
+              label={t("messaging.start.rehome")}
+              id="start-rehome-holder"
+            />
+          ) : null}
           <form action={withdrawInterestAction}>
             <input type="hidden" name="seedlingId" value={seedlingId} />
             <input type="hidden" name="caseId" value={item!.id} />

@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "admin_users": {
+            "admin_actions": {
+                  Row: {
+                    "action_type": string,"admin_id": string,"created_at": string,"id": string,"reason": string | null,"target_id": string,"target_type": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action_type": string,"admin_id": string,"created_at"?: string,"id"?: string,"reason"?: string | null,"target_id": string,"target_type": string
+                  }
+                  Update: {
+                    "action_type"?: string,"admin_id"?: string,"created_at"?: string,"id"?: string,"reason"?: string | null,"target_id"?: string,"target_type"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "admin_actions_admin_id_fkey"
+      columns: ["admin_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"admin_users": {
                   Row: {
                     "granted_at": string,"user_id": string
                   }
@@ -36,6 +56,58 @@ export type Database = {
                   }
                   Relationships: [
                     
+                  ]
+                },"availability_subscriptions": {
+                  Row: {
+                    "closed_at": string | null,"created_at": string,"locale": string,"seedling_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "closed_at"?: string | null,"created_at"?: string,"locale"?: string,"seedling_id": string,"user_id": string
+                  }
+                  Update: {
+                    "closed_at"?: string | null,"created_at"?: string,"locale"?: string,"seedling_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "availability_subscriptions_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "availability_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"blocks": {
+                  Row: {
+                    "blocked_id": string,"blocker_id": string,"created_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "blocked_id": string,"blocker_id": string,"created_at"?: string
+                  }
+                  Update: {
+                    "blocked_id"?: string,"blocker_id"?: string,"created_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "blocks_blocked_id_fkey"
+      columns: ["blocked_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "blocks_blocker_id_fkey"
+      columns: ["blocker_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"comments": {
                   Row: {
@@ -69,6 +141,76 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"conversation_reads": {
+                  Row: {
+                    "conversation_id": string,"read_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "conversation_id": string,"read_at": string,"user_id": string
+                  }
+                  Update: {
+                    "conversation_id"?: string,"read_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversation_reads_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversation_reads_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"conversations": {
+                  Row: {
+                    "context_type": string,"created_at": string,"id": string,"last_message_at": string | null,"rehome_case_id": string | null,"seed_offer_id": string | null,"seedling_id": string | null,"user_a_id": string,"user_b_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "context_type": string,"created_at"?: string,"id"?: string,"last_message_at"?: string | null,"rehome_case_id"?: string | null,"seed_offer_id"?: string | null,"seedling_id"?: string | null,"user_a_id": string,"user_b_id": string
+                  }
+                  Update: {
+                    "context_type"?: string,"created_at"?: string,"id"?: string,"last_message_at"?: string | null,"rehome_case_id"?: string | null,"seed_offer_id"?: string | null,"seedling_id"?: string | null,"user_a_id"?: string,"user_b_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversations_rehome_case_id_fkey"
+      columns: ["rehome_case_id"]
+isOneToOne: false
+      referencedRelation: "rehome_cases"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_seed_offer_id_fkey"
+      columns: ["seed_offer_id"]
+isOneToOne: false
+      referencedRelation: "seed_offers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_user_a_id_fkey"
+      columns: ["user_a_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_user_b_id_fkey"
+      columns: ["user_b_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"cultivar_references": {
                   Row: {
                     "created_at": string,"created_by": string | null,"id": string,"name": string,"normalized_name": string
@@ -86,6 +228,38 @@ isOneToOne: false
       columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"email_outbox": {
+                  Row: {
+                    "attempts": number,"claim_token": string | null,"claimed_until": string | null,"created_at": string,"dedupe_key": string,"id": string,"kind": string,"last_failure": string | null,"locale": string,"next_attempt_at": string,"provider_message_id": string | null,"recipient_id": string,"rehome_case_id": string | null,"seedling_id": string,"sent_at": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"claim_token"?: string | null,"claimed_until"?: string | null,"created_at"?: string,"dedupe_key": string,"id"?: string,"kind": string,"last_failure"?: string | null,"locale"?: string,"next_attempt_at"?: string,"provider_message_id"?: string | null,"recipient_id": string,"rehome_case_id"?: string | null,"seedling_id": string,"sent_at"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "attempts"?: number,"claim_token"?: string | null,"claimed_until"?: string | null,"created_at"?: string,"dedupe_key"?: string,"id"?: string,"kind"?: string,"last_failure"?: string | null,"locale"?: string,"next_attempt_at"?: string,"provider_message_id"?: string | null,"recipient_id"?: string,"rehome_case_id"?: string | null,"seedling_id"?: string,"sent_at"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "email_outbox_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "email_outbox_rehome_case_id_fkey"
+      columns: ["rehome_case_id"]
+isOneToOne: false
+      referencedRelation: "rehome_cases"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "email_outbox_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
       referencedColumns: ["id"]
     }
                   ]
@@ -158,6 +332,100 @@ isOneToOne: false
       columns: ["owner_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"messages": {
+                  Row: {
+                    "body": string | null,"client_key": string,"conversation_id": string,"created_at": string,"id": string,"photo_media_id": string | null,"sender_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"client_key": string,"conversation_id": string,"created_at"?: string,"id"?: string,"photo_media_id"?: string | null,"sender_id": string
+                  }
+                  Update: {
+                    "body"?: string | null,"client_key"?: string,"conversation_id"?: string,"created_at"?: string,"id"?: string,"photo_media_id"?: string | null,"sender_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "messages_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "messages_photo_media_id_fkey"
+      columns: ["photo_media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "messages_sender_id_fkey"
+      columns: ["sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"comment_id": string | null,"conversation_id": string | null,"created_at": string,"dedupe_key": string,"id": string,"read_at": string | null,"recipient_id": string,"rehome_case_id": string | null,"seed_offer_id": string | null,"seedling_id": string | null,"type": string,"update_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_id"?: string | null,"comment_id"?: string | null,"conversation_id"?: string | null,"created_at"?: string,"dedupe_key": string,"id"?: string,"read_at"?: string | null,"recipient_id": string,"rehome_case_id"?: string | null,"seed_offer_id"?: string | null,"seedling_id"?: string | null,"type": string,"update_id"?: string | null
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"comment_id"?: string | null,"conversation_id"?: string | null,"created_at"?: string,"dedupe_key"?: string,"id"?: string,"read_at"?: string | null,"recipient_id"?: string,"rehome_case_id"?: string | null,"seed_offer_id"?: string | null,"seedling_id"?: string | null,"type"?: string,"update_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_comment_id_fkey"
+      columns: ["comment_id"]
+isOneToOne: false
+      referencedRelation: "comments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_rehome_case_id_fkey"
+      columns: ["rehome_case_id"]
+isOneToOne: false
+      referencedRelation: "rehome_cases"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_seed_offer_id_fkey"
+      columns: ["seed_offer_id"]
+isOneToOne: false
+      referencedRelation: "seed_offers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_seedling_id_fkey"
+      columns: ["seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_update_id_fkey"
+      columns: ["update_id"]
+isOneToOne: false
+      referencedRelation: "updates"
       referencedColumns: ["id"]
     }
                   ]
@@ -293,9 +561,9 @@ isOneToOne: false
                   ]
                 },"rehome_cases": {
                   Row: {
-                    "chosen_recipient_id": string | null,"closed_at": string | null,"created_at": string,"handover_method": string | null,"id": string,"note": string | null,"offering_holder_id": string,"price_text": string | null,"received_at": string | null,"seedling_id": string,"sent_at": string | null,"status": string,"term": string | null,"updated_at": string
+                    "chosen_recipient_id": string | null,"closed_at": string | null,"created_at": string,"handover_method": string | null,"id": string,"note": string | null,"offering_holder_id": string,"price_text": string | null,"received_at": string | null,"seedling_id": string,"sent_at": string | null,"status": string,"term": string | null,"updated_at": string,"_availability_alert": undefined | null
                   }
-                  ComputedFields: never
+                  ComputedFields: "_availability_alert"
                   Insert: {
                     "chosen_recipient_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"handover_method"?: string | null,"id"?: string,"note"?: string | null,"offering_holder_id": string,"price_text"?: string | null,"received_at"?: string | null,"seedling_id": string,"sent_at"?: string | null,"status"?: string,"term"?: string | null,"updated_at"?: string
                   }
@@ -346,6 +614,56 @@ isOneToOne: false
       columns: ["rehome_case_id"]
 isOneToOne: false
       referencedRelation: "rehome_cases"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"reports": {
+                  Row: {
+                    "content_snapshot": string | null,"conversation_id": string | null,"created_at": string,"details": string | null,"id": string,"message_photo_media_id": string | null,"reason": string,"reported_user_id": string,"reporter_id": string,"resolved_at": string | null,"reviewed_by": string | null,"status": string,"target_id": string,"target_type": string,"target_update_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "content_snapshot"?: string | null,"conversation_id"?: string | null,"created_at"?: string,"details"?: string | null,"id"?: string,"message_photo_media_id"?: string | null,"reason": string,"reported_user_id": string,"reporter_id": string,"resolved_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"target_id": string,"target_type": string,"target_update_id"?: string | null
+                  }
+                  Update: {
+                    "content_snapshot"?: string | null,"conversation_id"?: string | null,"created_at"?: string,"details"?: string | null,"id"?: string,"message_photo_media_id"?: string | null,"reason"?: string,"reported_user_id"?: string,"reporter_id"?: string,"resolved_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"target_id"?: string,"target_type"?: string,"target_update_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reports_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_message_photo_media_id_fkey"
+      columns: ["message_photo_media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_reported_user_id_fkey"
+      columns: ["reported_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_reporter_id_fkey"
+      columns: ["reporter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_reviewed_by_fkey"
+      columns: ["reviewed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_target_update_id_fkey"
+      columns: ["target_update_id"]
+isOneToOne: false
+      referencedRelation: "updates"
       referencedColumns: ["id"]
     }
                   ]
@@ -761,11 +1079,29 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "_derivative_is_public":
+            "_availability_alert":
+{ Args: { "p_case": Omit<Database["public"]['Tables']["rehome_cases"]['Row'], Database["public"]['Tables']["rehome_cases"]['ComputedFields']> }; Returns: undefined
+                           },
+"_blocked_between":
+{ Args: { "p_a": string,"p_b": string }; Returns: boolean
+                           },
+"_derivative_is_public":
 { Args: { "p_derivative_id": string }; Returns: boolean
+                           },
+"_is_conversation_participant":
+{ Args: { "p_conversation_id": string }; Returns: boolean
+                           },
+"_lock_pair":
+{ Args: { "p_a": string,"p_b": string }; Returns: undefined
                            },
 "_media_object_unregistered":
 { Args: { "p_name": string }; Returns: boolean
+                           },
+"_message_media_is_readable":
+{ Args: { "p_media_id": string }; Returns: boolean
+                           },
+"_profile_active":
+{ Args: { "p_id": string }; Returns: boolean
                            },
 "_public_media_object_is_public":
 { Args: { "p_name": string }; Returns: boolean
@@ -796,6 +1132,17 @@ isOneToOne: false
                            },
 "add_unidentified_source_photo":
 { Args: { "p_media_id": string,"p_source_id": string }; Returns: undefined
+                           },
+"admin_list_reports":
+{ Args: { "p_limit"?: number,"p_show_all"?: boolean }; Returns: {
+              "content_snapshot": string,"created_at": string,"details": string,"id": string,"is_message": boolean,"reason": string,"reported_name": string,"reported_suspended": boolean,"reported_user_id": string,"reporter_name": string,"resolved_at": string,"status": string,"target_id": string,"target_live": boolean,"target_type": string,"target_update_id": string
+            }[]
+                           },
+"admin_remove_content":
+{ Args: { "p_reason"?: string,"p_report_id": string }; Returns: undefined
+                           },
+"admin_set_reported_suspension":
+{ Args: { "p_reason"?: string,"p_report_id": string,"p_suspended": boolean }; Returns: undefined
                            },
 "admin_set_suspended":
 { Args: { "suspended": boolean,"target_profile_id": string }; Returns: {
@@ -834,6 +1181,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"block_user":
+{ Args: { "p_target": string }; Returns: undefined
+                           },
 "caller_can_participate":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
@@ -868,6 +1218,9 @@ isOneToOne: false
                            },
 "confirm_rehome_received":
 { Args: { "p_case_id": string }; Returns: string
+                           },
+"create_report":
+{ Args: { "p_details"?: string,"p_reason": string,"p_target_id": string,"p_target_type": string }; Returns: string
                            },
 "create_seed_source":
 { Args: { "p_collection_year"?: number,"p_cultivar_name"?: string,"p_kind": string,"p_notes"?: string,"p_seedling_id"?: string,"p_unidentified_source_id"?: string }; Returns: string
@@ -925,6 +1278,25 @@ isOneToOne: false
 "edit_comment":
 { Args: { "p_body": string,"p_comment_id": string }; Returns: undefined
                            },
+"email_claim_due":
+{ Args: { "p_lease_seconds"?: number,"p_limit"?: number }; Returns: {
+              "attempts": number,"claim_token": string,"id": string
+            }[]
+                           },
+"email_delivery_context":
+{ Args: { "p_claim_token": string,"p_id": string }; Returns: {
+              "locale": string,"recipient_email": string,"seedling_id": string,"seedling_name": string,"suppressed_reason": string
+            }[]
+                           },
+"email_record_failed":
+{ Args: { "p_claim_token": string,"p_failure": string,"p_id": string }; Returns: undefined
+                           },
+"email_record_retry":
+{ Args: { "p_claim_token": string,"p_failure": string,"p_id": string }; Returns: undefined
+                           },
+"email_record_sent":
+{ Args: { "p_claim_token": string,"p_id": string,"p_provider_message_id": string }; Returns: undefined
+                           },
 "express_rehome_interest":
 { Args: { "p_case_id": string }; Returns: string
                            },
@@ -959,6 +1331,15 @@ isOneToOne: false
               "author_id": string,"author_name": string,"body": string,"comment_id": string,"created_at": string,"edited_at": string,"is_mine": boolean,"is_removed": boolean,"parent_comment_id": string
             }[]
                            },
+"mark_all_notifications_read":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"mark_conversation_read":
+{ Args: { "p_conversation_id": string }; Returns: undefined
+                           },
+"mark_notification_read":
+{ Args: { "p_notification_id": string }; Returns: undefined
+                           },
 "mark_rehome_sent":
 { Args: { "p_case_id": string }; Returns: boolean
                            },
@@ -991,6 +1372,9 @@ isOneToOne: false
 "publish_update":
 { Args: { "p_caption"?: string,"p_client_key": string,"p_items": Json,"p_observation_id": string }; Returns: Json
                            },
+"register_message_photo":
+{ Args: { "p_path": string }; Returns: string
+                           },
 "register_source_photo":
 { Args: { "p_path": string }; Returns: string
                            },
@@ -1004,6 +1388,9 @@ isOneToOne: false
 { Args: { "p_identifier": string }; Returns: {
               "is_retired_alias": boolean,"seedling_id": string
             }[]
+                           },
+"resolve_report":
+{ Args: { "p_reason"?: string,"p_report_id": string,"p_status": string }; Returns: undefined
                            },
 "search_cultivars":
 { Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_limit"?: number,"p_query": string }; Returns: {
@@ -1033,6 +1420,9 @@ isOneToOne: false
                            },
 "seedling_cover":
 { Args: { "p_seedling_id": string }; Returns: string
+                           },
+"send_message":
+{ Args: { "p_body"?: string,"p_client_key": string,"p_conversation_id": string,"p_photo_media_id"?: string }; Returns: string
                            },
 "set_cultivar_parent_photo":
 { Args: { "p_media_id": string,"p_source_id": string }; Returns: undefined
@@ -1090,8 +1480,35 @@ isOneToOne: false
 "set_seedling_save":
 { Args: { "p_on": boolean,"p_seedling_id": string }; Returns: undefined
                            },
+"start_direct_conversation":
+{ Args: { "p_other": string }; Returns: string
+                           },
 "start_rehome":
 { Args: { "p_handover"?: string,"p_make_public"?: boolean,"p_note"?: string,"p_price_text"?: string,"p_seedling_id": string,"p_term": string }; Returns: string
+                           },
+"start_rehome_conversation":
+{ Args: { "p_case_id": string,"p_with": string }; Returns: string
+                           },
+"start_seed_offer_conversation":
+{ Args: { "p_offer_id": string,"p_with": string }; Returns: string
+                           },
+"start_seedling_conversation":
+{ Args: { "p_seedling_id": string }; Returns: string
+                           },
+"subscribe_availability":
+{ Args: { "p_locale"?: string,"p_seedling_id": string }; Returns: undefined
+                           },
+"unblock_user":
+{ Args: { "p_target": string }; Returns: undefined
+                           },
+"unread_conversation_count":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"unread_notification_count":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"unsubscribe_availability":
+{ Args: { "p_seedling_id": string }; Returns: undefined
                            },
 "withdraw_rehome_interest":
 { Args: { "p_case_id": string }; Returns: boolean

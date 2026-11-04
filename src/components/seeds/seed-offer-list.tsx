@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FormMessage } from "@/design-system/components/form-message";
+import { StartConversation } from "@/components/messaging/start-conversation";
 import { getTranslation } from "@/i18n/server";
 import type { MessageKey } from "@/i18n/translator";
 import {
@@ -116,9 +117,19 @@ export async function SeedOfferList({
                     ) : (
                       <ul className="flex flex-col gap-1 text-base text-text">
                         {offer.interested.map((item) => (
-                          <li key={item.userId}>
-                            {item.name}
-                            {item.quantity ? ` · ${item.quantity}` : ""}
+                          <li key={item.userId} className="flex flex-col items-start gap-2">
+                            <span>
+                              {item.name}
+                              {item.quantity ? ` · ${item.quantity}` : ""}
+                            </span>
+                            <StartConversation
+                              kind="seedOffer"
+                              target={offer.id}
+                              other={item.userId}
+                              returnTo={returnTo}
+                              label={t("messaging.start.seedOffer")}
+                              id={`start-offer-${offer.id}-${item.userId}`}
+                            />
                           </li>
                         ))}
                       </ul>
@@ -136,13 +147,23 @@ export async function SeedOfferList({
                     {t("seeds.list.signIn")}
                   </Link>
                 ) : offer.iAmInterested ? (
-                  <form action={withdrawSeedInterestAction}>
-                    <input type="hidden" name="offerId" value={offer.id} />
-                    <input type="hidden" name="returnTo" value={returnTo} />
-                    <button type="submit" className={SECONDARY}>
-                      {t("seeds.list.withdraw")}
-                    </button>
-                  </form>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StartConversation
+                      kind="seedOffer"
+                      target={offer.id}
+                      other={offer.sellerId}
+                      returnTo={returnTo}
+                      label={t("messaging.start.seedOffer")}
+                      id={`start-offer-${offer.id}`}
+                    />
+                    <form action={withdrawSeedInterestAction}>
+                      <input type="hidden" name="offerId" value={offer.id} />
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                      <button type="submit" className={SECONDARY}>
+                        {t("seeds.list.withdraw")}
+                      </button>
+                    </form>
+                  </div>
                 ) : (
                   <form action={expressSeedInterestAction} className="flex flex-col gap-2">
                     <input type="hidden" name="offerId" value={offer.id} />

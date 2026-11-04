@@ -1,3 +1,4 @@
+import { ReportControl } from "@/components/safety/report-control";
 import { deleteCommentAction } from "@/modules/publications/actions";
 import type { CommentNode } from "@/modules/publications/repository";
 import { formatDate } from "@/i18n/format";
@@ -14,10 +15,13 @@ export async function CommentThread({
   updateId,
   comments,
   canPost,
+  canReport,
 }: {
   readonly updateId: string;
   readonly comments: readonly CommentNode[];
   readonly canPost: boolean;
+  /** Signed-in readers may report other growers' comments. Visitors see no report control. */
+  readonly canReport: boolean;
 }) {
   const { t } = await getTranslation();
   return (
@@ -35,6 +39,7 @@ export async function CommentThread({
               updateId={updateId}
               node={comment}
               canPost={canPost}
+              canReport={canReport}
               depth={0}
             />
           ))}
@@ -55,11 +60,13 @@ async function CommentItem({
   updateId,
   node,
   canPost,
+  canReport,
   depth,
 }: {
   readonly updateId: string;
   readonly node: CommentNode;
   readonly canPost: boolean;
+  readonly canReport: boolean;
   readonly depth: number;
 }) {
   const { t, locale } = await getTranslation();
@@ -103,6 +110,15 @@ async function CommentItem({
           </div>
         ) : null}
 
+        {!node.isRemoved && !node.isMine && canReport ? (
+          <ReportControl
+            targetType="comment"
+            targetId={node.id}
+            returnTo={`/updates/${updateId}`}
+            id={`report-comment-${node.id}`}
+          />
+        ) : null}
+
         {!node.isRemoved && canPost ? (
           <details>
             <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-brand">
@@ -127,6 +143,7 @@ async function CommentItem({
               updateId={updateId}
               node={reply}
               canPost={canPost}
+              canReport={canReport}
               depth={depth + 1}
             />
           ))}

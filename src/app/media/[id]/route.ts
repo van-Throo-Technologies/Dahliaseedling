@@ -4,7 +4,8 @@ import { isUuid } from "@/modules/capture/validation";
 
 /*
  * Delivers a private original. The media row is read with the caller's session, so RLS decides whether it is
- * visible: only its owner can see it. Visitors and other growers get the same 404 as for a missing file.
+ * visible: its owner, and for a message photograph the two participants in that conversation. Everyone else gets
+ * the same 404 as for a missing file.
  * For an owner, the response redirects to a signed URL that expires after 60 seconds. The signed URL lets
  * the browser stream video and seek. Nothing is cached publicly, and no storage path is exposed.
  */
