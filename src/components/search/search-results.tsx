@@ -312,12 +312,15 @@ export async function SearchResultsView({
   country,
   available = false,
   seeds = false,
+  retiredCanonicalId = null,
 }: {
   readonly results: SearchResults;
   readonly query: string | null;
   readonly country: string | null;
   readonly available?: boolean;
   readonly seeds?: boolean;
+  /** The canonical Seedling a retired identifier was merged into, when the typed identifier was retired. */
+  readonly retiredCanonicalId?: string | null;
 }) {
   const { t, locale } = await getTranslation();
   const words = labelWords(t);
@@ -378,6 +381,23 @@ export async function SearchResultsView({
 
       {results.invalidCursor ? (
         <FormMessage tone="error">{t("search.cursorInvalid")}</FormMessage>
+      ) : null}
+
+      {retiredCanonicalId && seedlings.length === 0 ? (
+        <section
+          aria-labelledby="search-retired-title"
+          className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4"
+        >
+          <h3 id="search-retired-title" className="text-base text-text">
+            {t("assistive.search.retiredIdentifier")}
+          </h3>
+          <a
+            href={`/seedlings/${retiredCanonicalId}`}
+            className="inline-flex min-h-11 items-center self-start text-base font-medium text-text-brand underline underline-offset-4"
+          >
+            {t("assistive.search.openSeedling")}
+          </a>
+        </section>
       ) : null}
 
       {total === 0 ? (

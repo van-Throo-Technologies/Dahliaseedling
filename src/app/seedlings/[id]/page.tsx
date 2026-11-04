@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AttachSeriesForm } from "@/components/seedlings/attach-series-form";
 import { ParentForm } from "@/components/seedlings/parent-form";
+import { FormMessage } from "@/design-system/components/form-message";
 import { AvailabilityControl } from "@/components/messaging/availability-control";
 import { MessagingFeedback } from "@/components/messaging/feedback-message";
 import { StartConversation } from "@/components/messaging/start-conversation";
@@ -66,6 +67,7 @@ export default async function SeedlingPage({
   readonly searchParams: Promise<{
     rehome?: string;
     rehomeError?: string;
+    mergeNotice?: string;
     messagingNotice?: string;
     messagingError?: string;
     seedNotice?: string;
@@ -80,7 +82,12 @@ export default async function SeedlingPage({
 
   const supabase = await createSupabaseServerClient();
   const seedling = await getSeedling(supabase, id);
-  if (!seedling) notFound();
+  if (!seedling) {
+    // A retired merged identity leads to its canonical Seedling, never to a second page for the same plant.
+    const { data: canonical } = await supabase.rpc("seedling_canonical_id", { p_seedling_id: id });
+    if (canonical) redirect(`/seedlings/${canonical}`);
+    notFound();
+  }
 
   const viewer = await getCurrentUser();
   const isHolder = viewer !== null && viewer.id === seedling.currentHolderId;
@@ -132,19 +139,26 @@ export default async function SeedlingPage({
         ).data !== null
       : false;
   const seedOffers = await offersForSeedling(supabase, id, viewer?.id ?? null);
-  const parentLabels = await displayLabels(
-    supabase,
-    parentage.flatMap((link) => (link.parentSeedlingId ? [link.parentSeedlingId] : [])),
-    words,
+  // A stored parent reference may point at a retired merged identity. The stored reference is not changed; only what is shown
+  // resolves to the canonical Seedling, and only where the viewer could see that canonical Seedling anyway.
+  const parentIds = parentage.flatMap((link) =>
+    link.parentSeedlingId ? [link.parentSeedlingId] : [],
   );
+  const canonicalParent = new Map<string, string>();
+  for (const parentId of parentIds) {
+    const { data: canonical } = await supabase.rpc("seedling_canonical_id", {
+      p_seedling_id: parentId,
+    });
+    if (canonical) canonicalParent.set(parentId, canonical);
+  }
+  const shownParentId = (parentId: string): string => canonicalParent.get(parentId) ?? parentId;
+  const parentLabels = await displayLabels(supabase, parentIds.map(shownParentId), words);
 
-  const parentNames = await workingNames(
-    supabase,
-    parentage.flatMap((link) => (link.parentSeedlingId ? [link.parentSeedlingId] : [])),
-  );
+  const parentNames = await workingNames(supabase, parentIds.map(shownParentId));
   const parentDisplay = (parentId: string): string => {
-    const label = parentLabels.get(parentId) ?? words.seedling;
-    const name = parentNames.get(parentId);
+    const shown = shownParentId(parentId);
+    const label = parentLabels.get(shown) ?? words.seedling;
+    const name = parentNames.get(shown);
     return name ? `${name} · ${label}` : label;
   };
 
@@ -320,7 +334,7 @@ export default async function SeedlingPage({
                     <span>{t("glossary.unknownParent")}</span>
                   ) : link.parentSeedlingId ? (
                     <Link
-                      href={`/seedlings/${link.parentSeedlingId}`}
+                      href={`/seedlings/${shownParentId(link.parentSeedlingId)}`}
                       className="text-text-brand underline underline-offset-4"
                     >
                       {parentDisplay(link.parentSeedlingId)}
@@ -367,6 +381,9 @@ export default async function SeedlingPage({
         </div>
       ) : null}
 
+      {query.mergeNotice === "done" ? (
+        <FormMessage tone="success">{t("assistive.merge.done")}</FormMessage>
+      ) : null}
       <MessagingFeedback error={query.messagingError} notice={query.messagingNotice} />
       {publicPart ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -474,6 +491,12 @@ export default async function SeedlingPage({
           <h2 id="manage-title" className="text-lg font-medium text-text">
             {t("seedlings.page.manage")}
           </h2>
+          <Link
+            href={`/seedlings/${id}/merge`}
+            className="inline-flex min-h-11 items-center self-start rounded-control border border-border bg-surface px-4 text-base text-text-brand"
+          >
+            {t("assistive.merge.open")}
+          </Link>
 
           {!seedling.firstGrownYear && yearNeeded ? (
             <p className="rounded-surface border border-border bg-surface p-4 text-base text-text">

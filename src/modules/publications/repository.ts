@@ -152,7 +152,9 @@ export async function listSeedlingJourney(
   client: Client,
   seedlingId: string,
 ): Promise<UpdateSummary[]> {
-  const { data, error } = await client.rpc("list_seedling_updates", { p_seedling_id: seedlingId });
+  const { data, error } = await client.rpc("list_canonical_seedling_updates", {
+    p_seedling_id: seedlingId,
+  });
   if (error) throw new Error("errors.publication.journeyFailed");
   const rows = (data ?? []) as unknown as {
     update_id: string;

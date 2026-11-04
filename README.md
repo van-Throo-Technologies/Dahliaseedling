@@ -1017,6 +1017,108 @@ The moderation changes do not alter these query paths. The administrator review 
 - Viewing a reported private message's photograph from the review page. The review shows its text as saved and records that a photograph was attached.
 - Restoration of removed content. No source defines a restore path.
 
+## Assistive selection and Seedling merge (Phase 9)
+
+The assistive scope is deliberately small. A grower chooses the Seedling for a Capture, can dictate a note, can use two explicit voice commands, and can merge two of their own Seedlings. No model, embedding, image corpus or external provider is used, and no private Capture media leaves DahliaSeedling for recognition. "The gardener gardens; the app assists."
+
+### Manual-first Capture
+
+The Capture question is "Which Seedling is this?". The grower chooses New Seedling (the default), one of their own Seedlings, or a Seedling by identifier. Nothing is compared, ranked by similarity, or labelled as a match, so the interface never says "possible match" or "likely match".
+
+- **Corpus.** Only the Seedlings the signed-in grower currently holds and that are active. `held_seedling_candidates` runs as the caller (security invoker), so row-level security applies. It excludes another grower's Seedlings, public Seedlings the grower does not hold, Seedlings the grower originated but no longer holds, and retired merged identities.
+- **Ordering.** Most recent capture first, then creation time (newest first), then identifier. There is no popularity, likes or engagement.
+- **Search within selection.** A search box filters the grower's own list. It does not reuse public search.
+- **Correction.** Unchanged from Phase 3: Change, then an existing Seedling, a search, or New Seedling, then move the Observation. No delete and no re-upload.
+- **Future recognition.** A later recognition signal would supply candidate identifiers into this same confirmation. The grower's choice stays authoritative. No embedding table exists.
+
+### Voice
+
+- **Dictation** uses the browser's own speech recognition, which is already in place. The original transcript is saved as the grower's text. Nothing is rewritten, summarised, translated or sent to a service. Where speech recognition is unavailable, the typed note works.
+- **Commands** are explicit intents, not generative extraction. "New seedling" (also "nieuwe zaailing", "nouveau semis") and "Not keeping this one" (also "deze niet verder kweken", "je ne garde pas celui-ci") are recognised only when the whole phrase matches. A sentence containing the words is not a command.
+- A command never acts on its own. "New seedling" selects the New Seedling destination. "Not keeping this one" offers a link to the Phase 6 continuation for the Seedling already chosen. Nothing is published, no holder changes, no recipient is chosen, and nothing is deleted.
+- **Structured extraction is deferred** (TRD §27). `structured_data` is not populated from speech or text.
+
+### Seedling merge
+
+A merge records that the grower confirmed two DahliaSeedling records represent one genetically unique Seedling. It is not visual similarity, cultivar similarity, parentage similarity, an AI decision, a Rehome, or a change of originator.
+
+**Rules, enforced in the database** (`merge_seedlings`, one transaction, row locks in identifier order):
+
+- The caller must be active and the current holder of both records. Different holders, non-holders, and suspended callers are refused.
+- The canonical and the duplicate must differ. A retired record cannot be merged again. A merge needs an explicit confirmation.
+- Conflicting originators are refused. Originator attribution is never rewritten.
+- An active or pending continuation on either record refuses the merge. So does an active Seed or Seedhead Offer sourced from either record.
+- Active availability alerts on the duplicate refuse the merge, rather than guessing which record should carry them.
+- Irreversible in MVP. There is no unmerge.
+
+**What a merge changes:**
+
+- The duplicate keeps its UUID and its rows. Nothing is hard-deleted. It gets `merged_into_id` pointing at the canonical Seedling and `deleted_at`, so every existing gate that refuses an inactive Seedling refuses it.
+- A `seedling_merges` row records who confirmed which canonical identity, and when. It is append-only.
+- One new provenance event, `merged_into`, is appended to the duplicate, with the canonical identifier in its metadata. Existing provenance rows are untouched. The canonical side gets no event, because one linked event is sufficient.
+- The duplicate's identifiers are marked as retired aliases. They are not reissued, renamed or deleted. The Series identifier text is unchanged.
+- Follows and saves move to the canonical Seedling, without duplicate rows. Nothing else in user state changes.
+- No holder transfer. No parentage row is created, deleted or repointed. No notification, availability event or email is produced.
+
+### Retired identity behaviour
+
+- A retired duplicate cannot accept Observations, Updates, Rehome cases, Seed sources, Seed Offers, availability subscriptions, follows or saves. Each of those takes the Seedling's row lock and refuses an inactive Seedling. A direct insert that bypasses the functions is refused too.
+- A retired duplicate cannot change holder. A trigger refuses the change even for a confirmed continuation, so a race cannot move a retired record.
+- Visiting a retired Seedling's address redirects to the canonical Seedling. The canonical identifier is returned only where the viewer could see the canonical Seedling anyway.
+- Search does not show the duplicate, so the canonical Seedling is the only result (the Phase 5 search already excludes inactive Seedlings).
+- Updates published from the duplicate keep their identity, author, timestamps, comments and likes. The visibility rule was redefined so that they remain public through their existing links while the Seedling is public and its holder and author are not suspended. Nothing is republished.
+- Parent references that point at a retired Seedling stay as stored. Where parentage is shown, the parent's name and link resolve to the canonical Seedling, and only where the viewer could see it. No parentage row is rewritten.
+
+### Canonical Update history (read time)
+
+The canonical Seedling's page shows the public history of the canonical Seedling and of every retired identity folded into it, directly or through a chain (A merged into B, then B merged into C). It is a read, not a copy: `list_canonical_seedling_updates` walks `merged_into_id` down from the canonical identity with a recursive, cycle-safe closure, and returns each Update in the same shape as the single-Seedling list. Nothing is rewritten. Each Update keeps its identifier, seedling, author, timestamps, comments and likes. The read applies `_update_is_public` to every Update, so private, moderated, removed and suspended content stays hidden for visitors and for the holder alike. Ordering is observed time, then published time, then identifier. Reads write no notification, availability change or outbox email.
+
+Chain resolution is handled by `seedling_canonical_id`, which follows the whole chain to the ultimate canonical Seedling. It has a fixed loop bound as a defence in depth. A merge only accepts active Seedlings on both sides, and the database refuses writes that would close a cycle, so a chain cannot loop in practice. A retired address resolves to the ultimate canonical Seedling, and only where the viewer could see that Seedling anyway.
+
+### Observations and media
+
+The caller's own Observations on the duplicate move to the canonical Seedling through the existing Change path. Their identifiers, media, storage paths, authorship, observed time, creation time, privacy and text are unchanged, and no media is re-uploaded. Observations authored by someone else stay on the retired identity, because only their author can see them; they are not moved. Public Updates are described above.
+
+### Concurrency
+
+Every path that could change or depend on the same Seedling takes its row lock: the merge (both records, in identifier order), each new-work insert, and a holder change. Each race has one valid outcome, with no partial merge. The tests cover two merges of the same duplicate, a merge racing a holder change, a merge racing a Rehome start, and a merge racing a Seed source. The races are sequenced by holding a row lock in a separate connection.
+
+### Privacy and data boundary
+
+No Capture image is sent for recognition. No embedding is generated. No external recognition or transcription provider is used. No cross-user recognition corpus exists. Existing private-media authorization is unchanged, and the Phase 8 email service-role boundary is unchanged. Recognition does not use the email worker's credential.
+
+### Deferred by design
+
+- Visual embeddings and a per-grower image corpus (TRD §27).
+- An external recognition provider.
+- Structured extraction into Observation fields (Decision B, TRD §27).
+- Cross-grower merge, and any administrator cross-grower merge.
+- Unmerge.
+- Canonical migration of stored parent-edge references.
+- Merging Seedlings across growers, and unmerge. Retired identifiers are unique per grower only, so a retired identifier shared by two growers resolves to nothing rather than to an arbitrary Seedling.
+
+### Verification
+
+- **Database, merge** (`tests/db/seedling-merge.test.ts`, 25 tests): same-holder success; the merge record; the appended provenance event and unchanged provenance rows; identifiers kept as retired aliases; the Observation moved with its media; parentage rows unchanged; follows consolidated; canonical resolution for holder, visitor and other grower; a retired duplicate refuses new Observations, Rehome, Seed sources, subscriptions and follows, and a direct insert; different holders, non-holder, self-merge, missing confirmation, retired records, conflicting originators, active continuation, active offer, active alert and suspended caller are all refused with nothing changed; search excludes the duplicate; no notifications, outbox rows or continuations are created; concurrent merges, holder-change race, Rehome-start race and Seed-source race.
+- **Database, candidates** (`tests/db/capture-selection.test.ts`, 5 tests): the corpus is exactly the held, active Seedlings; another grower's and originated-but-transferred Seedlings and retired identities are excluded; ordering is deterministic; a visitor receives nothing.
+- **Database, canonical Update history** (`tests/db/canonical-update-history.test.ts`, 13 tests): a canonical Update appears once; public Updates of retired duplicates, including a two-step chain, appear on the canonical page; identifier, seedling, author and timestamps are unchanged; comments and likes stay attached; private history stays private for visitors and the holder; moderated and removed Updates stay hidden; no duplicates; visitor and holder see the same public history; ordering; a multi-level chain resolves to the canonical Seedling; a write that would close a cycle is refused; retired Seedlings are absent from Search; reads write no notification, availability change or outbox row.
+- **Database, retired identifier** (`tests/db/retired-identifier.test.ts`, 3 tests; `tests/db/retired-identifier-ambiguity.test.ts`, 1 test): a retired identifier resolves to its canonical Seedling; two growers with the same retired text resolve to nothing. The first file's fixture gives its duplicate a Series identifier, because per-grower numbers repeat across growers and earlier runs in the shared database can hold the same text.
+- **Unit** (`src/modules/capture/capture.test.ts`): command recognition in English, Dutch and French, and that a dictated sentence is never a command. Dictionary parity for the new area is checked by the existing parity tests.
+- **Browser** (`tests/e2e/assistive-selection-merge.spec.ts`, phone and desktop): a Capture asks which Seedling it is and attaches to the chosen one; New Seedling saves privately; a wrong attachment is corrected without re-uploading; two Seedlings merge after the irreversible confirmation and the duplicate leads to the canonical Seedling; a merge blocked by an active continuation changes nothing and says why. Dictation and voice commands are not exercised in the browser, because automated tests have no speech engine; the command rules are unit-tested.
+- **Browser, canonical history** (`tests/e2e/canonical-history.spec.ts`, phone and desktop): two Seedlings with public Updates merge after confirmation; the canonical page shows each Update's caption once; the retired Update still opens at its own address.
+- **Manual, not automated:** dictation and the two voice commands on real speech-capable devices. The checklist and sign-off are in `docs/manual-qa-voice.md`. It is required before public launch and is not a Phase 9 blocker.
+- **Security mutation:** the caller-holder check in `merge_seedlings` was disabled. Three merge-authority tests failed (different-holder, non-holder and a holder change in progress). The migration was restored byte for byte and the merge suite passed again.
+
+### Performance (local, measured)
+
+These are local measurements on the development database, not production figures. There is no external latency, because no external service is used.
+
+- Private Capture save (upload and `capture_observation`), median over 12 saves: about 26 ms.
+- Holder-scoped candidate query with about 200 held Seedlings, median over 15 runs: about 10 ms. The plan runs in about 11 ms.
+- Merge transaction with 300 Observations on the duplicate, one call: about 19 ms.
+- Canonical identity resolution, median over 20 runs: about 4 ms.
+- Search with 200 retired records present, median over 10 runs: about 16 ms.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

@@ -873,6 +873,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"seedling_merges": {
+                  Row: {
+                    "canonical_seedling_id": string,"confirmed_by": string,"id": string,"merged_at": string,"retired_seedling_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "canonical_seedling_id": string,"confirmed_by": string,"id"?: string,"merged_at"?: string,"retired_seedling_id": string
+                  }
+                  Update: {
+                    "canonical_seedling_id"?: string,"confirmed_by"?: string,"id"?: string,"merged_at"?: string,"retired_seedling_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "seedling_merges_canonical_seedling_id_fkey"
+      columns: ["canonical_seedling_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seedling_merges_confirmed_by_fkey"
+      columns: ["confirmed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seedling_merges_retired_seedling_id_fkey"
+      columns: ["retired_seedling_id"]
+isOneToOne: true
+      referencedRelation: "seedlings"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"seedling_parentage": {
                   Row: {
                     "child_seedling_id": string,"created_at": string,"created_by": string,"id": string,"is_unknown": boolean,"notes": string | null,"parent_cultivar_id": string | null,"parent_seedling_id": string | null,"parent_unidentified_source_id": string | null,"role": Database["public"]['Enums']["parent_role"]
@@ -919,14 +951,14 @@ isOneToOne: false
                   ]
                 },"seedlings": {
                   Row: {
-                    "cover_derivative_id": string | null,"created_at": string,"current_holder_id": string,"deleted_at": string | null,"first_grown_year": number | null,"id": string,"originator_id": string,"updated_at": string,"visibility": Database["public"]['Enums']["seedling_visibility"],"working_name": string | null
+                    "cover_derivative_id": string | null,"created_at": string,"current_holder_id": string,"deleted_at": string | null,"first_grown_year": number | null,"id": string,"merged_into_id": string | null,"originator_id": string,"updated_at": string,"visibility": Database["public"]['Enums']["seedling_visibility"],"working_name": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "cover_derivative_id"?: string | null,"created_at"?: string,"current_holder_id": string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"originator_id": string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
+                    "cover_derivative_id"?: string | null,"created_at"?: string,"current_holder_id": string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"merged_into_id"?: string | null,"originator_id": string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
                   }
                   Update: {
-                    "cover_derivative_id"?: string | null,"created_at"?: string,"current_holder_id"?: string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"originator_id"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
+                    "cover_derivative_id"?: string | null,"created_at"?: string,"current_holder_id"?: string,"deleted_at"?: string | null,"first_grown_year"?: number | null,"id"?: string,"merged_into_id"?: string | null,"originator_id"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["seedling_visibility"],"working_name"?: string | null
                   }
                   Relationships: [
                     {
@@ -940,6 +972,12 @@ isOneToOne: false
       columns: ["current_holder_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "seedlings_merged_into_id_fkey"
+      columns: ["merged_into_id"]
+isOneToOne: false
+      referencedRelation: "seedlings"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "seedlings_originator_id_fkey"
@@ -1088,6 +1126,9 @@ isOneToOne: false
 "_derivative_is_public":
 { Args: { "p_derivative_id": string }; Returns: boolean
                            },
+"_guard_seedling_for_new_work":
+{ Args: { "p_seedling_id": string }; Returns: undefined
+                           },
 "_is_conversation_participant":
 { Args: { "p_conversation_id": string }; Returns: boolean
                            },
@@ -1233,6 +1274,7 @@ isOneToOne: false
 "deleted_at": string | null,
 "first_grown_year": number | null,
 "id": string,
+"merged_into_id": string | null,
 "originator_id": string,
 "updated_at": string,
 "visibility": Database["public"]['Enums']["seedling_visibility"],
@@ -1308,8 +1350,18 @@ isOneToOne: false
               "author_has_avatar": boolean,"author_id": string,"author_name": string,"caption": string,"comment_count": number,"like_count": number,"liked_by_me": boolean,"media": Json,"observed_at": string,"published_at": string,"seedling_id": string,"seedling_name": string,"update_id": string
             }[]
                            },
+"held_seedling_candidates":
+{ Args: { "p_limit"?: number }; Returns: {
+              "created_at": string,"last_capture_at": string,"seedling_id": string,"working_name": string
+            }[]
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"list_canonical_seedling_updates":
+{ Args: { "p_seedling_id": string }; Returns: {
+              "author_id": string,"author_name": string,"caption": string,"media": Json,"observed_at": string,"published_at": string,"update_id": string
+            }[]
                            },
 "list_my_unidentified_sources":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -1342,6 +1394,9 @@ isOneToOne: false
                            },
 "mark_rehome_sent":
 { Args: { "p_case_id": string }; Returns: boolean
+                           },
+"merge_seedlings":
+{ Args: { "p_canonical": string,"p_confirmed"?: boolean,"p_duplicate": string }; Returns: string
                            },
 "move_observation":
 { Args: { "p_new_seedling"?: boolean,"p_observation_id": string,"p_target_seedling_id"?: string }; Returns: {
@@ -1392,6 +1447,9 @@ isOneToOne: false
 "resolve_report":
 { Args: { "p_reason"?: string,"p_report_id": string,"p_status": string }; Returns: undefined
                            },
+"resolve_retired_identifier":
+{ Args: { "p_query": string }; Returns: string
+                           },
 "search_cultivars":
 { Args: { "p_after_id"?: string,"p_after_text"?: string,"p_after_tier"?: number,"p_limit"?: number,"p_query": string }; Returns: {
               "cultivar_id": string,"cultivar_name": string,"match_tier": number,"pollen_parent_count": number,"seed_parent_count": number,"sort_text": string
@@ -1417,6 +1475,9 @@ isOneToOne: false
                            },
 "search_text":
 { Args: { "p_query": string }; Returns: string
+                           },
+"seedling_canonical_id":
+{ Args: { "p_seedling_id": string }; Returns: string
                            },
 "seedling_cover":
 { Args: { "p_seedling_id": string }; Returns: string

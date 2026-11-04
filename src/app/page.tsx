@@ -93,6 +93,14 @@ export default async function HomePage({
       growers: firstValue(query.growers),
       seedOffers: firstValue(query.seedOffers),
     });
+
+    // A typed identifier that belonged to a merged Seedling leads to the Seedling it was merged into, only when nothing else matched.
+    const retiredCanonicalId =
+      search.value.query !== null && results.seedlings.items.length === 0
+        ? await supabase
+            .rpc("resolve_retired_identifier", { p_query: search.value.query })
+            .then(({ data }) => (typeof data === "string" ? data : null))
+        : null;
     return (
       <div className="flex flex-col gap-6">
         {heading}
@@ -109,6 +117,7 @@ export default async function HomePage({
           country={search.value.country}
           available={search.value.available}
           seeds={search.value.seeds}
+          retiredCanonicalId={retiredCanonicalId}
         />
       </div>
     );

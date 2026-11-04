@@ -127,6 +127,14 @@ describe("where the capture goes", () => {
 
 describe("voice command", () => {
   it("recognises 'New seedling' regardless of case and punctuation", () => {
+    expect(matchVoiceCommand("Nieuwe zaailing")).toBe("new_seedling");
+    expect(matchVoiceCommand("Nouveau semis")).toBe("new_seedling");
+  });
+
+  it("recognises 'Not keeping this one' as its own explicit intent, in each language", () => {
+    expect(matchVoiceCommand("Not keeping this one.")).toBe("not_keeping");
+    expect(matchVoiceCommand("Deze niet verder kweken")).toBe("not_keeping");
+    expect(matchVoiceCommand("Je ne garde pas celui-ci")).toBe("not_keeping");
     expect(matchVoiceCommand("New seedling.")).toBe("new_seedling");
     expect(matchVoiceCommand("new seedling")).toBe("new_seedling");
     expect(matchVoiceCommand("  NEW SEEDLING, please")).toBe("new_seedling");
@@ -134,7 +142,7 @@ describe("voice command", () => {
 
   it("ignores everything else, so dictated notes are never treated as commands", () => {
     expect(matchVoiceCommand("the seedling looks new")).toBeNull();
-    expect(matchVoiceCommand("not keeping this one")).toBeNull();
+    expect(matchVoiceCommand("the seedling is not keeping this one")).toBeNull();
     expect(matchVoiceCommand("")).toBeNull();
   });
 });

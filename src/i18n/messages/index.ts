@@ -15,6 +15,7 @@ import * as notifications from "./notifications";
 import * as safety from "./safety";
 import * as admin from "./admin";
 import * as email from "./email";
+import * as assistive from "./assistive";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -39,6 +40,7 @@ export const MESSAGES = {
     safety: safety.en,
     admin: admin.en,
     email: email.en,
+    assistive: assistive.en,
   },
   nl: {
     app: app.nl,
@@ -58,6 +60,7 @@ export const MESSAGES = {
     safety: safety.nl,
     admin: admin.nl,
     email: email.nl,
+    assistive: assistive.nl,
   },
   fr: {
     app: app.fr,
@@ -77,6 +80,7 @@ export const MESSAGES = {
     safety: safety.fr,
     admin: admin.fr,
     email: email.fr,
+    assistive: assistive.fr,
   },
 };
 

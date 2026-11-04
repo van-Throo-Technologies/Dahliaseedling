@@ -9,7 +9,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { prepareUploadsAction, captureAction } from "@/modules/capture/actions";
 import { CAPTURE_LIMITS } from "@/modules/capture/limits";
-import { matchVoiceCommand } from "@/modules/capture/voice";
+import { matchVoiceCommand, normaliseTranscript, type VoiceCommand } from "@/modules/capture/voice";
 import { validateSelection } from "@/modules/capture/validation";
 import type { Msg } from "@/i18n/message";
 
@@ -43,6 +43,8 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
   const [chosen, setChosen] = useState<Chosen[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("new");
+  const [seedlingSearch, setSeedlingSearch] = useState("");
+  const [voiceNotice, setVoiceNotice] = useState<VoiceCommand | null>(null);
   const [seedlingId, setSeedlingId] = useState(seedlings[0]?.id ?? "");
   const [identifier, setIdentifier] = useState("");
   const [note, setNote] = useState("");
@@ -95,9 +97,20 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
     return first ? translateMsg(t, first) : null;
   }
 
+  /**
+   * A recognised command only shows its control. "New seedling" selects the New Seedling destination; "Not keeping this one"
+   * offers the continuation for the chosen Seedling. Neither changes anything until the grower presses the control.
+   */
   function handleVoiceCommand(transcript: string) {
-    if (matchVoiceCommand(transcript) === "new_seedling") setMode("new");
+    const command = matchVoiceCommand(transcript);
+    if (command === "new_seedling") setMode("new");
+    setVoiceNotice(command);
   }
+
+  const searchTerm = normaliseTranscript(seedlingSearch);
+  const shownSeedlings = seedlings.filter(
+    (item) => searchTerm === "" || normaliseTranscript(item.label).includes(searchTerm),
+  );
 
   async function save() {
     const check = validateSelection(chosen.map((item) => item.file));
@@ -251,7 +264,10 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
 
       <form className="flex flex-col gap-6" noValidate onSubmit={(event) => event.preventDefault()}>
         <fieldset className="flex flex-col gap-3" disabled={busy}>
-          <legend className="text-lg font-medium text-text">{t("capture.capture.where")}</legend>
+          <legend className="text-lg font-medium text-text">
+            {t("assistive.capture.question")}
+          </legend>
+          <p className="text-sm text-text-muted">{t("assistive.capture.questionHint")}</p>
           <label className="flex min-h-11 items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 text-base text-text">
             <input
               type="radio"
@@ -279,18 +295,49 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               <span className="flex flex-1 flex-col gap-2">
                 <span className="font-medium">{t("capture.capture.existing")}</span>
                 {mode === "existing" ? (
-                  <select
-                    aria-label={t("capture.capture.chooseSeedling")}
-                    value={seedlingId}
-                    onChange={(event) => setSeedlingId(event.target.value)}
-                    className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
-                  >
-                    {seedlings.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
+                  <span className="flex flex-col gap-2">
+                    <label
+                      htmlFor="capture-seedling-search"
+                      className="text-sm font-medium text-text"
+                    >
+                      {t("assistive.capture.searchLabel")}
+                    </label>
+                    <input
+                      id="capture-seedling-search"
+                      type="search"
+                      value={seedlingSearch}
+                      onChange={(event) => setSeedlingSearch(event.target.value)}
+                      autoComplete="off"
+                      aria-describedby="capture-seedling-search-hint"
+                      className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
+                    />
+                    <span id="capture-seedling-search-hint" className="text-sm text-text-muted">
+                      {t("assistive.capture.searchHint")}
+                    </span>
+                    {shownSeedlings.length === 0 ? (
+                      <span role="status" className="text-sm text-text-muted">
+                        {t("assistive.capture.noMatches")}
+                      </span>
+                    ) : (
+                      <select
+                        aria-label={t("assistive.capture.question")}
+                        value={
+                          shownSeedlings.some((item) => item.id === seedlingId)
+                            ? seedlingId
+                            : shownSeedlings[0]?.id
+                        }
+                        onChange={(event) => setSeedlingId(event.target.value)}
+                        size={Math.min(Math.max(shownSeedlings.length, 2), 6)}
+                        className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
+                      >
+                        {shownSeedlings.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </span>
                 ) : null}
               </span>
             </label>
@@ -338,6 +385,31 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               onCommand={handleVoiceCommand}
               disabled={busy}
             />
+            {voiceNotice === "new_seedling" ? (
+              <p role="status" className="text-sm text-text-muted">
+                {t("assistive.capture.newSeedlingApplied")}
+              </p>
+            ) : null}
+            {voiceNotice === "not_keeping" ? (
+              <div
+                role="status"
+                className="flex flex-col gap-2 rounded-control border border-border bg-background p-3"
+              >
+                <p className="text-base font-medium text-text">
+                  {t("assistive.voice.notKeepingHeading")}
+                </p>
+                {mode === "existing" && seedlingId ? (
+                  <Link
+                    href={`/seedlings/${seedlingId}/rehome`}
+                    className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
+                  >
+                    {t("assistive.voice.notKeepingAction")}
+                  </Link>
+                ) : (
+                  <p className="text-sm text-text-muted">{t("assistive.voice.notKeepingChoose")}</p>
+                )}
+              </div>
+            ) : null}
             <label htmlFor="capture-note" className="text-base font-medium text-text">
               {t("capture.capture.note")}
             </label>
