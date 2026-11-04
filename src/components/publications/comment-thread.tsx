@@ -4,6 +4,7 @@ import type { CommentNode } from "@/modules/publications/repository";
 import { formatDate } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
 import { CommentEditForm, CommentForm } from "./comment-form";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * Comments on one Update, in the order they were posted, with replies under the comment they answer.
@@ -73,12 +74,16 @@ async function CommentItem({
   return (
     <li className={depth > 0 ? "ml-4 border-l border-border pl-4" : ""}>
       <article
-        aria-label={t("publication.comments.byAuthor", { name: node.authorName })}
+        aria-label={t("publication.comments.byAuthor", {
+          name: displayedName(node.authorName, t("privacy.formerGrower")),
+        })}
         className="flex flex-col gap-2"
       >
         <p className="text-sm text-text-muted">
-          <span className="font-medium text-text">{node.authorName}</span> ·{" "}
-          {formatDate(node.createdAt, locale)}
+          <span className="font-medium text-text">
+            {displayedName(node.authorName, t("privacy.formerGrower"))}
+          </span>{" "}
+          · {formatDate(node.createdAt, locale)}
           {node.editedAt ? ` · ${t("publication.comments.edited")}` : null}
         </p>
         {node.isRemoved ? (
@@ -122,13 +127,17 @@ async function CommentItem({
         {!node.isRemoved && canPost ? (
           <details>
             <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-brand">
-              {t("publication.comments.replyTo", { name: node.authorName })}
+              {t("publication.comments.replyTo", {
+                name: displayedName(node.authorName, t("privacy.formerGrower")),
+              })}
             </summary>
             <div className="pt-2">
               <CommentForm
                 updateId={updateId}
                 parentId={node.id}
-                label={t("publication.comments.replyTo", { name: node.authorName })}
+                label={t("publication.comments.replyTo", {
+                  name: displayedName(node.authorName, t("privacy.formerGrower")),
+                })}
                 submitLabel={t("publication.comments.postReply")}
               />
             </div>

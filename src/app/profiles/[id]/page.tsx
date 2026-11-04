@@ -21,6 +21,7 @@ import {
   listUpdatesByAuthor,
   type SeedlingCard,
 } from "@/modules/publications/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 // Profile ids are UUIDs. Anything else is not a profile, so it never reaches the database.
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -41,7 +42,11 @@ export async function generateMetadata({
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) return { title: t("identity.publicProfile.notFound") };
   const profile = await getPublicProfile(id);
-  return { title: profile ? profile.displayName : t("identity.publicProfile.notFound") };
+  return {
+    title: profile
+      ? displayedName(profile.displayName, t("privacy.formerGrower"))
+      : t("identity.publicProfile.notFound"),
+  };
 }
 
 /**
@@ -121,10 +126,14 @@ export default async function PublicProfilePage({
     <article aria-labelledby="page-title" className="flex flex-col gap-6">
       <header className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
-          <ProfileAvatar name={profile.displayName} url={avatarUrl} size="lg" />
+          <ProfileAvatar
+            name={displayedName(profile.displayName, t("privacy.formerGrower"))}
+            url={avatarUrl}
+            size="lg"
+          />
           <div className="flex min-w-0 flex-col gap-1">
             <h1 id="page-title" className="font-display text-2xl text-text-brand">
-              {profile.displayName}
+              {displayedName(profile.displayName, t("privacy.formerGrower"))}
             </h1>
             <p className="text-base text-text-muted">
               {countryName(profile.countryCode, locale)}

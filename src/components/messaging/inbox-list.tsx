@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatDateTime } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
 import type { InboxRow } from "@/modules/messaging/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * The Inbox. Each conversation names what it is about, so a grower can tell a continuation thread from a seed-offer thread.
@@ -35,7 +36,9 @@ export async function InboxList({ rows }: { readonly rows: readonly InboxRow[] }
               <span className="flex items-center justify-between gap-3">
                 <span className="font-medium text-text">
                   {row.otherName
-                    ? t("messaging.inbox.withGrower", { name: row.otherName })
+                    ? t("messaging.inbox.withGrower", {
+                        name: displayedName(row.otherName, t("privacy.formerGrower")),
+                      })
                     : t("messaging.inbox.unavailableGrower")}
                 </span>
                 {row.unread ? (

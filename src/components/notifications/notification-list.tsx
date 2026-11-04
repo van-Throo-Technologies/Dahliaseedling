@@ -7,6 +7,7 @@ import {
   markNotificationReadAction,
 } from "@/modules/notifications/actions";
 import type { NotificationRow } from "@/modules/messaging/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * The notification list. Each row is one typed sentence with the actor's name where it is known. A notification points at
@@ -45,7 +46,12 @@ export async function NotificationList({ rows }: { readonly rows: readonly Notif
         {rows.map((row) => {
           const key = TYPE_KEY[row.type];
           const sentence = key
-            ? t(key, { name: row.actorName ?? t("notifications.someone") })
+            ? t(key, {
+                name: displayedName(
+                  row.actorName ?? t("notifications.someone"),
+                  t("privacy.formerGrower"),
+                ),
+              })
             : t("notifications.someone");
           return (
             <li key={row.id} className="flex flex-col gap-2 px-4 py-3">

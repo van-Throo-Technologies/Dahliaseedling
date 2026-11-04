@@ -8,6 +8,7 @@ import { useLocale, useT } from "@/i18n/client";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { findParentCandidatesAction, setParentAction } from "@/modules/seedlings/actions";
 import type { ParentCandidate } from "@/modules/seedlings/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 export interface ParentDefaults {
   readonly kind: "none" | "unknown" | "seedling" | "cultivar" | "unidentified";
@@ -152,7 +153,9 @@ export function ParentForm({
                     <span className="font-medium">{candidate.label}</span>
                     {candidate.ownerName ? (
                       <span className="text-sm text-text-muted">
-                        {t("seedlings.parent.grownBy", { name: candidate.ownerName })}
+                        {t("seedlings.parent.grownBy", {
+                          name: displayedName(candidate.ownerName, t("privacy.formerGrower")),
+                        })}
                       </span>
                     ) : null}
                   </button>

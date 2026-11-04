@@ -15,6 +15,7 @@ import type {
   SeedlingReason,
   SeedlingResult,
 } from "@/modules/search/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * Grouped results for an active search. Each result links to its canonical page: a Seedling, a grower's profile,
@@ -194,7 +195,9 @@ function GrowerCard({
         href={`/profiles/${result.profileId}`}
         className="flex flex-col gap-1 rounded-surface border border-border bg-surface p-4 text-text no-underline"
       >
-        <span className="text-lg font-medium text-text-brand">{result.displayName}</span>
+        <span className="text-lg font-medium text-text-brand">
+          {displayedName(result.displayName, t("privacy.formerGrower"))}
+        </span>
         <span className="text-sm text-text-muted">
           {countryName(result.countryCode, locale)}
           {type ? ` · ${type}` : ""}

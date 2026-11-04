@@ -10,6 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
 import { labelWords } from "@/modules/seedlings/labels";
 import { displayLabels, listHeldSeedlings } from "@/modules/seedlings/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslation();
@@ -36,10 +37,14 @@ export default async function ProfilePage({
 
       <section aria-labelledby="page-title" className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-          <ProfileAvatar name={profile.displayName} url={avatarUrl} size="lg" />
+          <ProfileAvatar
+            name={displayedName(profile.displayName, t("privacy.formerGrower"))}
+            url={avatarUrl}
+            size="lg"
+          />
           <div className="flex min-w-0 flex-col gap-1">
             <h1 id="page-title" className="font-display text-2xl text-text-brand">
-              {profile.displayName}
+              {displayedName(profile.displayName, t("privacy.formerGrower"))}
             </h1>
             <p className="text-base text-text-muted">
               {countryName(profile.countryCode, locale)}
@@ -63,6 +68,9 @@ export default async function ProfilePage({
           )}
           <ButtonLink href={`/profiles/${userId}`} variant="secondary">
             {t("identity.profile.viewPublic")}
+          </ButtonLink>
+          <ButtonLink href="/privacy" variant="secondary">
+            {t("privacy.link")}
           </ButtonLink>
         </div>
       </section>

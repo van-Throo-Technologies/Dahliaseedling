@@ -1129,6 +1129,15 @@ These are local measurements on the development database, not production figures
 - **Indexes.** Two indexes were added for retired identifier resolution and the merged-link walk, justified by measurement. Public Search is not indexed and its semantics are unchanged.
 - **Operations.** Inspection with existing infrastructure, the hosted security checklist, the unexecuted Resend test, scheduler, backup, restore and real-device voice checklists are in `docs/operations.md`.
 
+## Privacy and data lifecycle (Phase 10B)
+
+- **Deactivation** is immediate and stops new action at the existing suspension gate. Active Rehome cases not yet sent are cancelled, sent cases keep their status, active Seed Offers are closed, and open interests are withdrawn.
+- **Erasure** clears a deactivated grower's personal content: name, bio, region, avatar, comment and observation text, Update captions, and social relationships. It leaves Seedling, identifier, parentage, holder and provenance records unchanged. Other participants' conversation history is kept, with the sender shown as "Former grower". Erasure is reported as pending until every step, including the sign-in identity and original media, has completed.
+- **Export** is the grower's own data as a ZIP archive with their original media. Other people's identities, private notes and reports about the grower are excluded. The archive is built per request and never stored.
+- **Storage** is never deleted by this phase. Objects that no live row references are queued for purge and detected for an operator. Nothing is purged until retention periods and operational authorization are approved.
+- **Moderation retention** is configurable and off by default. Personal text in decided reports and suspension reasons can be cleared after a period set by an administrator with a recorded basis. Records are kept.
+- The operations, approval and legal gates are in `docs/operations.md`.
+
 ## Quality checks
 
 | Command                | What it checks                               | Needs local Supabase? |

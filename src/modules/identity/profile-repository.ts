@@ -11,7 +11,11 @@ import type { AccountTypeLabel, ProfileInput } from "./validation";
  */
 
 type Client = Awaited<ReturnType<typeof createSupabaseServerClient>>;
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+// The lifecycle columns are read only by the privacy pages, so these queries do not select them.
+type ProfileRow = Omit<
+  Database["public"]["Tables"]["profiles"]["Row"],
+  "account_state" | "state_changed_at"
+>;
 
 export interface Profile {
   readonly id: string;

@@ -95,3 +95,33 @@ Not executed. Perform once, with explicit authorisation, before any real availab
 
 - [ ] Complete `docs/manual-qa-voice.md` on the devices listed there, in English, Dutch and French.
 - [ ] Automated tests do not cover microphone input. Do not record this as passed on the basis of unit or browser tests.
+
+## Privacy lifecycle (Phase 10B)
+
+**What the database does now.** A grower can deactivate their account, which takes effect at once and stops new action. A deactivated account can then request erasure. Erasure clears the personal content the grower controls, and it leaves provenance, identifiers, parentage and the other participant's conversation history unchanged. The profile remains as a tombstone labelled "Former grower" with the non-geographic country code `XX`.
+
+**What is outstanding, and why.** Erasure is never shown as completed while a step remains outstanding. Three steps are not yet performed by the application:
+
+- **Sign-in identity removal.** Deleting a Supabase Auth identity needs a privileged credential that has not been approved. Until then the grower's sign-in still works, but a deactivated or erased account cannot take any action.
+- **Original media removal.** Objects are queued in `storage_purge_queue` with state `awaiting_authorization`. Nothing deletes them until retention periods and operational authorization are approved.
+- **Avatar removal.** The grower's own session removes the avatar object. If that removal fails, the step stays outstanding, and the object is then found by the orphan check below.
+
+**Detecting work for an operator.** Administrators can run these read-only functions from the database:
+
+```sql
+select * from public.storage_orphan_candidates(500);    -- stored objects no live row references
+select * from public.storage_purge_eligible(500);       -- queued objects no live row references
+```
+
+Neither function deletes anything.
+
+**Retention periods.** No period is set. Retention categories are in `public.retention_policies`, and while a category has no period, applying it changes nothing. Setting one is an administrator action that requires a basis naming the legal review that approved it. Every application is recorded in `public.retention_runs`. Reports and administrator actions are never deleted, only their personal text is cleared.
+
+**Export.** The grower's download is built in memory for that single request, and is not stored. The size cap of 256 MiB is an operational guard, not a retention period. A file the storage policy refuses is listed as missing in the archive's manifest. Each request is recorded in `privacy_requests`, with no content.
+
+**Gates before any of this is used for real people.**
+
+- Legal review of the privacy notice, the Terms of Use, the retention periods, the message rules, and whether the pseudonymous originator reference is personal data.
+- A decision on the privileged credentials for sign-in identity removal and media purge, and their approval.
+- Hosted verification that the sign-in identity can be removed without breaking sessions, and that the storage paths match the migrations.
+- Confirmation of the backup retention period, which governs how long copies of erased data persist.

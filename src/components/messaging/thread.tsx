@@ -6,6 +6,7 @@ import type { ThreadRow } from "@/modules/messaging/repository";
 import { sendMessageAction } from "@/modules/messaging/actions";
 import { ReportControl } from "@/components/safety/report-control";
 import { MESSAGING_ERRORS, MESSAGING_NOTICES } from "./feedback";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * One conversation: its messages in order, the reader's own messages on the right, and a composer. Each other-grower message
@@ -28,7 +29,10 @@ interface ThreadProps {
 
 export async function Thread({ thread, returnTo, error, notice }: ThreadProps) {
   const { t, locale } = await getTranslation();
-  const name = thread.otherName ?? t("messaging.inbox.unavailableGrower");
+  const name = displayedName(
+    thread.otherName ?? t("messaging.inbox.unavailableGrower"),
+    t("privacy.formerGrower"),
+  );
   const contextKey = CONTEXT_KEY[thread.context];
   const contextLine =
     contextKey && thread.contextName

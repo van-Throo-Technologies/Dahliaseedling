@@ -6,6 +6,7 @@ import { avatarHref } from "@/modules/identity/presentation";
 import type { UpdateSummary } from "@/modules/publications/repository";
 import { PublicPhoto } from "./public-photo";
 import { LikeForm } from "./social-buttons";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * One Update in the Feed or on a seedling's journey. The photo leads, the grower's caption follows, and the
@@ -32,17 +33,19 @@ export async function UpdateCard({
 
   return (
     <article
-      aria-label={t("publication.update.byAuthor", { name: update.authorName })}
+      aria-label={t("publication.update.byAuthor", {
+        name: displayedName(update.authorName, t("privacy.formerGrower")),
+      })}
       className="flex flex-col gap-4 rounded-surface border border-border bg-surface p-4"
     >
       <header className="flex items-center gap-3">
         <ProfileAvatar
-          name={update.authorName}
+          name={displayedName(update.authorName, t("privacy.formerGrower"))}
           url={update.authorHasAvatar ? avatarHref(update.authorId) : null}
         />
         <div className="flex min-w-0 flex-col">
           <Link href={`/profiles/${update.authorId}`} className="font-medium text-text-brand">
-            {update.authorName}
+            {displayedName(update.authorName, t("privacy.formerGrower"))}
           </Link>
           <p className="text-sm text-text-muted">
             {t("publication.update.shared", { date: formatDate(update.publishedAt, locale) })}
@@ -71,7 +74,7 @@ export async function UpdateCard({
           <PublicPhoto
             image={lead}
             alt={t("publication.update.photoAlt", {
-              author: update.authorName,
+              author: displayedName(update.authorName, t("privacy.formerGrower")),
               seedling: seedlingLabel,
             })}
           />

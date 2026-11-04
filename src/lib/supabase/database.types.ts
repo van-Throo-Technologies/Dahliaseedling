@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "admin_actions": {
+            "account_erasures": {
+                  Row: {
+                    "auth_identity_removed_at": string | null,"avatar_removed_at": string | null,"completed_at": string | null,"profile_id": string,"records_erased_at": string,"requested_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auth_identity_removed_at"?: string | null,"avatar_removed_at"?: string | null,"completed_at"?: string | null,"profile_id": string,"records_erased_at"?: string,"requested_at"?: string
+                  }
+                  Update: {
+                    "auth_identity_removed_at"?: string | null,"avatar_removed_at"?: string | null,"completed_at"?: string | null,"profile_id"?: string,"records_erased_at"?: string,"requested_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "account_erasures_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"admin_actions": {
                   Row: {
                     "action_type": string,"admin_id": string,"created_at": string,"id": string,"reason": string | null,"target_id": string,"target_type": string
                   }
@@ -481,16 +501,36 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"profiles": {
+                },"privacy_requests": {
                   Row: {
-                    "account_type_label": string | null,"avatar_path": string | null,"bio": string | null,"country_code": string,"created_at": string,"display_name": string,"id": string,"is_suspended": boolean,"region_city": string | null,"updated_at": string
+                    "created_at": string,"id": string,"kind": string,"profile_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_type_label"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"country_code": string,"created_at"?: string,"display_name": string,"id": string,"is_suspended"?: boolean,"region_city"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"id"?: string,"kind": string,"profile_id": string
                   }
                   Update: {
-                    "account_type_label"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"country_code"?: string,"created_at"?: string,"display_name"?: string,"id"?: string,"is_suspended"?: boolean,"region_city"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"id"?: string,"kind"?: string,"profile_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "privacy_requests_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "account_state": string,"account_type_label": string | null,"avatar_path": string | null,"bio": string | null,"country_code": string,"created_at": string,"display_name": string,"id": string,"is_suspended": boolean,"region_city": string | null,"state_changed_at": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_state"?: string,"account_type_label"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"country_code": string,"created_at"?: string,"display_name": string,"id": string,"is_suspended"?: boolean,"region_city"?: string | null,"state_changed_at"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_state"?: string,"account_type_label"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"country_code"?: string,"created_at"?: string,"display_name"?: string,"id"?: string,"is_suspended"?: boolean,"region_city"?: string | null,"state_changed_at"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -685,6 +725,52 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "updates"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"retention_policies": {
+                  Row: {
+                    "basis": string | null,"category": string,"retain_days": number | null,"set_at": string | null,"set_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "basis"?: string | null,"category": string,"retain_days"?: number | null,"set_at"?: string | null,"set_by"?: string | null
+                  }
+                  Update: {
+                    "basis"?: string | null,"category"?: string,"retain_days"?: number | null,"set_at"?: string | null,"set_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "retention_policies_set_by_fkey"
+      columns: ["set_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"retention_runs": {
+                  Row: {
+                    "admin_id": string,"applied_at": string,"category": string,"id": string,"rows_cleared": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "admin_id": string,"applied_at"?: string,"category": string,"id"?: string,"rows_cleared": number
+                  }
+                  Update: {
+                    "admin_id"?: string,"applied_at"?: string,"category"?: string,"id"?: string,"rows_cleared"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "retention_runs_admin_id_fkey"
+      columns: ["admin_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "retention_runs_category_fkey"
+      columns: ["category"]
+isOneToOne: false
+      referencedRelation: "retention_policies"
+      referencedColumns: ["category"]
     }
                   ]
                 },"saved_seedlings": {
@@ -1027,6 +1113,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"storage_purge_queue": {
+                  Row: {
+                    "bucket": string,"id": string,"object_path": string,"owner_id": string,"purged_at": string | null,"queued_at": string,"reason": string,"state": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bucket": string,"id"?: string,"object_path": string,"owner_id": string,"purged_at"?: string | null,"queued_at"?: string,"reason": string,"state"?: string
+                  }
+                  Update: {
+                    "bucket"?: string,"id"?: string,"object_path"?: string,"owner_id"?: string,"purged_at"?: string | null,"queued_at"?: string,"reason"?: string,"state"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "storage_purge_queue_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"unidentified_source_photos": {
                   Row: {
                     "media_id": string,"sort_order": number,"source_id": string
@@ -1182,6 +1288,9 @@ isOneToOne: false
 "_seed_source_is_public":
 { Args: { "p_source_id": string }; Returns: boolean
                            },
+"_storage_object_referenced":
+{ Args: { "p_bucket": string,"p_name": string }; Returns: boolean
+                           },
 "_unidentified_source_is_owned":
 { Args: { "p_source_id": string }; Returns: boolean
                            },
@@ -1190,6 +1299,9 @@ isOneToOne: false
                            },
 "_update_is_public":
 { Args: { "p_update_id": string }; Returns: boolean
+                           },
+"account_export_document":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "add_comment":
 { Args: { "p_body": string,"p_parent_comment_id"?: string,"p_update_id": string }; Returns: string
@@ -1210,7 +1322,8 @@ isOneToOne: false
                            },
 "admin_set_suspended":
 { Args: { "suspended": boolean,"target_profile_id": string }; Returns: {
-              "account_type_label": string | null,
+              "account_state": string,
+"account_type_label": string | null,
 "avatar_path": string | null,
 "bio": string | null,
 "country_code": string,
@@ -1219,6 +1332,7 @@ isOneToOne: false
 "id": string,
 "is_suspended": boolean,
 "region_city": string | null,
+"state_changed_at": string,
 "updated_at": string
             }
                           SetofOptions: {
@@ -1229,6 +1343,9 @@ isOneToOne: false
       } },
 "admin_suspend_profile":
 { Args: { "p_profile_id": string,"p_reason": string,"p_suspended": boolean }; Returns: undefined
+                           },
+"apply_retention_period":
+{ Args: { "p_category": string }; Returns: number
                            },
 "attach_series_identifier":
 { Args: { "p_seedling_id": string,"p_series_id": string }; Returns: {
@@ -1330,6 +1447,9 @@ isOneToOne: false
       } },
 "create_unidentified_source":
 { Args: { "p_description": string }; Returns: string
+                           },
+"deactivate_my_account":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "decline_rehome":
 { Args: { "p_case_id": string }; Returns: string
@@ -1444,14 +1564,25 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"my_privacy_status":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "account_state": string,"auth_identity_removed": boolean,"avatar_removed": boolean,"completed": boolean,"erasure_requested_at": string,"media_purge_outstanding": boolean,"state_changed_at": string
+            }[]
+                           },
 "next_series_identifier":
 { Args: { "p_first_grown_year": number,"p_series_id": string }; Returns: string
+                           },
+"note_my_export":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "publish_seed_offer":
 { Args: { "p_handover_method"?: string,"p_items"?: Json,"p_material_type": string,"p_mode"?: string,"p_note"?: string,"p_packet_size"?: number,"p_price_text"?: string,"p_seedhead_count"?: number,"p_source_id": string }; Returns: string
                            },
 "publish_update":
 { Args: { "p_caption"?: string,"p_client_key": string,"p_items": Json,"p_observation_id": string }; Returns: Json
+                           },
+"record_my_avatar_removed":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "register_message_photo":
 { Args: { "p_path": string }; Returns: string
@@ -1464,6 +1595,9 @@ isOneToOne: false
                            },
 "reopen_rehome":
 { Args: { "p_case_id": string }; Returns: boolean
+                           },
+"request_my_erasure":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "resolve_own_identifier":
 { Args: { "p_identifier": string }; Returns: {
@@ -1519,6 +1653,9 @@ isOneToOne: false
                            },
 "set_like":
 { Args: { "p_on": boolean,"p_update_id": string }; Returns: undefined
+                           },
+"set_retention_period":
+{ Args: { "p_basis": string,"p_category": string,"p_days": number }; Returns: undefined
                            },
 "set_seedling_cover":
 { Args: { "p_derivative_id"?: string,"p_seedling_id": string }; Returns: undefined
@@ -1581,6 +1718,16 @@ isOneToOne: false
                            },
 "start_seedling_conversation":
 { Args: { "p_seedling_id": string }; Returns: string
+                           },
+"storage_orphan_candidates":
+{ Args: { "p_limit"?: number }; Returns: {
+              "bucket_id": string,"created_at": string,"object_name": string
+            }[]
+                           },
+"storage_purge_eligible":
+{ Args: { "p_limit"?: number }; Returns: {
+              "bucket": string,"id": string,"object_path": string,"owner_id": string,"queued_at": string
+            }[]
                            },
 "subscribe_availability":
 { Args: { "p_locale"?: string,"p_seedling_id": string }; Returns: undefined

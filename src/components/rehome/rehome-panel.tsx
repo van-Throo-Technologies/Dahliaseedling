@@ -19,6 +19,7 @@ import {
   type RehomePanel as Panel,
   type RehomeCase,
 } from "@/modules/rehome/repository";
+import { displayedName } from "@/modules/identity/former-grower";
 
 /*
  * The continuation panel on a Seedling page. What appears depends on the reader's role and the case's state, and the
@@ -173,7 +174,9 @@ export async function RehomePanel({
         {alerts}
         {isHolder ? (
           <>
-            <p className="text-base text-text">{chosenName ? `${chosenName}` : ""}</p>
+            <p className="text-base text-text">
+              {chosenName ? displayedName(chosenName, t("privacy.formerGrower")) : ""}
+            </p>
             <p className="text-base text-text-muted">{t("rehome.panel.chosenText")}</p>
             <Terms item={item!} t={t} />
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -258,7 +261,9 @@ export async function RehomePanel({
                     key={interest.id}
                     className="flex flex-col gap-2 rounded-control border border-border p-3"
                   >
-                    <span className="text-base font-medium text-text">{interest.displayName}</span>
+                    <span className="text-base font-medium text-text">
+                      {displayedName(interest.displayName, t("privacy.formerGrower"))}
+                    </span>
                     <span className="text-sm text-text-muted">
                       {formatDate(interest.createdAt, locale)}
                     </span>
