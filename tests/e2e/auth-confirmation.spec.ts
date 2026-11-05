@@ -133,3 +133,51 @@ test("the set-password page is not reachable without an invitation session", asy
   await expect(page).toHaveURL(/\/sign-in\?next=/);
   await context.close();
 });
+
+test("an ordinary signed-in account is refused the invitation password page and gets no form", async ({
+  page,
+  request,
+}) => {
+  const token = await mintTokenHash(request, "signup", uniqueEmail("ordinary"));
+  await page.goto(`/auth/confirm?token_hash=${token}&type=signup`);
+  await expect(page).toHaveURL(/\/profile\/setup/);
+
+  await page.goto("/auth/set-password?next=%2F");
+
+  await expect(
+    page.getByRole("heading", { name: EN.identity.setPassword.closedTitle, exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("p[role='alert']")).toHaveText(EN.identity.setPassword.notInvited);
+  await expect(page.locator("input[name='password']")).toHaveCount(0);
+});
+
+test("a completed invitation cannot be repeated, from the page or from the link", async ({
+  page,
+  request,
+}) => {
+  const email = uniqueEmail("invite-once");
+  const token = await mintTokenHash(request, "invite", email);
+
+  await page.goto(`/auth/confirm?token_hash=${token}&type=invite`);
+  await page.getByLabel(EN.identity.fields.password, { exact: true }).fill("a-first-password-789");
+  await page.getByRole("button", { name: EN.identity.setPassword.submit, exact: true }).click();
+  await expect(page).toHaveURL(/\/profile\/setup/);
+
+  await page.goto("/auth/set-password?next=%2F");
+  await expect(page.locator("input[name='password']")).toHaveCount(0);
+  await expect(page.locator("p[role='alert']")).toHaveText(EN.identity.setPassword.notInvited);
+
+  await page.context().clearCookies();
+  await page.goto(`/auth/confirm?token_hash=${token}&type=invite`);
+  await expect(page).toHaveURL(/\/sign-in\?confirm=expired$/);
+  await expect(page.locator("p[role='alert']")).toHaveText(EN.identity.confirm.expired);
+});
+
+test("an invalid invitation link is refused, and the sign-in page shows the notice", async ({
+  page,
+}) => {
+  await page.goto(`/auth/confirm?token_hash=${"e".repeat(64)}&type=invite`);
+
+  await expect(page).toHaveURL(/\/sign-in\?confirm=expired$/);
+  await expect(page.locator("p[role='alert']")).toHaveText(EN.identity.confirm.expired);
+});

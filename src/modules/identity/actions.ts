@@ -6,8 +6,10 @@ import { getTranslation } from "@/i18n/server";
 import { translateFields, type Msg } from "@/i18n/message";
 import { safeNextPath } from "@/lib/http/safe-next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logEvent } from "@/lib/logging/log";
 import { signUpRefusalFrom } from "./auth-flow";
 import { requireParticipant } from "./gate";
+import { invitationPasswordPending } from "./password-setup";
 import type { FormState } from "./form-state";
 import {
   insertOwnProfile,
@@ -138,16 +140,14 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
 }
 
 /*
- * An invited visitor has a session from the invitation link but no password yet. Anyone signed in may set one here, so the page is
- * reached only through the invitation flow and a signed-out visitor is sent to sign in first.
+ * Sets the password of an invited account. The visitor must be signed in, and the account must have no stored password yet, which only an
+ * invitation produces. An ordinary signed-in session fails that check, and so does a repeat after the invitation was completed.
  */
 export async function setPasswordAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const { t } = await getTranslation();
-  const password = validatePassword(formData.get("password"));
-  if (!password.ok) return invalid(password.fieldErrors);
 
   const user = await getCurrentUser();
   if (!user)
@@ -155,16 +155,37 @@ export async function setPasswordAction(
       `/sign-in?next=${encodeURIComponent(`/auth/set-password?next=${encodeURIComponent(nextFrom(formData))}`)}`,
     );
 
+  // The state check comes before validation, so an ordinary account learns nothing about the password rules from this page.
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.updateUser({ password: password.value });
-  if (error) {
+  if (!(await invitationPasswordPending(supabase))) {
+    logEvent("warn", "auth_set_password", {
+      outcome: "refused",
+      code: "not_invited",
+      route: "auth.set-password",
+    });
     return {
       status: "error",
       fieldErrors: {},
-      message: t("identity.setPassword.error"),
+      message: t("identity.setPassword.notInvited"),
       values: {},
     };
   }
+
+  const password = validatePassword(formData.get("password"));
+  if (!password.ok) return invalid(password.fieldErrors);
+
+  const failed: FormState = {
+    status: "error",
+    fieldErrors: {},
+    message: t("identity.setPassword.error"),
+    values: {},
+  };
+  const { error } = await supabase.auth.updateUser({ password: password.value });
+  if (error) return failed;
+
+  // The password is stored; now record that this invitation is complete, so the page and the link refuse a repeat.
+  const { error: recordError } = await supabase.rpc("complete_invitation_password");
+  if (recordError) return failed;
 
   return continueAfterAuthentication(nextFrom(formData));
 }

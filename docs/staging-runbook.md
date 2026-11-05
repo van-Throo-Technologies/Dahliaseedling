@@ -10,7 +10,7 @@ Staging is restricted to authorised operators until the gates in section 6 are c
 | -------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Runtime              | `package.json` `engines.node` `>=22.12.0`; `.nvmrc` pins `22`                                            | Use Node 22 on Vercel                                                                                  |
 | Build and start      | `npm run build`, `npm run start`                                                                         | Next.js 16 App Router                                                                                  |
-| Schema               | `supabase/migrations/` (27 files, applied in name order)                                                 | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table |
+| Schema               | `supabase/migrations/` (28 files, applied in name order)                                                 | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table |
 | Storage buckets      | Created by migrations with `on conflict (id) do nothing`                                                 | `avatars` (public read, 2 MB), `private-media` (private, 50 MB), `public-media` (private, 5 MB, WebP)  |
 | Storage access       | Owner-folder policies; signed URLs for private media                                                     | Defined in migrations, no manual setup                                                                 |
 | Scheduler            | `vercel.json`: `/api/email/deliver` every five minutes, region `fra1`                                    | Runs on production deployments only, on a plan that allows a five-minute schedule (section 2b)         |
@@ -69,7 +69,11 @@ Supabase sends one template per email type, not one per language. Choose one lan
 **Invitation-only registration.** Two mechanisms, and only one of them is a switch:
 
 - **Global sign-up switch (Supabase).** With "Allow new users to sign up" off, the server refuses `signUp` for every visitor. This is the enforcement. The sign-up page is not relied on to hide anything. When the server refuses, the page shows an invitation-only notice.
-- **Invitation acceptance (Supabase).** An operator invites an address from the Auth dashboard (Users, Invite user). Supabase creates the account and emails the invite template. The link opens `/auth/confirm`, which signs the invitee in and sends them to `/auth/set-password` to choose a password. The application does not keep its own invitation list, so there is nothing to maintain beyond Supabase's user list.
+- **Invitation acceptance (Supabase).** An operator invites an address from the Auth dashboard (Users, Invite user). Supabase creates the account and emails the invite template. The link opens `/auth/confirm`, which signs the invitee in and sends them to `/auth/set-password` to choose a password.
+
+  Only an invited account can set a password there. The check is the account's `invited_at` from Supabase Auth, together with a completion record in `invitation_completions`, which is written once the password is stored. An ordinary account is refused, and so is a repeat after completion. A stolen ordinary session therefore cannot open the page or change a password. The invitation link itself is single use.
+
+  Known limit: a session obtained from an invitation link that has not yet been completed can set that account's password. That session comes only from the emailed link, so it is the same trust as the link.
 
 The local `supabase/config.toml` keeps sign-up on so the automated tests can create accounts. That setting is for the local stack only.
 
@@ -91,11 +95,11 @@ Each step lists who acts, what to record, and how to confirm it. Do not proceed 
    supabase link --project-ref <project-ref>
    supabase db push
    ```
-   Never add `--include-roles`: `supabase/roles.sql` is local only. Confirm the applied migration list matches `supabase/migrations/` (27 files, including `20261110090000_privilege_model_correction.sql` and `20261110100000_revoke_legacy_journey_execute.sql`). Do not run `npm run db:reset` against the hosted project; that command is for the local stack only.
+   Never add `--include-roles`: `supabase/roles.sql` is local only. Confirm the applied migration list matches `supabase/migrations/` (28 files, including `20261110090000_privilege_model_correction.sql`, `20261110100000_revoke_legacy_journey_execute.sql` and `20261111090000_invitation_password_state.sql`). Do not run `npm run db:reset` against the hosted project; that command is for the local stack only.
 8. **Check the hosted schema** with read-only queries in the Supabase SQL editor:
    - Every public table has row-level security enabled: `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;` should return no rows.
    - `anon` and `authenticated` hold no table-level insert, update or delete on public tables. Their writes are column-level only, on the profile, observation, Seedling and series columns the application uses.
-   - `anon` executes 21 public functions and `authenticated` executes 99. `list_seedling_updates(uuid)` is executable by neither role, and PUBLIC holds no execute grant on it.
+   - `anon` executes 21 public functions and `authenticated` executes 101. `list_seedling_updates(uuid)` is executable by neither role, and PUBLIC holds no execute grant on it.
    - `storage.buckets` holds `avatars`, `private-media` and `public-media`, with `private-media` and `public-media` not public.
    - The `service_role` executes exactly the five email functions (`email_claim_due`, `email_delivery_context`, `email_record_failed`, `email_record_retry`, `email_record_sent`) and holds no table rights.
 9. **Deploy** the staging branch on Vercel. Record the deployment URL. This is the HTTPS origin for the Site URL (section 2b), the email templates and `APP_BASE_URL`. If it differs from what was configured, correct them and redeploy before any invitation is sent.

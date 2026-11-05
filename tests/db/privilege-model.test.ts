@@ -129,12 +129,32 @@ describe("the pinned privilege model", () => {
     expect(ANON_FUNCTIONS).toHaveLength(21);
   });
 
-  it("the authenticated role executes exactly 99 public functions", async () => {
+  it("the authenticated role executes exactly 101 public functions, including the two invitation password functions", async () => {
     const [count] = await rows(
       `select count(*)::int as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE')`,
     );
-    expect(count.n).toBe(99);
+    expect(count.n).toBe(101);
+    const invitation = await rows(
+      `select p.proname, has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated,
+              has_function_privilege('anon', p.oid, 'EXECUTE') as anon
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname in ('invitation_password_pending', 'complete_invitation_password')
+        order by 1`,
+    );
+    expect(invitation).toEqual([
+      { proname: "complete_invitation_password", authenticated: true, anon: false },
+      { proname: "invitation_password_pending", authenticated: true, anon: false },
+    ]);
+  });
+
+  it("the invitation completion record is unreadable and unwritable by clients", async () => {
+    const [grants] = await rows(
+      `select has_table_privilege('anon', 'public.invitation_completions', 'SELECT,INSERT,UPDATE,DELETE') as anon,
+              has_table_privilege('authenticated', 'public.invitation_completions', 'SELECT,INSERT,UPDATE,DELETE') as authenticated,
+              (select relrowsecurity from pg_class where oid = 'public.invitation_completions'::regclass) as rls`,
+    );
+    expect(grants).toEqual({ anon: false, authenticated: false, rls: true });
   });
 
   it("the legacy journey read is executable by no client role, and PUBLIC keeps no grant", async () => {

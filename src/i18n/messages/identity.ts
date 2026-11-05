@@ -41,6 +41,9 @@ export const en = {
     submitting: "Saving…",
     error:
       "We could not save your password. Try again. If the link has expired, contact us for a new invitation.",
+    closedTitle: "Invitation only",
+    notInvited:
+      "This page is only for finishing an invitation. Your password is already set, so nothing changes here. If you have forgotten your password, contact us.",
   },
   fields: {
     email: "Email",
@@ -150,6 +153,9 @@ export const nl: typeof en = {
     submitting: "Bezig met opslaan…",
     error:
       "We konden je wachtwoord niet opslaan. Probeer het opnieuw. Is de link verlopen, vraag ons dan om een nieuwe uitnodiging.",
+    closedTitle: "Alleen op uitnodiging",
+    notInvited:
+      "Deze pagina is alleen om een uitnodiging af te ronden. Je wachtwoord is al ingesteld, dus hier verandert niets. Ben je je wachtwoord vergeten, neem dan contact met ons op.",
   },
   fields: {
     email: "E-mailadres",
@@ -262,6 +268,9 @@ export const fr: typeof en = {
     submitting: "Enregistrement…",
     error:
       "Nous n'avons pas pu enregistrer votre mot de passe. Réessayez. Si le lien a expiré, demandez-nous une nouvelle invitation.",
+    closedTitle: "Sur invitation uniquement",
+    notInvited:
+      "Cette page sert uniquement à finaliser une invitation. Votre mot de passe est déjà défini, rien ne change ici. Si vous l'avez oublié, contactez-nous.",
   },
   fields: {
     email: "Adresse e-mail",

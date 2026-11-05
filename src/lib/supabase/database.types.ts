@@ -329,6 +329,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"invitation_completions": {
+                  Row: {
+                    "completed_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "completed_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "completed_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"likes": {
                   Row: {
                     "created_at": string,"update_id": string,"user_id": string
@@ -1426,6 +1440,9 @@ isOneToOne: false
 "close_seed_offer":
 { Args: { "p_offer_id": string }; Returns: boolean
                            },
+"complete_invitation_password":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "confirm_rehome_received":
 { Args: { "p_case_id": string }; Returns: string
                            },
@@ -1526,6 +1543,9 @@ isOneToOne: false
 { Args: { "p_limit"?: number }; Returns: {
               "created_at": string,"last_capture_at": string,"seedling_id": string,"working_name": string
             }[]
+                           },
+"invitation_password_pending":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
