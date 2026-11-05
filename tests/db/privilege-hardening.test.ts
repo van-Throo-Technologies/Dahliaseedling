@@ -36,7 +36,6 @@ const ANON_DEFINER_ALLOWLIST = [
   "get_public_update",
   "list_canonical_seedling_updates",
   "list_public_updates",
-  "list_seedling_updates",
   "list_update_comments",
   "rehome_panel",
   "resolve_retired_identifier",
@@ -134,7 +133,7 @@ describe("legitimate policy and read paths keep working", () => {
   });
 
   it("a visitor still reads public Update media through the policy helper", async () => {
-    const { data, error } = await visitor.rpc("list_seedling_updates", {
+    const { data, error } = await visitor.rpc("list_canonical_seedling_updates", {
       p_seedling_id: (
         await rows("select seedling_id::text from public.updates where id = $1", [update])
       )[0]!.seedling_id,

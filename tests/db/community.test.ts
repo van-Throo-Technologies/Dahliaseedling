@@ -256,7 +256,9 @@ describe("the public Feed", () => {
 
 describe("the seedling journey", () => {
   it("shows one seedling's Updates in the order they were observed, across years", async () => {
-    const journey = await visitor.rpc("list_seedling_updates", { p_seedling_id: seedling });
+    const journey = await visitor.rpc("list_canonical_seedling_updates", {
+      p_seedling_id: seedling,
+    });
     const rows = journey.data as { update_id: string; observed_at: string }[];
     expect(rows.map((row) => row.update_id)).toEqual(updates);
     const years = new Set(rows.map((row) => new Date(row.observed_at).getUTCFullYear()));
@@ -265,8 +267,9 @@ describe("the seedling journey", () => {
 
   it("holds Updates across two growing years for one seedling identity", async () => {
     const older = await publishOne(alice, seedling, "Last year", "2025-07-01T10:00:00Z");
-    const journey = (await visitor.rpc("list_seedling_updates", { p_seedling_id: seedling }))
-      .data as {
+    const journey = (
+      await visitor.rpc("list_canonical_seedling_updates", { p_seedling_id: seedling })
+    ).data as {
       update_id: string;
       observed_at: string;
     }[];
@@ -281,7 +284,9 @@ describe("the seedling journey", () => {
   });
 
   it("refuses the journey of a private seedling to a visitor, as if it did not exist", async () => {
-    const result = await visitor.rpc("list_seedling_updates", { p_seedling_id: privateSeedling });
+    const result = await visitor.rpc("list_canonical_seedling_updates", {
+      p_seedling_id: privateSeedling,
+    });
     expect(result.data).toEqual([]);
   });
 });

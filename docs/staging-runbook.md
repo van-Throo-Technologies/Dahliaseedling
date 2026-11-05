@@ -1,0 +1,110 @@
+# Staging runbook: hosted Supabase, Vercel and Resend
+
+This runbook prepares the staging deployment for a controlled beta. It lists what the repository already does, what the owner must do, in order, and how to verify each step. It contains no credentials. Variable names are listed in section 2; `.env.example` holds only the two browser-safe values. Never paste values into a ticket, a commit or a chat.
+
+Staging is restricted to authorised operators until the gates in section 6 are closed.
+
+## 1. What the repository already provides
+
+| Concern              | Where it is                                                          | Notes                                                                                                  |
+| -------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Runtime              | `package.json` `engines.node` `>=22.12.0`; `.nvmrc` pins `22`        | Use Node 22 on Vercel                                                                                  |
+| Build and start      | `npm run build`, `npm run start`                                     | Next.js 16 App Router                                                                                  |
+| Schema               | `supabase/migrations/` (27 files, applied in name order)             | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table |
+| Storage buckets      | Created by migrations with `on conflict (id) do nothing`             | `avatars` (public read, 2 MB), `private-media` (private, 50 MB), `public-media` (private, 5 MB, WebP)  |
+| Storage access       | Owner-folder policies; signed URLs for private media                 | Defined in migrations, no manual setup                                                                 |
+| Scheduler            | `vercel.json`: `/api/email/deliver` every five minutes               | Vercel's cron sends `CRON_SECRET` as a bearer token when it is set; confirm in step 10                 |
+| Worker authorisation | `src/app/api/email/deliver/route.ts`, constant-time bearer check     | Refuses every request without the secret                                                               |
+| Health               | `GET /api/health`                                                    | 200 when configuration is complete; 503 and the missing names otherwise. No network calls              |
+| Security headers     | `next.config.ts` via `src/lib/security/headers.ts`                   | CSP, Permissions-Policy, framing, HSTS in production                                                   |
+| Logs                 | Structured JSON lines on standard output (`src/lib/logging/log.ts`)  | Read in the Vercel runtime logs, filter on `event`                                                     |
+| Sign-up              | Confirmation-aware: with no session the app shows "check your email" | Email confirmation can be turned on without code changes                                               |
+| Admin bootstrap      | README, "Admin access": insert one `admin_users` row                 | Run once, by an operator, after the operator's own account exists                                      |
+
+**Privilege model.** Hosted Supabase gives `anon`, `authenticated` and `service_role` broad rights on new objects by default. The migrations revoke those defaults and then grant exactly what the application uses. Any new table or function must be granted explicitly in its own migration. The privilege tests in `tests/db/privilege-model.test.ts` pin the expected grants and fail when one is missing or unexpected.
+
+**Local hosted-equivalent testing.** `supabase/roles.sql` recreates the hosted default rights in the local database. `npm run db:reset` applies it, so `npm run test:db` and `npm run test:e2e` run against the same privilege model as staging. This file is for the local stack only. Never pass `--include-roles` to any command that targets the hosted project.
+
+## 2. Environment variables (names only)
+
+Set these on the Vercel project for the staging environment. Mark the secret values as sensitive in Vercel.
+
+| Name                                   | Public? | Purpose                                       | Required                                         |
+| -------------------------------------- | ------- | --------------------------------------------- | ------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`             | yes     | Hosted project URL                            | yes                                              |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes     | Hosted publishable key                        | yes                                              |
+| `SUPABASE_SECRET_KEY`                  | **no**  | Email worker only (service client)            | yes, for email                                   |
+| `RESEND_API_KEY`                       | **no**  | Resend API key                                | yes, for email                                   |
+| `EMAIL_FROM_ADDRESS`                   | no      | From address on the verified Resend domain    | yes, for email                                   |
+| `APP_BASE_URL`                         | no      | Public HTTPS origin, used in email links      | yes, for email                                   |
+| `CRON_SECRET`                          | **no**  | Bearer secret checked by `/api/email/deliver` | yes, for email                                   |
+| `APP_BUILD_ID`                         | no      | Short build label for feedback records        | optional (Vercel's commit SHA is used if absent) |
+
+Vercel provides `VERCEL_GIT_COMMIT_SHA` automatically. Never prefix a secret with `NEXT_PUBLIC_`.
+
+## 3. Owner actions, in execution order
+
+Each step lists who acts, what to record, and how to confirm it. Do not proceed to a step before the previous one is confirmed.
+
+1. **Choose the hosting region** for Supabase and Vercel. Record the choice. _Owner decision; affects processor and transfer terms, so counsel should confirm it._
+2. **Create the hosted Supabase project** in that region. Record its project reference. Do not reuse the local stack.
+3. **Create the Resend account**, verify the sending domain, and create a sending API key. Record the from-address. Do not send a test email yet (step 11).
+4. **Create the Vercel project** linked to the repository, using the staging branch. Do not deploy yet.
+5. **Set the environment variables** from section 2 on the Vercel project, for the staging environment only.
+6. **Configure hosted Auth** in the Supabase dashboard (Authentication settings):
+   - Site URL: the HTTPS staging origin of the Vercel deployment.
+   - Additional redirect URLs: the same origin only. Remove the local `127.0.0.1` entries.
+   - Enable email confirmation.
+   - Password minimum: 8 characters, unless the owner decides otherwise.
+   - Keep auth rate limits on.
+   - Sign-up: open or invitation-only. _Owner decision._
+7. **Apply the migrations** to the hosted project from the repository, with the Supabase CLI:
+   ```
+   supabase link --project-ref <project-ref>
+   supabase db push
+   ```
+   Never add `--include-roles`: `supabase/roles.sql` is local only. Confirm the applied migration list matches `supabase/migrations/` (27 files, including `20261110090000_privilege_model_correction.sql` and `20261110100000_revoke_legacy_journey_execute.sql`). Do not run `npm run db:reset` against the hosted project; that command is for the local stack only.
+8. **Check the hosted schema** with read-only queries in the Supabase SQL editor:
+   - Every public table has row-level security enabled: `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;` should return no rows.
+   - `anon` and `authenticated` hold no table-level insert, update or delete on public tables. Their writes are column-level only, on the profile, observation, Seedling and series columns the application uses.
+   - `anon` executes 21 public functions and `authenticated` executes 99. `list_seedling_updates(uuid)` is executable by neither role, and PUBLIC holds no execute grant on it.
+   - `storage.buckets` holds `avatars`, `private-media` and `public-media`, with `private-media` and `public-media` not public.
+   - The `service_role` executes exactly the five email functions (`email_claim_due`, `email_delivery_context`, `email_record_failed`, `email_record_retry`, `email_record_sent`) and holds no table rights.
+9. **Deploy** the staging branch on Vercel. Record the deployment URL. This is the HTTPS origin used in steps 5 and 6; if it differs, correct the Site URL and `APP_BASE_URL` and redeploy.
+10. **Verify the deployment** from the outside:
+    - `curl -s https://<origin>/api/health` returns 200 with `"status":"ok"`.
+    - `curl -s -o /dev/null -w "%{http_code}" https://<origin>/api/email/deliver` returns 401 (no bearer token).
+    - `curl -sI https://<origin>/` shows `Content-Security-Policy`, `Permissions-Policy`, `X-Frame-Options` and `Strict-Transport-Security`.
+    - `curl -sI https://<origin>/profile` shows `Cache-Control: private, no-store`.
+11. **Resend live test.** _Requires explicit owner authorisation for each send._ Use one approved test recipient. Confirm one outbox row moves to `sent` with a provider message identifier, and that a second scheduler run does not send it again. Then delete the test subscription.
+12. **Create the first administrator.** Sign up on staging with the operator's own account, then find its user identifier in the Auth dashboard and run the README's `admin_users` insert in the SQL editor. Record that the bootstrap was done. Create a second administrator the same way.
+13. **Restrict access to staging.** Turn on Vercel deployment protection for the staging deployment, so only authorised operators reach it. _Owner decision on who the operators are._
+14. **Backups.** Confirm point-in-time backups are enabled for the hosted project and record the retention period the plan provides. _Owner decision on recovery-time and recovery-point targets._
+15. **Restore rehearsal.** Restore the latest backup into a separate project, run the checks from step 8 there, and record the time taken. Delete the rehearsal project afterwards.
+
+## 4. Operations
+
+- **Logs:** Vercel runtime logs. Filter on `event`. The events are `email_delivery_run`, `email_delivery_refused` and `account_export`, each with an `outcome`. Log lines never contain addresses, message text, tokens, signed URLs or exports.
+- **Email failures:** query `email_outbox` status counts, without selecting recipients (the query is in `docs/operations.md`).
+- **Feedback:** administrators review `/admin/feedback`.
+- **Privacy requests:** handled through the operator procedure in `docs/operations.md`. Erasure of the sign-in identity and of original media is not automatic and needs owner approval per request.
+
+## 5. Rollback
+
+- **Application:** promote the previous Vercel deployment. This takes effect immediately and does not touch the database.
+- **Database:** migrations are forward-only. A bad migration is corrected by a new migration. Do not drop or edit tables by hand. For data loss, restore from the backup into a separate project first, and decide the cut-over with the owner.
+- **Environment:** revert the variable in Vercel and redeploy.
+
+## 6. Gates that stay closed until authorised
+
+Staging stays restricted to operators until all of these are complete:
+
+- The Privacy Notice and Terms have been reviewed by a qualified adviser. Until then, the pages at `/legal/privacy` and `/legal/terms` show the review-pending notice, and must not be presented as final.
+- Personal-data request handling is operational: the mailbox, the response procedure, and a named person.
+- Handling for sign-in identity removal and original-media removal is approved in writing. The application does not perform either automatically.
+- The hosting region, data processing terms and backup retention are verified with each provider.
+- Error visibility is decided: runtime logs only, or an external provider approved by the owner.
+
+## 7. Confirmed deployment blockers
+
+None technical. Every item above depends on an external account, a credential, or an owner decision. The repository's build, migrations, health endpoint, headers, scheduler and worker authorisation all verify locally.
