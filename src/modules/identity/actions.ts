@@ -6,6 +6,7 @@ import { getTranslation } from "@/i18n/server";
 import { translateFields, type Msg } from "@/i18n/message";
 import { safeNextPath } from "@/lib/http/safe-next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { signUpRefusalFrom } from "./auth-flow";
 import { requireParticipant } from "./gate";
 import type { FormState } from "./form-state";
 import {
@@ -115,10 +116,15 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
     password: password.value,
   });
   if (error) {
+    const refusal = signUpRefusalFrom(error.code);
     return {
       status: "error",
       fieldErrors: {},
-      message: t("identity.signUp.genericError"),
+      message: t(
+        refusal === "invitationOnly"
+          ? "identity.signUp.invitationOnly"
+          : "identity.signUp.genericError",
+      ),
       values: echo(formData, ["email"]),
     };
   }
@@ -126,6 +132,38 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
   // With email confirmation on, there is no session yet. The user confirms, then signs in.
   if (!data.session) {
     return { status: "saved", message: t("identity.signUp.saved") };
+  }
+
+  return continueAfterAuthentication(nextFrom(formData));
+}
+
+/*
+ * An invited visitor has a session from the invitation link but no password yet. Anyone signed in may set one here, so the page is
+ * reached only through the invitation flow and a signed-out visitor is sent to sign in first.
+ */
+export async function setPasswordAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { t } = await getTranslation();
+  const password = validatePassword(formData.get("password"));
+  if (!password.ok) return invalid(password.fieldErrors);
+
+  const user = await getCurrentUser();
+  if (!user)
+    redirect(
+      `/sign-in?next=${encodeURIComponent(`/auth/set-password?next=${encodeURIComponent(nextFrom(formData))}`)}`,
+    );
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.updateUser({ password: password.value });
+  if (error) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.setPassword.error"),
+      values: {},
+    };
   }
 
   return continueAfterAuthentication(nextFrom(formData));

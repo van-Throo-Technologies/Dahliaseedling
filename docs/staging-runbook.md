@@ -6,20 +6,20 @@ Staging is restricted to authorised operators until the gates in section 6 are c
 
 ## 1. What the repository already provides
 
-| Concern              | Where it is                                                          | Notes                                                                                                  |
-| -------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Runtime              | `package.json` `engines.node` `>=22.12.0`; `.nvmrc` pins `22`        | Use Node 22 on Vercel                                                                                  |
-| Build and start      | `npm run build`, `npm run start`                                     | Next.js 16 App Router                                                                                  |
-| Schema               | `supabase/migrations/` (27 files, applied in name order)             | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table |
-| Storage buckets      | Created by migrations with `on conflict (id) do nothing`             | `avatars` (public read, 2 MB), `private-media` (private, 50 MB), `public-media` (private, 5 MB, WebP)  |
-| Storage access       | Owner-folder policies; signed URLs for private media                 | Defined in migrations, no manual setup                                                                 |
-| Scheduler            | `vercel.json`: `/api/email/deliver` every five minutes               | Vercel's cron sends `CRON_SECRET` as a bearer token when it is set; confirm in step 10                 |
-| Worker authorisation | `src/app/api/email/deliver/route.ts`, constant-time bearer check     | Refuses every request without the secret                                                               |
-| Health               | `GET /api/health`                                                    | 200 when configuration is complete; 503 and the missing names otherwise. No network calls              |
-| Security headers     | `next.config.ts` via `src/lib/security/headers.ts`                   | CSP, Permissions-Policy, framing, HSTS in production                                                   |
-| Logs                 | Structured JSON lines on standard output (`src/lib/logging/log.ts`)  | Read in the Vercel runtime logs, filter on `event`                                                     |
-| Sign-up              | Confirmation-aware: with no session the app shows "check your email" | Email confirmation can be turned on without code changes                                               |
-| Admin bootstrap      | README, "Admin access": insert one `admin_users` row                 | Run once, by an operator, after the operator's own account exists                                      |
+| Concern              | Where it is                                                                                              | Notes                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Runtime              | `package.json` `engines.node` `>=22.12.0`; `.nvmrc` pins `22`                                            | Use Node 22 on Vercel                                                                                  |
+| Build and start      | `npm run build`, `npm run start`                                                                         | Next.js 16 App Router                                                                                  |
+| Schema               | `supabase/migrations/` (27 files, applied in name order)                                                 | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table |
+| Storage buckets      | Created by migrations with `on conflict (id) do nothing`                                                 | `avatars` (public read, 2 MB), `private-media` (private, 50 MB), `public-media` (private, 5 MB, WebP)  |
+| Storage access       | Owner-folder policies; signed URLs for private media                                                     | Defined in migrations, no manual setup                                                                 |
+| Scheduler            | `vercel.json`: `/api/email/deliver` every five minutes, region `fra1`                                    | Runs on production deployments only, on a plan that allows a five-minute schedule (section 2b)         |
+| Worker authorisation | `src/app/api/email/deliver/route.ts`, constant-time bearer check                                         | Refuses every request without the secret                                                               |
+| Health               | `GET /api/health`                                                                                        | 200 when configuration is complete; 503 and the missing names otherwise. No network calls              |
+| Security headers     | `next.config.ts` via `src/lib/security/headers.ts`                                                       | CSP, Permissions-Policy, framing, HSTS in production                                                   |
+| Logs                 | Structured JSON lines on standard output (`src/lib/logging/log.ts`)                                      | Read in the Vercel runtime logs, filter on `event`                                                     |
+| Sign-up and links    | `/auth/confirm` verifies confirmation and invitation links; `/auth/set-password` completes an invitation | Public sign-up is refused by Supabase when its switch is off (section 2b)                              |
+| Admin bootstrap      | README, "Admin access": insert one `admin_users` row                                                     | Run once, by an operator, after the operator's own account exists                                      |
 
 **Privilege model.** Hosted Supabase gives `anon`, `authenticated` and `service_role` broad rights on new objects by default. The migrations revoke those defaults and then grant exactly what the application uses. Any new table or function must be granted explicitly in its own migration. The privilege tests in `tests/db/privilege-model.test.ts` pin the expected grants and fail when one is missing or unexpected.
 
@@ -42,6 +42,37 @@ Set these on the Vercel project for the staging environment. Mark the secret val
 
 Vercel provides `VERCEL_GIT_COMMIT_SHA` automatically. Never prefix a secret with `NEXT_PUBLIC_`.
 
+## 2b. Supabase Auth settings, email templates and invitations
+
+Set these in the hosted project's Authentication settings. None of them is applied yet. "Before the Vercel URL" means the setting can be made before step 9.
+
+| Setting                    | Value                                                                                                                                                  | Before the Vercel URL? |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| Email provider             | Enabled, email and password                                                                                                                            | yes                    |
+| Confirm email              | On                                                                                                                                                     | yes                    |
+| Allow new users to sign up | **Off.** Supabase then refuses public sign-up for everyone, including direct API calls. Invited users are not affected.                                | yes                    |
+| Minimum password length    | 8, matching the application's rule                                                                                                                     | yes                    |
+| Site URL                   | `https://<staging origin>`, the origin from step 9                                                                                                     | no                     |
+| Additional redirect URLs   | Leave empty. The links carry a token hash, and the application does not use a redirect target from a link.                                             | yes                    |
+| JWT expiry                 | 3600 seconds                                                                                                                                           | yes                    |
+| Refresh token rotation     | On, reuse interval 10 seconds                                                                                                                          | yes                    |
+| Rate limits                | On, at the defaults                                                                                                                                    | yes                    |
+| SMTP                       | Custom SMTP through Resend. Supabase's built-in sender is for development and is limited, so authentication email needs the Resend domain from step 3. | after step 3           |
+
+**Email templates.** In Authentication, Email Templates, replace the links in the two templates below. The default `{{ .ConfirmationURL }}` sends the visitor through Supabase's own redirect. That route does not give this application a token it can verify on the server, so it must not be used.
+
+- **Confirm signup:** `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`
+- **Invite user:** `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite`
+
+Supabase sends one template per email type, not one per language. Choose one language for the beta and have the wording reviewed by a native speaker before inviting testers (see section 6).
+
+**Invitation-only registration.** Two mechanisms, and only one of them is a switch:
+
+- **Global sign-up switch (Supabase).** With "Allow new users to sign up" off, the server refuses `signUp` for every visitor. This is the enforcement. The sign-up page is not relied on to hide anything. When the server refuses, the page shows an invitation-only notice.
+- **Invitation acceptance (Supabase).** An operator invites an address from the Auth dashboard (Users, Invite user). Supabase creates the account and emails the invite template. The link opens `/auth/confirm`, which signs the invitee in and sends them to `/auth/set-password` to choose a password. The application does not keep its own invitation list, so there is nothing to maintain beyond Supabase's user list.
+
+The local `supabase/config.toml` keeps sign-up on so the automated tests can create accounts. That setting is for the local stack only.
+
 ## 3. Owner actions, in execution order
 
 Each step lists who acts, what to record, and how to confirm it. Do not proceed to a step before the previous one is confirmed.
@@ -49,15 +80,12 @@ Each step lists who acts, what to record, and how to confirm it. Do not proceed 
 1. **Choose the hosting region** for Supabase and Vercel. Record the choice. _Owner decision; affects processor and transfer terms, so counsel should confirm it._
 2. **Create the hosted Supabase project** in that region. Record its project reference. Do not reuse the local stack.
 3. **Create the Resend account**, verify the sending domain, and create a sending API key. Record the from-address. Do not send a test email yet (step 11).
-4. **Create the Vercel project** linked to the repository, using the staging branch. Do not deploy yet.
+4. **Create a dedicated Vercel project for staging**, linked to the repository. Do not deploy yet. Required settings, all before the first deployment exists:
+   - **Plan:** Pro. Vercel's Hobby plan cannot run the five-minute email schedule. Vercel runs cron jobs only on production deployments, so the production branch must be `staging`. Pushing that branch needs owner approval.
+   - **Region:** Frankfurt (`fra1`), set in `vercel.json`, next to the Supabase project in `eu-central-1`.
+   - **Deployment protection:** on, so the deployment is not reachable by the public before the operators are set up.
 5. **Set the environment variables** from section 2 on the Vercel project, for the staging environment only.
-6. **Configure hosted Auth** in the Supabase dashboard (Authentication settings):
-   - Site URL: the HTTPS staging origin of the Vercel deployment.
-   - Additional redirect URLs: the same origin only. Remove the local `127.0.0.1` entries.
-   - Enable email confirmation.
-   - Password minimum: 8 characters, unless the owner decides otherwise.
-   - Keep auth rate limits on.
-   - Sign-up: open or invitation-only. _Owner decision._
+6. **Configure hosted Auth** in the Supabase dashboard, using section 2b, except the Site URL. Turn "Allow new users to sign up" off before any invitation is sent. The Site URL is set after step 9. Do not invite anyone until both are done.
 7. **Apply the migrations** to the hosted project from the repository, with the Supabase CLI:
    ```
    supabase link --project-ref <project-ref>
@@ -70,15 +98,15 @@ Each step lists who acts, what to record, and how to confirm it. Do not proceed 
    - `anon` executes 21 public functions and `authenticated` executes 99. `list_seedling_updates(uuid)` is executable by neither role, and PUBLIC holds no execute grant on it.
    - `storage.buckets` holds `avatars`, `private-media` and `public-media`, with `private-media` and `public-media` not public.
    - The `service_role` executes exactly the five email functions (`email_claim_due`, `email_delivery_context`, `email_record_failed`, `email_record_retry`, `email_record_sent`) and holds no table rights.
-9. **Deploy** the staging branch on Vercel. Record the deployment URL. This is the HTTPS origin used in steps 5 and 6; if it differs, correct the Site URL and `APP_BASE_URL` and redeploy.
+9. **Deploy** the staging branch on Vercel. Record the deployment URL. This is the HTTPS origin for the Site URL (section 2b), the email templates and `APP_BASE_URL`. If it differs from what was configured, correct them and redeploy before any invitation is sent.
 10. **Verify the deployment** from the outside:
     - `curl -s https://<origin>/api/health` returns 200 with `"status":"ok"`.
     - `curl -s -o /dev/null -w "%{http_code}" https://<origin>/api/email/deliver` returns 401 (no bearer token).
     - `curl -sI https://<origin>/` shows `Content-Security-Policy`, `Permissions-Policy`, `X-Frame-Options` and `Strict-Transport-Security`.
     - `curl -sI https://<origin>/profile` shows `Cache-Control: private, no-store`.
 11. **Resend live test.** _Requires explicit owner authorisation for each send._ Use one approved test recipient. Confirm one outbox row moves to `sent` with a provider message identifier, and that a second scheduler run does not send it again. Then delete the test subscription.
-12. **Create the first administrator.** Sign up on staging with the operator's own account, then find its user identifier in the Auth dashboard and run the README's `admin_users` insert in the SQL editor. Record that the bootstrap was done. Create a second administrator the same way.
-13. **Restrict access to staging.** Turn on Vercel deployment protection for the staging deployment, so only authorised operators reach it. _Owner decision on who the operators are._
+12. **Create the first administrator.** With sign-up off, the operator's account is created by invitation: invite the operator's address from the Auth dashboard, open the link, and choose a password. Then find the user identifier in the Auth dashboard and run the README's `admin_users` insert in the SQL editor. Record that the bootstrap was done. Create a second administrator the same way.
+13. **Confirm access and the scheduler.** Deployment protection was set in step 4. Check that it has not blocked the scheduler: after the first five-minute run, the runtime logs should show an `email_delivery_run` event. If the scheduler is blocked, stop and correct it before inviting testers. _Owner decision on who the operators are._
 14. **Backups.** Confirm point-in-time backups are enabled for the hosted project and record the retention period the plan provides. _Owner decision on recovery-time and recovery-point targets._
 15. **Restore rehearsal.** Restore the latest backup into a separate project, run the checks from step 8 there, and record the time taken. Delete the rehearsal project afterwards.
 
@@ -104,6 +132,8 @@ Staging stays restricted to operators until all of these are complete:
 - Handling for sign-in identity removal and original-media removal is approved in writing. The application does not perform either automatically.
 - The hosting region, data processing terms and backup retention are verified with each provider.
 - Error visibility is decided: runtime logs only, or an external provider approved by the owner.
+- Password recovery is decided. The application has no reset flow, so a tester who forgets a password cannot recover it by themselves. Choose the operator procedure, or build the flow, before testers rely on their accounts.
+- The Auth email templates and the invitation-only notice are reviewed in Dutch and French by a native speaker.
 
 ## 7. Confirmed deployment blockers
 

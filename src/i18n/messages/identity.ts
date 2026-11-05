@@ -24,6 +24,23 @@ export const en = {
     saved: "Check your email to confirm your account, then sign in.",
     genericError:
       "We could not create an account with those details. Try signing in, or use a different email.",
+    invitationOnly:
+      "New accounts are by invitation only for now. If you have been invited, open the link in your invitation email.",
+  },
+  confirm: {
+    expired:
+      "This link has expired or has already been used. Sign in, or contact us for a new invitation.",
+    invalid:
+      "This link is not valid. Check that you opened the whole link from your email, or contact us for a new one.",
+    signedUp: "Your email is confirmed. Set up your profile to continue.",
+  },
+  setPassword: {
+    title: "Choose a password",
+    intro: "Your invitation is confirmed. Choose a password to finish setting up your account.",
+    submit: "Save password",
+    submitting: "Saving…",
+    error:
+      "We could not save your password. Try again. If the link has expired, contact us for a new invitation.",
   },
   fields: {
     email: "Email",
@@ -116,6 +133,23 @@ export const nl: typeof en = {
     saved: "Controleer je e-mail om je account te bevestigen, en log daarna in.",
     genericError:
       "We konden met deze gegevens geen account aanmaken. Probeer in te loggen, of gebruik een ander e-mailadres.",
+    invitationOnly:
+      "Nieuwe accounts zijn voorlopig alleen op uitnodiging. Heb je een uitnodiging ontvangen, open dan de link in die e-mail.",
+  },
+  confirm: {
+    expired:
+      "Deze link is verlopen of al gebruikt. Log in, of vraag ons om een nieuwe uitnodiging.",
+    invalid:
+      "Deze link is niet geldig. Controleer of je de volledige link uit je e-mail hebt geopend, of vraag ons om een nieuwe.",
+    signedUp: "Je e-mailadres is bevestigd. Stel je profiel in om verder te gaan.",
+  },
+  setPassword: {
+    title: "Kies een wachtwoord",
+    intro: "Je uitnodiging is bevestigd. Kies een wachtwoord om je account af te ronden.",
+    submit: "Wachtwoord opslaan",
+    submitting: "Bezig met opslaan…",
+    error:
+      "We konden je wachtwoord niet opslaan. Probeer het opnieuw. Is de link verlopen, vraag ons dan om een nieuwe uitnodiging.",
   },
   fields: {
     email: "E-mailadres",
@@ -210,6 +244,24 @@ export const fr: typeof en = {
     saved: "Confirmez votre compte depuis votre e-mail, puis connectez-vous.",
     genericError:
       "Nous n'avons pas pu créer de compte avec ces informations. Essayez de vous connecter, ou utilisez une autre adresse e-mail.",
+    invitationOnly:
+      "Les nouveaux comptes sont pour l'instant sur invitation uniquement. Si vous avez reçu une invitation, ouvrez le lien de l'e-mail d'invitation.",
+  },
+  confirm: {
+    expired:
+      "Ce lien a expiré ou a déjà été utilisé. Connectez-vous, ou demandez-nous une nouvelle invitation.",
+    invalid:
+      "Ce lien n'est pas valide. Vérifiez que vous avez ouvert le lien complet depuis votre e-mail, ou demandez-nous un nouveau lien.",
+    signedUp: "Votre adresse e-mail est confirmée. Configurez votre profil pour continuer.",
+  },
+  setPassword: {
+    title: "Choisissez un mot de passe",
+    intro:
+      "Votre invitation est confirmée. Choisissez un mot de passe pour finaliser votre compte.",
+    submit: "Enregistrer le mot de passe",
+    submitting: "Enregistrement…",
+    error:
+      "Nous n'avons pas pu enregistrer votre mot de passe. Réessayez. Si le lien a expiré, demandez-nous une nouvelle invitation.",
   },
   fields: {
     email: "Adresse e-mail",
