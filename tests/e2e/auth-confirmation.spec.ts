@@ -8,6 +8,7 @@ import { localSupabase } from "../support/local-supabase";
  */
 
 const EN = MESSAGES.en;
+const DROPPED_HEADERS = ["cookie", "host", "content-length"];
 const PASSWORD = "correct-horse-battery";
 
 function uniqueEmail(label: string): string {
@@ -180,4 +181,68 @@ test("an invalid invitation link is refused, and the sign-in page shows the noti
 
   await expect(page).toHaveURL(/\/sign-in\?confirm=expired$/);
   await expect(page.locator("p[role='alert']")).toHaveText(EN.identity.confirm.expired);
+});
+
+test("an ordinary account cannot invoke the invitation password action directly, and its password does not change", async ({
+  browser,
+  request,
+  baseURL,
+}) => {
+  const ordinaryEmail = uniqueEmail("forge-ordinary");
+  const ordinaryContext = await browser.newContext();
+  const ordinary = await ordinaryContext.newPage();
+  const signupToken = await mintTokenHash(request, "signup", ordinaryEmail);
+  await ordinary.goto(`/auth/confirm?token_hash=${signupToken}&type=signup`);
+  await expect(ordinary).toHaveURL(/\/profile\/setup/);
+
+  // A pending invitee submits the real form once. The request is captured and never reaches the server, so the invitation stays open.
+  const inviteeContext = await browser.newContext();
+  const invitee = await inviteeContext.newPage();
+  const inviteToken = await mintTokenHash(request, "invite", uniqueEmail("forge-invitee"));
+  await invitee.goto(`/auth/confirm?token_hash=${inviteToken}&type=invite`);
+  await expect(invitee).toHaveURL(/\/auth\/set-password/);
+  const captured: { headers: Record<string, string>; body: string }[] = [];
+  await invitee.route("**/auth/set-password**", async (route) => {
+    if (route.request().method() === "POST") {
+      captured.push({ headers: route.request().headers(), body: route.request().postData() ?? "" });
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+  await invitee
+    .getByLabel(EN.identity.fields.password, { exact: true })
+    .fill("invitee-first-pass-1");
+  await invitee.getByRole("button", { name: EN.identity.setPassword.submit, exact: true }).click();
+  await expect.poll(() => captured.length).toBe(1);
+  await inviteeContext.close();
+
+  // The ordinary account replays that exact request with its own session cookies and a different password.
+  const forged = "forged-password-999";
+  // The captured request carries the invitee's cookie, host and length, so those are dropped.
+  const headers = Object.fromEntries(
+    Object.entries(captured[0]!.headers).filter(([name]) => !DROPPED_HEADERS.includes(name)),
+  );
+  const response = await ordinaryContext.request.post(
+    new URL("/auth/set-password?next=%2F", baseURL).toString(),
+    {
+      headers,
+      data: captured[0]!.body.replaceAll("invitee-first-pass-1", forged),
+    },
+  );
+  const text = await response.text();
+  // A server action's response also re-renders the page, which shows this notice to an ordinary account. The notice therefore only shows
+  // that the response came back; the password checks below are what show the gate held.
+  expect(text).toContain(EN.identity.setPassword.notInvited);
+
+  // The stored password is unchanged: the original still signs in, and the forged one does not.
+  const { apiUrl, publishableKey } = localSupabase();
+  const signIn = (password: string) =>
+    request.post(`${apiUrl}/auth/v1/token?grant_type=password`, {
+      headers: { apikey: publishableKey },
+      data: { email: ordinaryEmail, password },
+    });
+  expect((await signIn(PASSWORD)).ok()).toBe(true);
+  expect((await signIn(forged)).ok()).toBe(false);
+  await ordinaryContext.close();
 });
