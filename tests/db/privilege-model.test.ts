@@ -55,8 +55,7 @@ const ANON_FUNCTIONS = [
   "search_text",
   "seedling_canonical_id",
   "seedling_cover",
-  // Two signatures: the deployed five-argument rollout wrapper and the seven-argument per-visitor function.
-  "submit_invitation_request",
+  // The eight-argument per-visitor submission, which needs a server-signed proof. The legacy five-argument route is revoked.
   "submit_invitation_request",
 ];
 
@@ -129,15 +128,15 @@ describe("the pinned privilege model", () => {
         where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`,
     );
     expect(found.map((r) => r.proname as string)).toEqual([...ANON_FUNCTIONS].sort());
-    expect(ANON_FUNCTIONS).toHaveLength(23);
+    expect(ANON_FUNCTIONS).toHaveLength(22);
   });
 
-  it("the authenticated role executes exactly 108 public functions, including the invitation password, invitation request and activity functions", async () => {
+  it("the authenticated role executes exactly 107 public functions, including the invitation password, invitation request and activity functions", async () => {
     const [count] = await rows(
       `select count(*)::int as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE')`,
     );
-    expect(count.n).toBe(108);
+    expect(count.n).toBe(107);
     const invitation = await rows(
       `select p.proname, has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated,
               has_function_privilege('anon', p.oid, 'EXECUTE') as anon
