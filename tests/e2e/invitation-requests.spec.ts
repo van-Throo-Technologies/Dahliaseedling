@@ -74,6 +74,14 @@ test("a visitor's request is stored as pending, and creates no account", async (
   expect(accounts.n).toBe(0);
 });
 
+test("the request page tells the founder's story before the form", async ({ page }) => {
+  await page.goto("/join");
+  await expect(
+    page.getByRole("heading", { name: EN.invitations.join.storyHeading, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(EN.invitations.join.signOffRole, { exact: true })).toBeVisible();
+});
+
 test("a filled honeypot gets the same answer, and nothing is stored", async ({ browser }) => {
   const email = uniqueEmail("bot");
   const context = await browser.newContext();
