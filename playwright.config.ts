@@ -43,6 +43,8 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: supabase.apiUrl,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabase.publishableKey,
       NEXT_TELEMETRY_DISABLED: "1",
+      // The invitation-request page is off by default. The browser tests turn it on, so the public journey can be exercised.
+      INVITATION_REQUESTS_ENABLED: "true",
     } as Record<string, string>,
   },
 });

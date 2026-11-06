@@ -5,5 +5,12 @@ import nextTypescript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
-  globalIgnores([".next/**", "coverage/**", "next-env.d.ts", "src/lib/supabase/database.types.ts"]),
+  // .claude/ holds local agent tooling, not application code, and its scripts use CommonJS by design.
+  globalIgnores([
+    ".next/**",
+    "coverage/**",
+    ".claude/**",
+    "next-env.d.ts",
+    "src/lib/supabase/database.types.ts",
+  ]),
 ]);

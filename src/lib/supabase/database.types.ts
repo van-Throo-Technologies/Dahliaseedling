@@ -343,6 +343,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"invitation_requests": {
+                  Row: {
+                    "client_key": string,"country_code": string,"created_at": string,"decided_at": string | null,"decided_by": string | null,"email": string,"id": string,"invited_at": string | null,"name": string,"reason": string,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_key": string,"country_code": string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"email": string,"id"?: string,"invited_at"?: string | null,"name": string,"reason": string,"status"?: string
+                  }
+                  Update: {
+                    "client_key"?: string,"country_code"?: string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"email"?: string,"id"?: string,"invited_at"?: string | null,"name"?: string,"reason"?: string,"status"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"likes": {
                   Row: {
                     "created_at": string,"update_id": string,"user_id": string
@@ -1346,10 +1360,24 @@ isOneToOne: false
 "add_unidentified_source_photo":
 { Args: { "p_media_id": string,"p_source_id": string }; Returns: undefined
                            },
+"admin_decide_invitation_request":
+{ Args: { "p_decision": string,"p_request_id": string }; Returns: string
+                           },
+"admin_list_invitation_requests":
+{ Args: { "p_limit"?: number,"p_status"?: string }; Returns: {
+              "country_code": string,"created_at": string,"decided_at": string,"email": string,"invited_at": string,"name": string,"reason": string,"request_id": string,"status": string
+            }[]
+                           },
 "admin_list_reports":
 { Args: { "p_limit"?: number,"p_show_all"?: boolean }; Returns: {
               "content_snapshot": string,"created_at": string,"details": string,"id": string,"is_message": boolean,"reason": string,"reported_name": string,"reported_suspended": boolean,"reported_user_id": string,"reporter_name": string,"resolved_at": string,"status": string,"target_id": string,"target_live": boolean,"target_type": string,"target_update_id": string
             }[]
+                           },
+"admin_mark_invitation_sent":
+{ Args: { "p_request_id": string }; Returns: undefined
+                           },
+"admin_purge_invitation_requests":
+{ Args: { "p_older_than"?: string }; Returns: number
                            },
 "admin_remove_content":
 { Args: { "p_reason"?: string,"p_report_id": string }; Returns: undefined
@@ -1777,6 +1805,9 @@ isOneToOne: false
                            },
 "submit_feedback":
 { Args: { "p_app_version"?: string,"p_category": string,"p_client_key": string,"p_message": string,"p_page_context"?: string }; Returns: string
+                           },
+"submit_invitation_request":
+{ Args: { "p_client_key": string,"p_country": string,"p_email": string,"p_name": string,"p_reason": string }; Returns: string
                            },
 "subscribe_availability":
 { Args: { "p_locale"?: string,"p_seedling_id": string }; Returns: undefined

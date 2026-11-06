@@ -11,3 +11,5 @@ DahliaSeedling_Backlog.md
 test-results
 playwright-report
 blob-report
+# Local agent tooling under .claude/ is maintained outside this project; do not reformat it.
+.claude

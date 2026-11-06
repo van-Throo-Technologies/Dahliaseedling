@@ -19,6 +19,7 @@ import * as assistive from "./assistive";
 import * as privacy from "./privacy";
 import * as feedback from "./feedback";
 import * as launch from "./launch";
+import * as invitations from "./invitations";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -47,6 +48,7 @@ export const MESSAGES = {
     privacy: privacy.en,
     feedback: feedback.en,
     launch: launch.en,
+    invitations: invitations.en,
   },
   nl: {
     app: app.nl,
@@ -70,6 +72,7 @@ export const MESSAGES = {
     privacy: privacy.nl,
     feedback: feedback.nl,
     launch: launch.nl,
+    invitations: invitations.nl,
   },
   fr: {
     app: app.fr,
@@ -93,6 +96,7 @@ export const MESSAGES = {
     privacy: privacy.fr,
     feedback: feedback.fr,
     launch: launch.fr,
+    invitations: invitations.fr,
   },
 };
 

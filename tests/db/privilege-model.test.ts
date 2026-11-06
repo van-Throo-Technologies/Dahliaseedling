@@ -55,6 +55,7 @@ const ANON_FUNCTIONS = [
   "search_text",
   "seedling_canonical_id",
   "seedling_cover",
+  "submit_invitation_request",
 ];
 
 const created: string[] = [];
@@ -126,15 +127,15 @@ describe("the pinned privilege model", () => {
         where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`,
     );
     expect(found.map((r) => r.proname as string)).toEqual([...ANON_FUNCTIONS].sort());
-    expect(ANON_FUNCTIONS).toHaveLength(21);
+    expect(ANON_FUNCTIONS).toHaveLength(22);
   });
 
-  it("the authenticated role executes exactly 101 public functions, including the two invitation password functions", async () => {
+  it("the authenticated role executes exactly 106 public functions, including the invitation password and invitation request functions", async () => {
     const [count] = await rows(
       `select count(*)::int as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE')`,
     );
-    expect(count.n).toBe(101);
+    expect(count.n).toBe(106);
     const invitation = await rows(
       `select p.proname, has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated,
               has_function_privilege('anon', p.oid, 'EXECUTE') as anon

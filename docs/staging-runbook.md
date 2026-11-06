@@ -10,7 +10,7 @@ Staging is restricted to authorised operators until the gates in section 6 are c
 | -------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Runtime              | `package.json` `engines.node` `>=22.12.0`; `.nvmrc` pins `22`                                            | Use Node 22 on Vercel                                                                                                   |
 | Build and start      | `npm run build`, `npm run start`                                                                         | Next.js 16 App Router                                                                                                   |
-| Schema               | `supabase/migrations/` (28 files, applied in name order)                                                 | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table                  |
+| Schema               | `supabase/migrations/` (29 files, applied in name order)                                                 | Forward-only; never edit a committed migration. Privileges are explicit: see the note after this table                  |
 | Storage buckets      | Created by migrations with `on conflict (id) do nothing`                                                 | `avatars` (public read, 2 MB), `private-media` (private, 50 MB), `public-media` (private, 5 MB, WebP)                   |
 | Storage access       | Owner-folder policies; signed URLs for private media                                                     | Defined in migrations, no manual setup                                                                                  |
 | Scheduler            | No Vercel cron. The Hobby plan cannot run a five-minute schedule. `vercel.json` sets only region `fra1`  | Staging will call `/api/email/deliver` from Supabase pg_cron, pg_net and Vault, after verification (section 3, step 16) |
@@ -85,6 +85,17 @@ Supabase sends one template per email type, not one per language. Choose one lan
 
 The local `supabase/config.toml` keeps sign-up on so the automated tests can create accounts. That setting is for the local stack only.
 
+## 2c. Invitation requests (public entry point)
+
+A visitor can ask for access at `/join` without giving their address to anyone else. The request is stored as pending and creates no account. The founder reviews requests at `/admin/invitations`, which is not found for anyone who is not an administrator.
+
+- **Switch:** the public page exists only while `INVITATION_REQUESTS_ENABLED` is `true`. Any other value makes `/join` not found. Set it in Vercel and redeploy. It is not a secret.
+- **Approval:** approving a request only records the decision. The founder then sends the invitation from Supabase (Authentication, Users, Invite user) to the address shown, and marks it sent in the review page. Each step happens once.
+- **Why not automatic:** sending from the application would need the Supabase secret key on the request path, which widens the boundary that only the email worker uses. Automating it is a separate decision.
+- **Limits:** at most 200 submissions in any 24 hours across the whole site, one open request per address, and an idempotency key per form. A hidden honeypot field catches simple automated submissions.
+- **Retention:** declined and invited requests are removed after 90 days by `admin_purge_invitation_requests`. It refuses periods under 30 days. There is no scheduler yet, so an administrator runs it, for example `select public.admin_purge_invitation_requests();` through the SQL editor, at least monthly.
+- **Testing on staging:** the staging deployment is protected, so the public page cannot be shared from it. To test the public journey before sharing, keep staging protected and use an operator session. Public sharing needs a separate deployment with the flag on (see the proposal below), which needs approval.
+
 ## 3. Owner actions, in execution order
 
 Each step lists who acts, what to record, and how to confirm it. Do not proceed to a step before the previous one is confirmed.
@@ -103,7 +114,7 @@ Each step lists who acts, what to record, and how to confirm it. Do not proceed 
    supabase link --project-ref <project-ref>
    supabase db push
    ```
-   Never add `--include-roles`: `supabase/roles.sql` is local only. Confirm the applied migration list matches `supabase/migrations/` (28 files, including `20261110090000_privilege_model_correction.sql`, `20261110100000_revoke_legacy_journey_execute.sql` and `20261111090000_invitation_password_state.sql`). Do not run `npm run db:reset` against the hosted project; that command is for the local stack only.
+   Never add `--include-roles`: `supabase/roles.sql` is local only. Confirm the applied migration list matches `supabase/migrations/` (29 files, including `20261111100000_invitation_requests.sql`, `20261110090000_privilege_model_correction.sql`, `20261110100000_revoke_legacy_journey_execute.sql` and `20261111090000_invitation_password_state.sql`). Do not run `npm run db:reset` against the hosted project; that command is for the local stack only.
 8. **Check the hosted schema** with read-only queries in the Supabase SQL editor:
    - Every public table has row-level security enabled: `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;` should return no rows.
    - `anon` and `authenticated` hold no table-level insert, update or delete on public tables. Their writes are column-level only, on the profile, observation, Seedling and series columns the application uses.
