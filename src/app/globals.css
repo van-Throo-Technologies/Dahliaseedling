@@ -33,3 +33,10 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* On phones the primary navigation is fixed to the bottom edge. Keyboard focus and in-page links scroll targets clear of it. */
+@media (max-width: 767px) {
+  html {
+    scroll-padding-bottom: 7rem;
+  }
+}

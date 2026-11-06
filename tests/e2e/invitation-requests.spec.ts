@@ -74,6 +74,72 @@ test("a visitor's request is stored as pending, and creates no account", async (
   expect(accounts.n).toBe(0);
 });
 
+test("the hero shows the founder's photograph with its alt text, and the page still works without it", async ({
+  page,
+}) => {
+  await page.goto("/join");
+  const photograph = page.getByRole("img", { name: EN.invitations.join.heroAlt, exact: true });
+  await expect(photograph).toBeVisible();
+  expect(
+    await photograph.evaluate((element) => (element as HTMLImageElement).naturalWidth),
+  ).toBeGreaterThan(0);
+});
+
+test("without the photograph, the heading and the request form still work", async ({ page }) => {
+  await page.route("**/images/dahlia-founder.jpg", (route) => route.abort());
+  await page.goto("/join");
+  await expect(
+    page.getByRole("heading", { name: EN.invitations.join.heroHeading, level: 1, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel(EN.invitations.join.email, { exact: true })).toBeVisible();
+});
+
+test("the hero leads with the heading, and its button takes a visitor to the form without horizontal scrolling", async ({
+  page,
+}) => {
+  await page.goto("/join");
+  await expect(
+    page.getByRole("heading", { name: EN.invitations.join.heroHeading, level: 1, exact: true }),
+  ).toBeVisible();
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+
+  await page.getByRole("link", { name: EN.invitations.join.requestCta, exact: true }).click();
+  await expect(page.getByLabel(EN.invitations.join.email, { exact: true })).toBeInViewport();
+});
+
+test("on a phone, the fixed navigation covers neither the focused field nor the submit button", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "phone",
+    "The bottom navigation is fixed only on phone-sized screens.",
+  );
+  await page.goto("/join");
+
+  const bar = await page
+    .getByRole("navigation", { name: EN.app.nav.label, exact: true })
+    .boundingBox();
+  expect(bar).not.toBeNull();
+  const overlaps = (box: { x: number; y: number; width: number; height: number } | null) =>
+    box !== null && box.y < bar!.y + bar!.height && box.y + box.height > bar!.y;
+
+  const reason = page.getByLabel(EN.invitations.join.reason, { exact: true });
+  await reason.focus();
+  expect(overlaps(await reason.boundingBox())).toBe(false);
+
+  const submit = page.getByRole("button", { name: EN.invitations.join.submit, exact: true });
+  await submit.focus();
+  expect(overlaps(await submit.boundingBox())).toBe(false);
+
+  await page.mouse.wheel(0, 5000);
+  await expect(submit).toBeInViewport();
+  expect(overlaps(await submit.boundingBox())).toBe(false);
+});
+
 test("the request page tells the founder's story before the form", async ({ page }) => {
   await page.goto("/join");
   await expect(

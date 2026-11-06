@@ -7,6 +7,10 @@ export const en = {
       "DahliaSeedling is a new, invitation-only place for growers who record and share real seedlings. Every Seedling on it is a real, grower-contributed plant.",
     privacyNote:
       "Your email address is used only to send you an invitation if your request is approved. You will not be added to any mailing list. Declined and finished requests are deleted after 90 days.",
+    heroHeading: "Every seedling deserves a chance to be seen.",
+    heroAlt:
+      "A pink and yellow dahlia in full bloom, with a closed green bud beside it and leaves behind it.",
+    requestCta: "Request an invitation",
     storyHeading: "A little story behind DahliaSeedling",
     story1:
       "For years, I've been watching dahlia growers share the beautiful, unique flowers they've grown from seed. Every seedling is different, and that's part of what makes growing dahlias so fascinating.",
@@ -76,6 +80,10 @@ export const nl: typeof en = {
       "DahliaSeedling is een nieuwe plek op uitnodiging voor kwekers die echte zaailingen vastleggen en delen. Elke zaailing erop is een echte plant, ingebracht door een kweker.",
     privacyNote:
       "Je e-mailadres wordt alleen gebruikt om je een uitnodiging te sturen als je aanvraag wordt goedgekeurd. Je wordt aan geen enkele mailinglijst toegevoegd. Afgewezen en afgehandelde aanvragen worden na 90 dagen verwijderd.",
+    heroHeading: "Elke zaailing verdient het om gezien te worden.",
+    heroAlt:
+      "Een roze en gele dahlia in volle bloei, met een gesloten groene knop ernaast en bladeren erachter.",
+    requestCta: "Vraag een uitnodiging aan",
     storyHeading: "Een klein verhaal achter DahliaSeedling",
     story1:
       "Al jaren zie ik dahliakwekers hun mooie, unieke bloemen laten zien die ze uit zaad hebben gekweekt. Elke zaailing is anders, en dat maakt het kweken van dahlia's zo fascinerend.",
@@ -146,6 +154,10 @@ export const fr: typeof en = {
       "DahliaSeedling est un nouvel espace sur invitation, pour les cultivateurs qui enregistrent et partagent de vrais semis. Chaque semis qui s'y trouve est une vraie plante, apportée par un cultivateur.",
     privacyNote:
       "Votre adresse e-mail sert uniquement à vous envoyer une invitation si votre demande est acceptée. Vous ne serez inscrit à aucune liste de diffusion. Les demandes refusées ou closes sont supprimées après 90 jours.",
+    heroHeading: "Chaque semis mérite d'être vu.",
+    heroAlt:
+      "Un dahlia rose et jaune en pleine floraison, avec un bouton vert fermé à côté et des feuilles derrière.",
+    requestCta: "Demander une invitation",
     storyHeading: "Une petite histoire derrière DahliaSeedling",
     story1:
       "Depuis des années, je regarde les cultivateurs de dahlias partager les fleurs magnifiques et uniques qu'ils ont obtenues de semis. Chaque semis est différent, et c'est ce qui rend la culture du dahlia si fascinante.",
@@ -161,7 +173,7 @@ export const fr: typeof en = {
     story7: "Ne pas être retenu ne veut pas dire que cela ne vaut pas la peine d'être cultivé.",
     signOffLead: "Bien à vous,",
     signOffName: "Janine",
-    signOffRole: "Fondateur·rice, DahliaSeedling",
+    signOffRole: "Fondatrice, DahliaSeedling",
     name: "Nom",
     nameHint: "Le nom sous lequel les autres cultivateurs vous connaîtront.",
     country: "Pays",
