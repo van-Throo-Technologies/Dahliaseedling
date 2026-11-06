@@ -30,6 +30,7 @@ import {
   validateVisibility,
   validateWorkingName,
 } from "./validation";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Server actions for Seedling core. Each one:
@@ -73,6 +74,7 @@ export async function createSeriesAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   await requireParticipant("/series");
   const { t } = await getTranslation();
 
@@ -99,6 +101,7 @@ export async function createSeedlingAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   await requireParticipant("/seedlings/new");
 
   const series = validateSeriesChoice(formData.get("seriesId"));
@@ -154,6 +157,7 @@ export async function updateSeedlingAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
   if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
@@ -192,6 +196,7 @@ export async function attachSeriesAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
   if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
@@ -225,6 +230,7 @@ export async function setParentAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const { t } = await getTranslation();
   const id = text(formData, "seedlingId");
   if (!isUuid(id)) return failure(t("errors.seedling.notFound"));
@@ -265,6 +271,7 @@ export async function findParentCandidatesAction(
   term: string,
   seedlingId: string,
 ): Promise<ParentCandidate[]> {
+  refuseOnPublicSurface();
   if (!isUuid(seedlingId)) return [];
   const { userId } = await requireParticipant(`/seedlings/${seedlingId}`);
   const { t } = await getTranslation();

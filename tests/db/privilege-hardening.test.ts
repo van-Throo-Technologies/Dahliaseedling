@@ -42,6 +42,7 @@ const ANON_DEFINER_ALLOWLIST = [
   "seedling_canonical_id",
   "seedling_cover",
   "submit_invitation_request",
+  "submit_invitation_request",
   "_derivative_is_public",
   "_public_media_object_is_public",
   "_public_media_object_unregistered",

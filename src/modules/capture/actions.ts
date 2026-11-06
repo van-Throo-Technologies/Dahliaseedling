@@ -27,6 +27,7 @@ import {
   type SeedlingChoice,
 } from "./validation";
 import type { MessageKey } from "@/i18n/translator";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Capture server actions. The participation gate runs first (signed in, profile, not suspended). Input is
@@ -77,6 +78,7 @@ async function captureMessage(error: unknown, fallback: MessageKey): Promise<str
 export async function prepareUploadsAction(
   mimeTypes: readonly string[],
 ): Promise<{ readonly paths: string[] } | { readonly error: string }> {
+  refuseOnPublicSurface();
   const { userId } = await requireParticipant("/capture");
   const { t } = await getTranslation();
 
@@ -97,6 +99,7 @@ export async function prepareUploadsAction(
 
 /** Removes uploads the grower abandoned. Only uploads that never became media can be removed. */
 export async function discardUploadsAction(paths: readonly string[]): Promise<void> {
+  refuseOnPublicSurface();
   const { userId } = await requireParticipant("/capture");
   const own = paths.filter((path) => path.startsWith(`${userId}/`));
   const supabase = await createSupabaseServerClient();
@@ -115,6 +118,7 @@ async function resolveChoice(
 }
 
 export async function captureAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  refuseOnPublicSurface();
   const { userId } = await requireParticipant("/capture");
 
   const choice = validateSeedlingChoice(
@@ -168,6 +172,7 @@ export async function updateObservationAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const id = text(formData, "observationId");
   if (!isUuid(id)) return failureKey("errors.capture.notFound");
   await requireParticipant(`/observations/${id}`);
@@ -204,6 +209,7 @@ export async function moveObservationAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const id = text(formData, "observationId");
   if (!isUuid(id)) return failureKey("errors.capture.notFound");
   await requireParticipant(`/observations/${id}/move`);
@@ -237,6 +243,7 @@ export async function moveObservationAction(
 }
 
 export async function deleteObservationAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const id = text(formData, "observationId");
   if (!isUuid(id)) redirect("/profile");
   await requireParticipant(`/observations/${id}`);

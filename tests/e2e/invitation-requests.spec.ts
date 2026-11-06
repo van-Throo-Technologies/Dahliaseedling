@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type APIRequestContext, type Browser } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 import { localSupabase, withSuperuser } from "../support/local-supabase";
@@ -219,5 +220,93 @@ test("an administrator declines one request, approves another, and records the i
   // Once recorded, the request is no longer offered for the same action.
   await page.goto("/admin/invitations");
   await expect(page.locator("article", { hasText: approvedEmail })).toHaveCount(0);
+  await context.close();
+});
+
+test("a captured administrator decision, replayed to its own page, is processed", async ({
+  browser,
+  request,
+}) => {
+  const email = uniqueEmail("replay");
+  await submitRequest(browser, email);
+
+  const { context, page } = await administratorContext(browser, request);
+  await page.goto("/admin/invitations");
+  let captured: { headers: Record<string, string>; body: string } | undefined;
+  await page.route("**/admin/invitations**", async (route) => {
+    if (route.request().method() === "POST" && captured === undefined) {
+      captured = { headers: route.request().headers(), body: route.request().postData() ?? "" };
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+  await page
+    .locator("article", { hasText: email })
+    .getByRole("button", { name: EN.invitations.admin.decline, exact: true })
+    .click();
+  await expect.poll(() => captured !== undefined).toBe(true);
+  await page.unroute("**/admin/invitations**");
+
+  const { headers, body } = captured!;
+  const replayHeaders = Object.fromEntries(
+    Object.entries(headers).filter(
+      ([name]) => !["cookie", "host", "content-length"].includes(name),
+    ),
+  );
+
+  // Control: the same captured request, sent to its own page, is processed. The public surface refuses this action on its own deployment; see
+  // the public-surface tests, which replay the request to the join route there.
+  await context.request.post(new URL("/admin/invitations", page.url()).toString(), {
+    headers: replayHeaders,
+    data: body,
+  });
+  expect(await storedStatus(email)).toBe("declined");
+  await context.close();
+});
+
+test("the crafted administrator request, sent to its own page, is processed (control for the public-surface test)", async ({
+  browser,
+  request,
+}) => {
+  const email = uniqueEmail("crafted");
+  await submitRequest(browser, email);
+  const { context, page } = await administratorContext(browser, request);
+  await page.goto("/admin/invitations");
+  const [row] = await withSuperuser(
+    async (db) =>
+      (await db.query("select id from public.invitation_requests where email = $1", [email])).rows,
+  );
+
+  const manifest = JSON.parse(
+    readFileSync(".next/server/server-reference-manifest.json", "utf8"),
+  ) as {
+    node: Record<string, { exportedName: string; filename: string }>;
+  };
+  const actionId = Object.entries(manifest.node).find(
+    ([, value]) =>
+      value.exportedName === "decideInvitationRequestAction" &&
+      value.filename === "src/modules/invitations/actions.ts",
+  )![0];
+  const boundary = "----DahliaSeedlingControl";
+  const field = (name: string, value: string) =>
+    `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`;
+  const body =
+    field(`_1_$ACTION_ID_${actionId}`, "") +
+    field("_1_requestId", row!.id as string) +
+    field("_1_decision", "decline") +
+    field("0", '["$K1"]') +
+    `--${boundary}--\r\n`;
+
+  await context.request.post(new URL("/admin/invitations", page.url()).toString(), {
+    headers: {
+      accept: "text/x-component",
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+      origin: new URL(page.url()).origin,
+      "next-action": actionId,
+    },
+    data: body,
+  });
+  expect(await storedStatus(email)).toBe("declined");
   await context.close();
 });

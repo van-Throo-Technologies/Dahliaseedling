@@ -2,7 +2,7 @@
   "name": "dahliaseedling",
   "version": "0.0.0",
   "private": true,
-  "description": "DahliaSeedling — a community and continuation platform for genetically unique dahlias grown from seed.",
+  "description": "DahliaSeedling \u2014 a community and continuation platform for genetically unique dahlias grown from seed.",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=22.12.0"
@@ -25,7 +25,8 @@
     "db:migration:new": "supabase migration new",
     "test:db": "vitest run --config vitest.db.config.mts",
     "test:e2e": "playwright test",
-    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+    "test:e2e:public": "npm run build && npx playwright test -c playwright.public.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

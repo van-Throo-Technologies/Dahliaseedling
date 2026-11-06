@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/modules/capture/validation";
 import { safeReturnPath } from "@/modules/messaging/validation";
 import { accountFailure } from "@/modules/admin/account-failure";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Administrator actions on a report. Each one names a report, not a free-form target, and the database checks is_admin() and
@@ -41,6 +42,7 @@ function reportIdOf(formData: FormData): string | null {
 }
 
 export async function resolveReportAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const returnTo = safeReturnPath(formData.get("returnTo"), REVIEW);
   const reportId = reportIdOf(formData);
   const status = String(formData.get("status") ?? "");
@@ -53,6 +55,7 @@ export async function resolveReportAction(formData: FormData): Promise<never> {
 }
 
 export async function removeContentAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const returnTo = safeReturnPath(formData.get("returnTo"), REVIEW);
   const reportId = reportIdOf(formData);
   if (!reportId) back(returnTo, "adminError=notFound");
@@ -63,6 +66,7 @@ export async function removeContentAction(formData: FormData): Promise<never> {
 }
 
 export async function setReportedSuspensionAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const returnTo = safeReturnPath(formData.get("returnTo"), REVIEW);
   const reportId = reportIdOf(formData);
   if (!reportId) back(returnTo, "adminError=notFound");
@@ -83,6 +87,7 @@ const ACCOUNTS = "/admin/accounts";
  * reason of 10 to 500 characters, and writes the audit row in the same transaction. The reason is not logged or echoed in the address.
  */
 export async function suspendProfileAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const profileId = String(formData.get("profileId") ?? "").trim();
   const reason = String(formData.get("reason") ?? "");
   const suspend = String(formData.get("suspend") ?? "") === "1";

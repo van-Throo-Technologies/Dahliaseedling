@@ -54,10 +54,12 @@ export default async function AdminInvitationsPage({
 
   const { notice, error } = await searchParams;
   const { t, locale } = await getTranslation();
-  const [pending, approved] = await Promise.all([
+  const [pending, approved, activity] = await Promise.all([
     supabase.rpc("admin_list_invitation_requests", { p_status: "pending", p_limit: 100 }),
     supabase.rpc("admin_list_invitation_requests", { p_status: "approved", p_limit: 100 }),
+    supabase.rpc("admin_invitation_activity"),
   ]);
+  const counts = (activity.data?.[0] ?? null) as Record<string, number> | null;
   const pendingRows = (pending.data ?? []) as unknown as RequestRow[];
   const approvedRows = (approved.data ?? []) as unknown as RequestRow[];
 
@@ -74,6 +76,38 @@ export default async function AdminInvitationsPage({
         <FormMessage tone="success">{t(NOTICE[notice]!)}</FormMessage>
       ) : null}
       {error && ERROR[error] ? <FormMessage tone="error">{t(ERROR[error]!)}</FormMessage> : null}
+
+      {counts ? (
+        <section
+          aria-labelledby="activity-title"
+          className="flex flex-col gap-3 rounded-control border border-border bg-surface p-4"
+        >
+          <h2 id="activity-title" className="font-display text-xl text-text-brand">
+            {t("invitations.admin.activity.title")}
+          </h2>
+          <p className="text-sm text-text-muted">{t("invitations.admin.activity.note")}</p>
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ["requests", "requests_24h"],
+                ["pending", "pending"],
+                ["approved", "approved"],
+                ["declined", "declined"],
+                ["invited", "invited"],
+                ["refusals", "refusals_24h"],
+                ["visitors", "visitors_24h"],
+              ] as const
+            ).map(([label, key]) => (
+              <div key={key} className="flex flex-col">
+                <dt className="text-sm text-text-muted">
+                  {t(`invitations.admin.activity.${label}`)}
+                </dt>
+                <dd className="font-display text-2xl tabular-nums text-text">{counts[key] ?? 0}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
 
       <section aria-labelledby="pending-title" className="flex flex-col gap-4">
         <h2 id="pending-title" className="font-display text-xl text-text-brand">

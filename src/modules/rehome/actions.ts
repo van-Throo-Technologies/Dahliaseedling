@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/modules/capture/validation";
 import { isRateLimited } from "@/lib/errors/rate-limit";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Continuation actions. Each one calls a database function, which decides who may do what and enforces the state
@@ -57,6 +58,7 @@ async function run(
 }
 
 export async function startRehomeAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const seedlingId = String(formData.get("seedlingId") ?? "");
   if (!isUuid(seedlingId)) back(seedlingId, "rehomeError=generic");
   const client = await createSupabaseServerClient();
@@ -75,6 +77,7 @@ export async function startRehomeAction(formData: FormData): Promise<never> {
 }
 
 export async function expressInterestAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return run(
     formData,
     (client, ids) => client.rpc("express_rehome_interest", { p_case_id: ids.caseId }),
@@ -83,6 +86,7 @@ export async function expressInterestAction(formData: FormData): Promise<never> 
 }
 
 export async function withdrawInterestAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return run(
     formData,
     (client, ids) => client.rpc("withdraw_rehome_interest", { p_case_id: ids.caseId }),
@@ -91,6 +95,7 @@ export async function withdrawInterestAction(formData: FormData): Promise<never>
 }
 
 export async function chooseRecipientAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const recipientId = String(formData.get("recipientId") ?? "");
   if (!isUuid(recipientId)) {
     back(String(formData.get("seedlingId") ?? ""), "rehomeError=generic");
@@ -104,6 +109,7 @@ export async function chooseRecipientAction(formData: FormData): Promise<never> 
 }
 
 export async function markSentAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return run(
     formData,
     (client, ids) => client.rpc("mark_rehome_sent", { p_case_id: ids.caseId }),
@@ -112,6 +118,7 @@ export async function markSentAction(formData: FormData): Promise<never> {
 }
 
 export async function reopenAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return run(
     formData,
     (client, ids) => client.rpc("reopen_rehome", { p_case_id: ids.caseId }),
@@ -120,6 +127,7 @@ export async function reopenAction(formData: FormData): Promise<never> {
 }
 
 export async function withdrawAvailabilityAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return run(
     formData,
     (client, ids) => client.rpc("cancel_rehome", { p_case_id: ids.caseId }),
@@ -129,6 +137,7 @@ export async function withdrawAvailabilityAction(formData: FormData): Promise<ne
 
 /** The selected recipient steps back while the arrangement is arranged. The holder stays, and the case is available again. */
 export async function declineRecipientAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return run(
     formData,
     (client, ids) => client.rpc("decline_rehome", { p_case_id: ids.caseId }),
@@ -138,6 +147,7 @@ export async function declineRecipientAction(formData: FormData): Promise<never>
 
 /** Receipt is the transfer boundary. The database answers "completed", "already_completed" or "stale". */
 export async function confirmReceiptAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const ids = idsFrom(formData);
   if (!ids) back(String(formData.get("seedlingId") ?? ""), "rehomeError=generic");
   const client = await createSupabaseServerClient();

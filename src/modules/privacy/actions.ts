@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isRateLimited } from "@/lib/errors/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Deactivation and erasure. Each action asks the database to do the work, so the rules are enforced there. The browser only shows a
@@ -25,6 +26,7 @@ function back(query: string): never {
 }
 
 export async function deactivateAccountAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   if (String(formData.get("confirm") ?? "") !== "yes") back("privacyError=notConfirmed");
   const client = await createSupabaseServerClient();
   const { error } = await client.rpc("deactivate_my_account");
@@ -33,6 +35,7 @@ export async function deactivateAccountAction(formData: FormData): Promise<never
 }
 
 export async function requestErasureAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   if (String(formData.get("confirm") ?? "") !== "yes") back("privacyError=notConfirmed");
   const client = await createSupabaseServerClient();
   const { data: avatarPath, error } = await client.rpc("request_my_erasure");

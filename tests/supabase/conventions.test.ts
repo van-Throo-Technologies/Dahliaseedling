@@ -19,7 +19,8 @@ function migrationFiles(): string[] {
 
 /** Table names created in a migration, without the schema prefix. */
 function createdTables(sql: string): string[] {
-  const pattern = /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?("?[a-z_][a-z0-9_]*"?)/gi;
+  const pattern =
+    /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:(?:public|private)\.)?("?[a-z_][a-z0-9_]*"?)/gi;
   return [...sql.matchAll(pattern)].flatMap((match) => {
     const name = match[1];
     return name === undefined ? [] : [name.replace(/"/g, "").toLowerCase()];
@@ -69,11 +70,11 @@ describe("migration conventions", () => {
 
       for (const table of createdTables(sql)) {
         const rlsPattern = new RegExp(
-          `alter\\s+table\\s+(?:public\\.)?"?${table}"?\\s+enable\\s+row\\s+level\\s+security`,
+          `alter\\s+table\\s+(?:(?:public|private)\\.)?"?${table}"?\\s+enable\\s+row\\s+level\\s+security`,
         );
         // A table that no client or worker may touch names an explicit revoke of service_role instead of a grant.
         const grantPattern = new RegExp(
-          `grant\\s[^;]*\\son\\s+table\\s+(?:public\\.)?"?${table}"?|revoke\\s+all\\s+on\\s+table\\s+(?:public\\.)?"?${table}"?\\s+from\\s[^;]*service_role`,
+          `grant\\s[^;]*\\son\\s+table\\s+(?:(?:public|private)\\.)?"?${table}"?|revoke\\s+all\\s+on\\s+table\\s+(?:(?:public|private)\\.)?"?${table}"?\\s+from\\s[^;]*service_role`,
         );
 
         expect(sql, `${file}: RLS for ${table}`).toMatch(rlsPattern);

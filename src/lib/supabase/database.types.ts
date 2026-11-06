@@ -357,6 +357,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"invitation_visitor_buckets": {
+                  Row: {
+                    "refused": number,"submissions": number,"visitor_hash": string,"window_start": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "refused"?: number,"submissions"?: number,"visitor_hash": string,"window_start": string
+                  }
+                  Update: {
+                    "refused"?: number,"submissions"?: number,"visitor_hash"?: string,"window_start"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"likes": {
                   Row: {
                     "created_at": string,"update_id": string,"user_id": string
@@ -1363,6 +1377,11 @@ isOneToOne: false
 "admin_decide_invitation_request":
 { Args: { "p_decision": string,"p_request_id": string }; Returns: string
                            },
+"admin_invitation_activity":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "approved": number,"declined": number,"invited": number,"pending": number,"refusals_24h": number,"requests_24h": number,"visitors_24h": number
+            }[]
+                           },
 "admin_list_invitation_requests":
 { Args: { "p_limit"?: number,"p_status"?: string }; Returns: {
               "country_code": string,"created_at": string,"decided_at": string,"email": string,"invited_at": string,"name": string,"reason": string,"request_id": string,"status": string
@@ -1808,6 +1827,8 @@ isOneToOne: false
                            },
 "submit_invitation_request":
 { Args: { "p_client_key": string,"p_country": string,"p_email": string,"p_name": string,"p_reason": string }; Returns: string
+                           } |
+{ Args: { "p_client_key": string,"p_country": string,"p_email": string,"p_name": string,"p_proof": string,"p_reason": string,"p_visitor_hash": string,"p_visitor_limit": number }; Returns: string
                            },
 "subscribe_availability":
 { Args: { "p_locale"?: string,"p_seedling_id": string }; Returns: undefined

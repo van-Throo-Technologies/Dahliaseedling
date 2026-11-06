@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { translateFields } from "@/i18n/message";
 import { getTranslation } from "@/i18n/server";
@@ -10,6 +11,8 @@ import { isAdministrator } from "@/modules/admin/repository";
 import { isUuid } from "@/modules/capture/validation";
 import type { FormState } from "@/modules/identity/form-state";
 import { isHoneypotFilled, validateInvitationRequest } from "./validation";
+import { intakeProof, visitorAddress, visitorHash, visitorLimitFrom } from "./visitor";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Invitation requests. A visitor's request is stored as pending by a database function that answers the same way for a new request and
@@ -64,13 +67,52 @@ export async function submitInvitationRequestAction(
     };
   }
 
+  // Without the salt, a visitor cannot be counted safely. The request is refused rather than stored without the per-visitor limit.
+  const salt = process.env.INVITATION_VISITOR_SALT?.trim() ?? "";
+  if (salt === "") {
+    logEvent("error", "invitation_request", {
+      outcome: "refused",
+      code: "visitor_salt_missing",
+      route: "join",
+    });
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("invitations.join.genericError"),
+      values,
+    };
+  }
+  // The database accepts a submission only with a proof made here, so the visitor and the allowance cannot be chosen by a direct caller.
+  // Without the intake key, every request is refused.
+  const intakeSecret = process.env.INVITATION_INTAKE_SECRET?.trim() ?? "";
+  if (intakeSecret === "") {
+    logEvent("error", "invitation_request", {
+      outcome: "refused",
+      code: "intake_secret_missing",
+      route: "join",
+    });
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("invitations.join.genericError"),
+      values,
+    };
+  }
+  const visitor = visitorHash(visitorAddress(await headers()), salt);
+  const limit = visitorLimitFrom(process.env.INVITATION_VISITOR_HOURLY_LIMIT);
+  const key = clientKey.toLowerCase();
+  const proof = intakeProof(visitor, limit, key, intakeSecret);
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("submit_invitation_request", {
-    p_client_key: clientKey,
+    p_client_key: key,
     p_name: input.value.name,
     p_country: input.value.countryCode,
     p_email: input.value.email,
     p_reason: input.value.reason,
+    p_visitor_hash: visitor,
+    p_visitor_limit: limit,
+    p_proof: proof,
   });
 
   if (error) {
@@ -83,6 +125,19 @@ export async function submitInvitationRequestAction(
       status: "error",
       fieldErrors: {},
       message: t("invitations.join.genericError"),
+      values,
+    };
+  }
+  if (data === "visitor_limited") {
+    logEvent("warn", "invitation_request", {
+      outcome: "refused",
+      code: "visitor_limit",
+      route: "join",
+    });
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("invitations.join.visitorLimited"),
       values,
     };
   }
@@ -117,6 +172,7 @@ async function administratorClient() {
 
 /** Approves or declines one pending request. Approval records the decision only; the invitation is sent from Supabase. */
 export async function decideInvitationRequestAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const requestId = text(formData, "requestId");
   const decision = text(formData, "decision");
   if (!isUuid(requestId) || (decision !== "approve" && decision !== "decline"))
@@ -154,6 +210,7 @@ export async function decideInvitationRequestAction(formData: FormData): Promise
 
 /** Records that the invitation for an approved request has been sent. It can be recorded once. */
 export async function markInvitationSentAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const requestId = text(formData, "requestId");
   if (!isUuid(requestId)) back("error=notFound");
 

@@ -14,6 +14,7 @@ import { getSeedling } from "@/modules/seedlings/repository";
 import { DerivativeError, makePublicImage } from "./derivatives";
 import { isPubliclyShareable } from "./limits";
 import { validateCaption, validateCommentBody, validateSelection } from "./validation";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Server actions for publication and the social layer. Each one passes the participation gate, checks its
@@ -70,6 +71,7 @@ function publicationKey(error: { code?: string }): MessageKey {
  * visibility. Observations, media, notes and transcripts keep their privacy.
  */
 export async function makeSeedlingPublicAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const observationId = text(formData, "observationId");
   if (!isUuid(observationId)) redirect("/capture");
   await requireParticipant(`/observations/${observationId}/share`);
@@ -110,6 +112,7 @@ export async function publishUpdateAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const observationId = text(formData, "observationId");
   if (!isUuid(observationId)) return failureKey("errors.publication.observationNotFound");
   const { userId } = await requireParticipant(`/observations/${observationId}/share`);
@@ -204,6 +207,7 @@ async function discard(
 }
 
 export async function deleteUpdateAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const updateId = text(formData, "updateId");
   if (!isUuid(updateId)) redirect("/");
   const { userId } = await requireParticipant(`/updates/${updateId}`);
@@ -216,6 +220,7 @@ export async function deleteUpdateAction(formData: FormData): Promise<void> {
 }
 
 export async function setCoverAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const seedlingId = text(formData, "seedlingId");
   const derivativeId = text(formData, "derivativeId");
   if (!isUuid(seedlingId)) redirect("/");
@@ -236,6 +241,7 @@ export async function addCommentAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const updateId = text(formData, "updateId");
   if (!isUuid(updateId)) return failureKey("errors.publication.updateNotFound");
   await requireParticipant(`/updates/${updateId}`);
@@ -260,6 +266,7 @@ export async function editCommentAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const updateId = text(formData, "updateId");
   const commentId = text(formData, "commentId");
   if (!isUuid(updateId) || !isUuid(commentId))
@@ -281,6 +288,7 @@ export async function editCommentAction(
 }
 
 export async function deleteCommentAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const updateId = text(formData, "updateId");
   const commentId = text(formData, "commentId");
   if (!isUuid(updateId) || !isUuid(commentId)) redirect("/");
@@ -292,6 +300,7 @@ export async function deleteCommentAction(formData: FormData): Promise<void> {
 }
 
 export async function toggleLikeAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const updateId = text(formData, "updateId");
   if (!isUuid(updateId)) redirect("/");
   await requireParticipant(`/updates/${updateId}`);
@@ -303,6 +312,7 @@ export async function toggleLikeAction(formData: FormData): Promise<void> {
 }
 
 export async function toggleSeedlingFollowAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const seedlingId = text(formData, "seedlingId");
   if (!isUuid(seedlingId)) redirect("/");
   const returnTo = safeReturn(text(formData, "returnTo"), `/seedlings/${seedlingId}`);
@@ -318,6 +328,7 @@ export async function toggleSeedlingFollowAction(formData: FormData): Promise<vo
 }
 
 export async function toggleGrowerFollowAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const profileId = text(formData, "profileId");
   if (!isUuid(profileId)) redirect("/");
   const returnTo = safeReturn(text(formData, "returnTo"), `/profiles/${profileId}`);
@@ -333,6 +344,7 @@ export async function toggleGrowerFollowAction(formData: FormData): Promise<void
 }
 
 export async function toggleSavedAction(formData: FormData): Promise<void> {
+  refuseOnPublicSurface();
   const seedlingId = text(formData, "seedlingId");
   if (!isUuid(seedlingId)) redirect("/");
   const returnTo = safeReturn(text(formData, "returnTo"), `/seedlings/${seedlingId}`);

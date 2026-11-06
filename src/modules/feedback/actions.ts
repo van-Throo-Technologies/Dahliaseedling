@@ -9,6 +9,7 @@ import { APP_BUILD } from "@/lib/build-info";
 import { isUuid } from "@/modules/capture/validation";
 import type { FormState } from "@/modules/identity/form-state";
 import { isFeedbackCategory, isFeedbackMessageValid } from "./validation";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Sending feedback returns the form state, so the typed text is kept on an error. The database decides who may send and enforces the
@@ -25,6 +26,7 @@ export async function submitFeedbackAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const { t } = await getTranslation();
   const category = String(formData.get("category") ?? "");
   const message = String(formData.get("message") ?? "");
@@ -63,6 +65,7 @@ const STATUSES = ["new", "reviewing", "resolved"] as const;
 
 /** Changes one feedback item's status. Returns to the same filtered list. */
 export async function setFeedbackStatusAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const id = String(formData.get("feedbackId") ?? "");
   const status = String(formData.get("status") ?? "");
   const category = String(formData.get("category") ?? "");

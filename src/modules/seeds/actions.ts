@@ -14,6 +14,7 @@ import {
   type DerivativeItem,
 } from "./photos";
 import { validateInterestQuantity, validateOffer, type OfferForm } from "./validation";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Server actions for seeds and seedheads. Each one passes the participation gate, checks its input, and calls the database
@@ -43,6 +44,7 @@ function back(path: string, query: string): never {
 }
 
 export async function createSeedOfferAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const seedlingId = text(formData, "seedlingId");
   const seedlingFrom = seedlingId && isUuid(seedlingId) ? seedlingId : null;
   const { userId } = await requireParticipant("/offers/new");
@@ -190,14 +192,17 @@ async function interestAction(formData: FormData, action: "express" | "withdraw"
 }
 
 export async function expressSeedInterestAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return interestAction(formData, "express");
 }
 
 export async function withdrawSeedInterestAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return interestAction(formData, "withdraw");
 }
 
 export async function closeSeedOfferAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const offerId = text(formData, "offerId");
   const returnTo = safeReturn(text(formData, "returnTo"));
   if (!isUuid(offerId) || !returnTo) back("/", "seedError=seeds.errors.notFound");

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   anonClient,
@@ -7,6 +8,7 @@ import {
   withSuperuser,
   type TestUser,
 } from "../support/local-supabase";
+import { proofFor } from "../support/invitation-intake";
 
 /*
  * Founder-controlled invitation requests. A visitor's request is stored as pending and creates no account. Only an administrator can read
@@ -24,13 +26,25 @@ function address(label: string): string {
   return email;
 }
 
-function submission(email: string, clientKey = crypto.randomUUID()) {
+function visitorHash(): string {
+  return createHash("sha256").update(crypto.randomUUID()).digest("hex");
+}
+
+function submission(
+  email: string,
+  clientKey = crypto.randomUUID(),
+  visitor = visitorHash(),
+  limit = 100,
+) {
   return {
     p_client_key: clientKey,
     p_name: "Anna de Vries",
     p_country: "NL",
     p_email: email,
     p_reason: "I grow dahlias from seed and want to share real plants.",
+    p_visitor_hash: visitor,
+    p_visitor_limit: limit,
+    p_proof: proofFor(visitor, limit, clientKey),
   };
 }
 
@@ -281,5 +295,120 @@ describe("data protection", () => {
     expect(removed.data).toBeGreaterThanOrEqual(1);
     expect(await requestRow(oldEmail)).toHaveLength(0);
     expect(await requestRow(pendingEmail)).toHaveLength(1);
+  });
+});
+
+describe("per-visitor limit", () => {
+  it("refuses the request beyond the allowance, stores nothing, and counts the refusal", async () => {
+    const visitor = visitorHash();
+    const emailsSent = Array.from({ length: 5 }, () => address("allowed"));
+    for (const email of emailsSent) {
+      expect(
+        (
+          await anonClient().rpc(
+            "submit_invitation_request",
+            submission(email, undefined, visitor, 5),
+          )
+        ).data,
+      ).toBe("received");
+    }
+    const over = address("over-visitor");
+    const refused = await anonClient().rpc(
+      "submit_invitation_request",
+      submission(over, undefined, visitor, 5),
+    );
+    expect(refused.data).toBe("visitor_limited");
+    expect(await requestRow(over)).toHaveLength(0);
+
+    const counters = await withSuperuser(
+      async (db) =>
+        (
+          await db.query(
+            "select submissions, refused from public.invitation_visitor_buckets where visitor_hash = $1 and window_start = date_trunc('hour', now())",
+            [visitor],
+          )
+        ).rows,
+    );
+    expect(counters).toEqual([{ submissions: 6, refused: 1 }]);
+  });
+
+  it("does not affect a different visitor", async () => {
+    const busy = visitorHash();
+    for (let index = 0; index < 3; index += 1) {
+      await anonClient().rpc(
+        "submit_invitation_request",
+        submission(address("busy"), undefined, busy, 3),
+      );
+    }
+    const other = await anonClient().rpc(
+      "submit_invitation_request",
+      submission(address("quiet"), undefined, visitorHash(), 3),
+    );
+    expect(other.data).toBe("received");
+  });
+
+  it("refuses a malformed visitor hash or an unusable allowance", async () => {
+    const malformedHash = await anonClient().rpc(
+      "submit_invitation_request",
+      submission(address("bad-hash"), undefined, "not-a-hash", 5),
+    );
+    expect(errorCode(malformedHash.error)).toBe("22023");
+    const badLimit = await anonClient().rpc(
+      "submit_invitation_request",
+      submission(address("bad-limit"), undefined, visitorHash(), 0),
+    );
+    expect(errorCode(badLimit.error)).toBe("22023");
+  });
+
+  it("keeps the counters unreadable and unwritable by clients", async () => {
+    const [grants] = await withSuperuser(
+      async (db) =>
+        (
+          await db.query(
+            `select has_table_privilege('anon', 'public.invitation_visitor_buckets', 'SELECT,INSERT,UPDATE,DELETE') as anon,
+                  has_table_privilege('authenticated', 'public.invitation_visitor_buckets', 'SELECT,INSERT,UPDATE,DELETE') as authenticated,
+                  relrowsecurity as rls
+             from pg_class where oid = 'public.invitation_visitor_buckets'::regclass`,
+          )
+        ).rows,
+    );
+    expect(grants).toEqual({ anon: false, authenticated: false, rls: true });
+  });
+
+  it("gives an administrator counts only, and refuses everyone else", async () => {
+    const asAdmin = await admin.client.rpc("admin_invitation_activity");
+    expect(asAdmin.error).toBeNull();
+    const row = (asAdmin.data as Record<string, number>[])[0]!;
+    expect(typeof row.requests_24h).toBe("number");
+    expect(typeof row.visitors_24h).toBe("number");
+    expect(Object.keys(row).some((key) => /email|name|reason|ip/.test(key))).toBe(false);
+
+    expect(errorCode((await grower.client.rpc("admin_invitation_activity")).error)).toBe("42501");
+    expect((await anonClient().rpc("admin_invitation_activity")).error).not.toBeNull();
+  });
+
+  it("removes visitor counters older than two days when the purge runs", async () => {
+    const old = visitorHash();
+    const recent = visitorHash();
+    await withSuperuser((db) =>
+      db.query(
+        `insert into public.invitation_visitor_buckets (visitor_hash, window_start, submissions)
+         values ($1, now() - interval '3 days', 1), ($2, now(), 1)`,
+        [old, recent],
+      ),
+    );
+    const removed = await admin.client.rpc("admin_purge_invitation_requests", {
+      p_older_than: "90 days",
+    });
+    expect(removed.error).toBeNull();
+    const remaining = await withSuperuser(async (db) =>
+      (
+        await db.query(
+          "select visitor_hash from public.invitation_visitor_buckets where visitor_hash = any($1::text[])",
+          [[old, recent]],
+        )
+      ).rows.map((row) => row.visitor_hash),
+    );
+    expect(remaining).toEqual([recent]);
   });
 });

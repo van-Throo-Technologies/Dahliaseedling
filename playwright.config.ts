@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 import { localSupabase } from "./tests/support/local-supabase";
+import { intakeSecret } from "./tests/support/invitation-intake";
+
+// Workers and the test server read the same intake key, so it is set on the process before anything else runs.
+process.env.INVITATION_INTAKE_SECRET = intakeSecret;
 
 // End-to-end tests run against a production build wired to the local Supabase stack.
 // Start the stack first: `npm run supabase:start`.
@@ -8,10 +12,13 @@ const supabase = localSupabase();
 
 export default defineConfig({
   testDir: "tests/e2e",
+  globalSetup: "./tests/support/e2e-intake.setup.ts",
   // Tests create real accounts in the shared local database, so they run one at a time.
   workers: 1,
   fullyParallel: false,
   reporter: [["list"]],
+  // The public-surface checks run against their own server (playwright.public.config.ts).
+  testIgnore: ["**/public-surface.spec.ts"],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
@@ -45,6 +52,10 @@ export default defineConfig({
       NEXT_TELEMETRY_DISABLED: "1",
       // The invitation-request page is off by default. The browser tests turn it on, so the public journey can be exercised.
       INVITATION_REQUESTS_ENABLED: "true",
+      // A fresh salt per run keeps the visitor counts of one run from affecting another. The allowance is high because every test shares one address.
+      INVITATION_VISITOR_SALT: crypto.randomUUID(),
+      INVITATION_INTAKE_SECRET: intakeSecret,
+      INVITATION_VISITOR_HOURLY_LIMIT: "1000",
     } as Record<string, string>,
   },
 });

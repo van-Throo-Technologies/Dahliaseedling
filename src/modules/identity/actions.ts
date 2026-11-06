@@ -24,6 +24,7 @@ import {
   validatePassword,
   validateProfileInput,
 } from "./validation";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Server actions for sign-in, sign-up, sign-out and profile writes.
@@ -98,6 +99,7 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
 }
 
 export async function signUpAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  refuseOnPublicSurface();
   const { t } = await getTranslation();
   const email = validateEmail(formData.get("email"));
   const password = validatePassword(formData.get("password"));
@@ -191,6 +193,7 @@ export async function setPasswordAction(
 }
 
 export async function signOutAction(): Promise<void> {
+  refuseOnPublicSurface();
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/");
@@ -219,6 +222,7 @@ export async function updateProfileAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  refuseOnPublicSurface();
   const { userId, profile: current } = await requireParticipant("/profile/edit");
   const { t } = await getTranslation();
 

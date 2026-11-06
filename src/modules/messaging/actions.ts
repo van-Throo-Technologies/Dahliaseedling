@@ -14,6 +14,7 @@ import {
   safeReturnPath,
 } from "./validation";
 import { isRateLimited } from "@/lib/errors/rate-limit";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * Messaging, reporting, blocking and availability subscriptions. Each action signs the caller in, checks the shape of its
@@ -60,6 +61,7 @@ async function discardUploads(client: Client, paths: readonly string[]): Promise
 
 /** Starts or opens the conversation for one context. The database finds the existing thread or creates it once. */
 export async function startConversationAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const returnTo = safeReturnPath(formData.get("returnTo"), "/inbox");
   await requireParticipant(returnTo);
   const kind = String(formData.get("kind") ?? "");
@@ -91,6 +93,7 @@ export async function startConversationAction(formData: FormData): Promise<never
 
 /** Sends one message, with an optional photograph. The client key makes a repeated submission return the same message. */
 export async function sendMessageAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const conversationId = String(formData.get("conversationId") ?? "");
   if (!isUuid(conversationId)) redirect("/inbox?messagingError=notFound");
   const thread = `/inbox/${conversationId}`;
@@ -158,15 +161,18 @@ async function setBlock(formData: FormData, block: boolean): Promise<never> {
 }
 
 export async function blockGrowerAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return setBlock(formData, true);
 }
 
 export async function unblockGrowerAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   return setBlock(formData, false);
 }
 
 /** Sends a report. The reported grower is never told; the reviewer sees the snapshot the database keeps. */
 export async function reportAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const returnTo = safeReturnPath(formData.get("returnTo"), "/inbox");
   await requireParticipant(returnTo);
   const targetType = String(formData.get("targetType") ?? "");
@@ -192,6 +198,7 @@ export async function reportAction(formData: FormData): Promise<never> {
 
 /** Subscribes to, or leaves, the availability alert for one public Seedling. */
 export async function setAvailabilityAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const returnTo = safeReturnPath(formData.get("returnTo"), "/inbox");
   await requireParticipant(returnTo);
   const seedlingId = String(formData.get("seedlingId") ?? "");

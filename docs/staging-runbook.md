@@ -96,6 +96,30 @@ A visitor can ask for access at `/join` without giving their address to anyone e
 - **Retention:** declined and invited requests are removed after 90 days by `admin_purge_invitation_requests`. It refuses periods under 30 days. There is no scheduler yet, so an administrator runs it, for example `select public.admin_purge_invitation_requests();` through the SQL editor, at least monthly.
 - **Testing on staging:** the staging deployment is protected, so the public page cannot be shared from it. To test the public journey before sharing, keep staging protected and use an operator session. Public sharing needs a separate deployment with the flag on (see the proposal below), which needs approval.
 
+## 2d. Public invitation surface (not yet deployed)
+
+A separate public deployment would serve only the invitation journey. It is not created yet.
+
+- **Switch:** `PUBLIC_SURFACE=invitations`. The proxy refuses every path outside the journey before any page, action or route runs. Allowed: `/join`, `/auth/confirm`, `/auth/set-password`, `/sign-in`, `/legal/privacy`, `/legal/terms`, `/api/health`, and the static files those pages load. `/` redirects to `/join`. Everything else is not found, including `/admin/*`, the feed, the profile and every other API route.
+- **Defence in depth:** the administrator functions check `is_admin()` in the database, so an allowed page cannot reach administrator data.
+- **Visitor limit:** each visitor is counted by a keyed hash of their network address, using the salt in `INVITATION_VISITOR_SALT`. No raw address is stored or logged. The default allowance is 10 requests an hour (`INVITATION_VISITOR_HOURLY_LIMIT`). Shared addresses, such as mobile networks, share a count, so the default is generous.
+- **Address source:** the last `x-forwarded-for` entry only. The application ignores `x-real-ip`, because a client can send it. Earlier `x-forwarded-for` entries are chosen by the client and are never trusted. The address is not used when no entry is present, and all such requests share one count.
+- **Provider assumptions (Vercel):** Vercel appends the connecting address as the last `x-forwarded-for` entry. Live verification is a public-launch check: on a preview deployment, send two requests with different forged leading entries and confirm the visitor count does not change. Also confirm the recorded hash differs between two real networks. Until this is done, the limit is tested only against a local header.
+- **Intake key (`INVITATION_INTAKE_SECRET`):** the server signs each submission with this key, over the visitor hash, the allowance and the client key. The database holds the same key in `private.invitation_intake_keys`, which the API cannot read, and it verifies the signature before counting. Without a valid signature, or without a key in the database, a submission is refused. A direct caller cannot choose its visitor or its allowance. Set the variable as sensitive on Vercel. Set the database row once, in the SQL editor, with a value of at least 32 characters: `insert into private.invitation_intake_keys (id, secret) values (1, '<value>') on conflict (id) do update set secret = excluded.secret;`. Use the same value in both places, and never paste it into a chat or a commit. To rotate, change the database row and the Vercel variable in one short window; submissions made in between are refused and can be retried.
+- **Known limits:** IPv6 visitors can rotate addresses within a prefix, so a single person may obtain several counts. The daily cap of 200 applies to every caller and bounds total volume. The five-argument legacy wrapper needs no signature, so it stays open until the rollout ends; it is capped at 100 a hour for all its callers together, and a flood of it can block the deployed application for that hour.
+- **Salt:** required on every deployment. If it is missing, submissions are refused rather than stored without the limit. Rotating it resets all counts. Store it as a sensitive variable; do not reuse another secret.
+- **Retention:** visitor counters are removed after two days by the monthly purge, `admin_purge_invitation_requests`.
+- **Activity:** the review page shows counts only: requests, decisions, refusals and distinct visitors for the last 24 hours.
+
+**Rollout sequence (zero interruption).** The deployed application calls the five-argument `submit_invitation_request`. The migration keeps that signature as a wrapper, so the order below never stops submissions.
+
+1. Apply `20261112090000_invitation_visitor_limits.sql` to hosted staging with `supabase db push --linked`, without `--include-roles`. Both signatures exist after this step. The deployed application keeps working; its requests share one hourly allowance of 100, and any refusal is shown as its generic error.
+2. Set the intake key in the database row (see the intake key note above), then deploy the new application with `INVITATION_VISITOR_SALT`, `INVITATION_INTAKE_SECRET` and `INVITATION_VISITOR_HOURLY_LIMIT` set. New requests use the signed eight-argument function with the per-visitor limit.
+3. Confirm on the deployment that a request from a real network is stored and answered `received`, and that the activity counts change.
+4. Once the new application is live and verified (step 3), run this once in the SQL editor. Do not put it in a migration, because `db push` would apply it before the new application is deployed: `revoke execute on function public.submit_invitation_request(uuid, text, text, text, text) from anon, authenticated;`. After that, the five-argument signature is not callable by anyone, and the legacy route is closed.
+
+Before any public deployment: the hosted migration needs approval, `INVITATION_VISITOR_SALT` must be set on protected staging, and the Vercel plan must allow the intended use. See the hosting review before deciding.
+
 ## 3. Owner actions, in execution order
 
 Each step lists who acts, what to record, and how to confirm it. Do not proceed to a step before the previous one is confirmed.

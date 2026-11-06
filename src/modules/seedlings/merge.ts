@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/modules/capture/validation";
 import { requireParticipant } from "@/modules/identity/gate";
+import { refuseOnPublicSurface } from "@/lib/security/public-action-guard";
 
 /*
  * The merge action. The grower names the two records and says which one stays. The database decides everything else: the holder,
@@ -42,6 +43,7 @@ function failureOf(error: { code?: string; message?: string } | null): MergeFail
 }
 
 export async function mergeSeedlingsAction(formData: FormData): Promise<never> {
+  refuseOnPublicSurface();
   const thisId = String(formData.get("thisId") ?? "");
   const otherId = String(formData.get("otherId") ?? "");
   const keep = String(formData.get("keep") ?? "");
