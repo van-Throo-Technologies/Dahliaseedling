@@ -1,0 +1,18 @@
+You're invited to DahliaSeedling
+
+You've been invited to join DahliaSeedling, a community where dahlia growers can document their seedlings, share their progress and discover what others are growing.
+
+Whether you're raising your first seedlings or have been breeding dahlias for years, DahliaSeedling gives each seedling a place to grow, be followed and be remembered.
+
+To get started, accept your invitation, choose a password and create your grower profile.
+
+Accept invitation:
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite
+
+If the button doesn't work, you can use the invitation link above.
+
+Why did you receive this email?
+
+Someone has invited you to join DahliaSeedling. This invitation is intended for your email address. If you weren't expecting it, you can safely ignore this message.
+
+DahliaSeedling

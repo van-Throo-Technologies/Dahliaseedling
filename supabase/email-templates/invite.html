@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>Your invitation to DahliaSeedling</title>
+    <style>
+      @media only screen and (max-width: 620px) {
+        .container {
+          width: 100% !important;
+        }
+        .pad {
+          padding-left: 20px !important;
+          padding-right: 20px !important;
+        }
+        .button a {
+          display: block !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #fbf7f1">
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0">
+      Accept your invitation and create your grower profile.
+    </div>
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #fbf7f1"
+    >
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <table
+            role="presentation"
+            class="container"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              width: 600px;
+              max-width: 600px;
+              background-color: #ffffff;
+              border: 1px solid #e8ddd2;
+              border-radius: 12px;
+            "
+          >
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 32px 40px 8px 40px;
+                  font-family: Georgia, &quot;Times New Roman&quot;, serif;
+                  font-size: 24px;
+                  line-height: 30px;
+                  color: #382733;
+                "
+              >
+                DahliaSeedling
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 16px 40px 0 40px;
+                  font-family: Georgia, &quot;Times New Roman&quot;, serif;
+                  font-size: 26px;
+                  line-height: 34px;
+                  color: #382733;
+                "
+              >
+                You're invited to DahliaSeedling
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 16px 40px 0 40px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 16px;
+                  line-height: 24px;
+                  color: #29272a;
+                "
+              >
+                You've been invited to join DahliaSeedling, a community where dahlia growers can
+                document their seedlings, share their progress and discover what others are growing.
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 16px 40px 0 40px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 16px;
+                  line-height: 24px;
+                  color: #29272a;
+                "
+              >
+                Whether you're raising your first seedlings or have been breeding dahlias for years,
+                DahliaSeedling gives each seedling a place to grow, be followed and be remembered.
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 16px 40px 0 40px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 16px;
+                  line-height: 24px;
+                  color: #29272a;
+                "
+              >
+                To get started, accept your invitation, choose a password and create your grower
+                profile.
+              </td>
+            </tr>
+            <tr>
+              <td class="pad" align="left" style="padding: 28px 40px 8px 40px">
+                <table
+                  role="presentation"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  class="button"
+                >
+                  <tr>
+                    <td align="center" bgcolor="#F29B72" style="border-radius: 8px">
+                      <a
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=invite"
+                        target="_blank"
+                        style="
+                          display: inline-block;
+                          padding: 14px 28px;
+                          font-family: Arial, Helvetica, sans-serif;
+                          font-size: 16px;
+                          font-weight: bold;
+                          line-height: 20px;
+                          color: #382733;
+                          text-decoration: none;
+                          border-radius: 8px;
+                        "
+                        >Accept invitation</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 16px 40px 0 40px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 14px;
+                  line-height: 21px;
+                  color: #8b6177;
+                "
+              >
+                If the button doesn't work, you can use the invitation link below.<br />
+                <span style="word-break: break-all; color: #382733"
+                  >{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=invite</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 24px 40px 0 40px;
+                  border-top: 1px solid #e8ddd2;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 14px;
+                  line-height: 21px;
+                  color: #382733;
+                "
+              >
+                <strong>Why did you receive this email?</strong>
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 8px 40px 0 40px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 13px;
+                  line-height: 20px;
+                  color: #8b6177;
+                "
+              >
+                Someone has invited you to join DahliaSeedling. This invitation is intended for your
+                email address. If you weren't expecting it, you can safely ignore this message.
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="pad"
+                style="
+                  padding: 20px 40px 32px 40px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 13px;
+                  line-height: 20px;
+                  color: #8b6177;
+                "
+              >
+                DahliaSeedling
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
