@@ -3,6 +3,7 @@ import { getTranslation } from "@/i18n/server";
 import { getCurrentUser } from "@/modules/identity/session";
 import { AppFooter } from "./app-footer";
 import { AppHeader } from "./app-header";
+import { AppMain } from "./app-main";
 import { PrimaryNav } from "./primary-nav";
 
 /**
@@ -23,9 +24,7 @@ export async function AppShell({ children }: { readonly children: ReactNode }) {
       </a>
       <AppHeader signedIn={user !== null} />
       <PrimaryNav />
-      <main id="main" className="mx-auto w-full max-w-2xl px-4 pb-28 pt-6 md:pb-12 md:pt-8">
-        {children}
-      </main>
+      <AppMain>{children}</AppMain>
       <AppFooter />
     </>
   );

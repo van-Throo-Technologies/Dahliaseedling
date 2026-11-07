@@ -63,7 +63,14 @@ async function searchIn(
   country?: string,
 ) {
   await page.getByLabel(labels.label).fill(query);
-  if (country) await page.getByLabel(labels.country).selectOption(country);
+  if (country) {
+    // The filters are closed by default, so the visitor opens them first. They stay open once a filter is in the address.
+    const filters = page.locator("details").first();
+    if (!(await filters.evaluate((element) => (element as HTMLDetailsElement).open))) {
+      await page.getByText(labels.filters, { exact: true }).click();
+    }
+    await page.getByLabel(labels.country).selectOption(country);
+  }
   await page.getByRole("button", { name: labels.submit }).click();
 }
 

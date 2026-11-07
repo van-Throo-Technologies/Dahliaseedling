@@ -6,9 +6,7 @@
 export const en = {
   feed: {
     title: "Feed",
-    intro:
-      "Stories from growers, shared deliberately. The photo leads, and each one opens its seedling.",
-    everyone: "Everyone",
+    everyone: "For You",
     following: "Following",
     viewLabel: "Feed view",
     olderLabel: "Older updates",
@@ -19,6 +17,14 @@ export const en = {
     emptyFollowingText:
       "Follow a seedling or a grower, and their public Updates will collect here.",
     backToFeed: "Back to the Feed",
+    emptyGrowerTitle: "Your first seedling can start here",
+    emptyGrowerText:
+      "Photograph a seedling in your garden. You decide whether to share it, and when.",
+    emptyGrowerAction: "Capture a photo",
+    emptySetupText: "Set up your profile to share your first seedling.",
+    emptySetupAction: "Set up your profile",
+    emptyVisitorText: "Sign in to share the first seedling from your garden.",
+    emptyVisitorAction: "Sign in",
   },
   update: {
     label: "Update",
@@ -128,9 +134,7 @@ export const en = {
 export const nl: typeof en = {
   feed: {
     title: "Start-feed",
-    intro:
-      "Verhalen van kwekers, bewust gedeeld. De foto staat voorop en elk verhaal opent de zaailing.",
-    everyone: "Iedereen",
+    everyone: "Voor jou",
     following: "Gevolgd",
     viewLabel: "Weergave van de feed",
     olderLabel: "Oudere updates",
@@ -142,6 +146,13 @@ export const nl: typeof en = {
     emptyFollowingText:
       "Volg een zaailing of een kweker, dan verzamelen hun openbare updates zich hier.",
     backToFeed: "Terug naar de feed",
+    emptyGrowerTitle: "Je eerste zaailing kan hier beginnen",
+    emptyGrowerText: "Fotografeer een zaailing in je tuin. Jij bepaalt of en wanneer je die deelt.",
+    emptyGrowerAction: "Maak een foto",
+    emptySetupText: "Stel je profiel in om je eerste zaailing te delen.",
+    emptySetupAction: "Stel je profiel in",
+    emptyVisitorText: "Log in om de eerste zaailing uit je tuin te delen.",
+    emptyVisitorAction: "Inloggen",
   },
   update: {
     label: "Update",
@@ -251,9 +262,7 @@ export const nl: typeof en = {
 export const fr: typeof en = {
   feed: {
     title: "Fil d'actualité",
-    intro:
-      "Des récits de cultivateurs, partagés en connaissance de cause. La photo est en premier, et chaque récit ouvre son semis.",
-    everyone: "Tous",
+    everyone: "Pour vous",
     following: "Abonnements",
     viewLabel: "Affichage du fil",
     olderLabel: "Mises à jour plus anciennes",
@@ -264,6 +273,14 @@ export const fr: typeof en = {
     emptyFollowingText:
       "Suivez un semis ou un cultivateur, et leurs mises à jour publiques s'afficheront ici.",
     backToFeed: "Retour au fil d'actualité",
+    emptyGrowerTitle: "Votre premier semis peut commencer ici",
+    emptyGrowerText:
+      "Photographiez un semis dans votre jardin. Vous décidez si et quand le partager.",
+    emptyGrowerAction: "Photographier",
+    emptySetupText: "Configurez votre profil pour partager votre premier semis.",
+    emptySetupAction: "Configurez votre profil",
+    emptyVisitorText: "Connectez-vous pour partager le premier semis de votre jardin.",
+    emptyVisitorAction: "Se connecter",
   },
   update: {
     label: "Mise à jour",

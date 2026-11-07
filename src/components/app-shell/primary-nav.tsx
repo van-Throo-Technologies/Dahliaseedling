@@ -24,15 +24,24 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { href: "/profile", labelKey: "app.nav.profile", icon: UserIcon },
 ];
 
-function isActive(pathname: string, href: string): boolean {
+/*
+ * Whether a destination is the current page. Profile is the grower's own profile and its management pages, but not the onboarding
+ * step that a grower without a profile is sent through, so Profile is not shown as current while the grower is setting it up.
+ */
+export function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
+  if (href === "/profile") {
+    if (pathname === "/profile/setup" || pathname.startsWith("/profile/setup/")) return false;
+    return pathname === "/profile" || pathname.startsWith("/profile/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 /**
- * Phone-first primary navigation: fixed to the bottom, with safe-area padding. From the medium
- * breakpoint up it becomes a static row under the header, with the same items in the same order.
- * Active items get aria-current and bolder text, so state is not carried by colour alone.
+ * Phone-first primary navigation: fixed to the bottom, with safe-area padding. From the medium breakpoint up it becomes a static row
+ * under the header, with the same items in the same order. The current destination has three cues that do not rely on colour: a bar
+ * above its icon, bold text, and aria-current for assistive technology. Capture keeps its Apricot circle in every state, and gains a ring
+ * only when the grower is on the Capture page.
  */
 export function PrimaryNav() {
   const pathname = usePathname();
@@ -54,18 +63,30 @@ export function PrimaryNav() {
                 aria-current={active ? "page" : undefined}
                 className={
                   item.dominant
-                    ? "group flex flex-col items-center gap-1 py-2 text-sm font-medium text-text-brand no-underline"
+                    ? `group flex flex-col items-center gap-1 py-2 text-sm text-text-brand no-underline ${
+                        active ? "font-bold" : "font-medium"
+                      }`
                     : `flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 rounded-control px-2 py-2 text-sm no-underline ${
                         active ? "font-bold text-text-brand" : "font-medium text-text-muted"
                       }`
                 }
               >
                 {item.dominant ? (
-                  <span className="-mt-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-on-primary transition-transform group-active:scale-95 md:-mt-0 md:h-12 md:w-12">
+                  <span
+                    className={`-mt-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-on-primary transition-transform group-active:scale-95 md:-mt-0 md:h-12 md:w-12 ${
+                      active ? "ring-4 ring-primary/30 ring-offset-2 ring-offset-surface" : ""
+                    }`}
+                  >
                     <Icon className="h-7 w-7 md:h-6 md:w-6" />
                   </span>
                 ) : (
-                  <Icon className="h-6 w-6" />
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className={`h-1 w-6 rounded-full ${active ? "bg-primary" : "invisible"}`}
+                    />
+                    <Icon className="h-6 w-6" />
+                  </>
                 )}
                 <span>{t(item.labelKey)}</span>
               </Link>

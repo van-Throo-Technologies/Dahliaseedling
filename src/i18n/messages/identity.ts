@@ -67,7 +67,8 @@ export const en = {
   },
   setup: {
     title: "Set up your profile",
-    intro: "Two things to start. You can add a photo, region and bio later.",
+    intro:
+      "Two things to start: a display name and your country. A profile is needed before you can share, capture or message, and you can add a photo, region and bio later. Browsing stays open.",
     submit: "Continue",
     submitting: "Saving…",
   },
@@ -179,7 +180,8 @@ export const nl: typeof en = {
   },
   setup: {
     title: "Stel je profiel in",
-    intro: "Twee dingen om mee te beginnen. Een foto, regio en bio kun je later toevoegen.",
+    intro:
+      "Twee dingen om mee te beginnen: een weergavenaam en je land. Een profiel is nodig voordat je iets kunt delen, vastleggen of berichten sturen. Een foto, regio en bio kun je later toevoegen. Bladeren blijft open.",
     submit: "Doorgaan",
     submitting: "Opslaan…",
   },
@@ -296,7 +298,7 @@ export const fr: typeof en = {
   setup: {
     title: "Configurez votre profil",
     intro:
-      "Deux éléments pour commencer. Vous pourrez ajouter plus tard une photo, une région et une biographie.",
+      "Deux éléments pour commencer : un nom affiché et votre pays. Un profil est nécessaire avant de partager, de capturer ou d'écrire, et vous pourrez ajouter plus tard une photo, une région et une biographie. La navigation reste libre.",
     submit: "Continuer",
     submitting: "Enregistrement…",
   },

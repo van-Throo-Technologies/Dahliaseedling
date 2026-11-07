@@ -6,7 +6,8 @@ import { SearchForm } from "@/components/search/search-form";
 import { SearchResultsView } from "@/components/search/search-results";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
-import { getCurrentUser } from "@/modules/identity/session";
+import { getCurrentUser, getOwnProfile } from "@/modules/identity/session";
+import { ButtonLink } from "@/design-system/components/button-link";
 import { FEED_PAGE_SIZE } from "@/modules/publications/limits";
 import { listFeedPage } from "@/modules/publications/repository";
 import { encodeCursor, validateFeedCursor } from "@/modules/publications/validation";
@@ -67,7 +68,6 @@ export default async function HomePage({
       <h1 className="font-display text-3xl leading-tight text-text-brand">
         {t("publication.feed.title")}
       </h1>
-      <p className="text-base text-text-muted">{t("publication.feed.intro")}</p>
     </header>
   );
 
@@ -134,6 +134,37 @@ export default async function HomePage({
     );
   }
 
+  const ownProfile = viewer && !followingView ? await getOwnProfile() : null;
+  const emptyState = followingView
+    ? {
+        title: t("publication.feed.emptyFollowingTitle"),
+        text: t("publication.feed.emptyFollowingText"),
+        action: null,
+      }
+    : viewer && ownProfile
+      ? {
+          title: t("publication.feed.emptyGrowerTitle"),
+          text: t("publication.feed.emptyGrowerText"),
+          action: { href: "/capture", label: t("publication.feed.emptyGrowerAction") },
+        }
+      : viewer
+        ? {
+            title: t("publication.feed.emptyGrowerTitle"),
+            text: t("publication.feed.emptySetupText"),
+            action: {
+              href: "/profile/setup?next=%2Fcapture",
+              label: t("publication.feed.emptySetupAction"),
+            },
+          }
+        : {
+            title: t("publication.feed.emptyTitle"),
+            text: t("publication.feed.emptyVisitorText"),
+            action: {
+              href: "/sign-in?next=%2Fcapture",
+              label: t("publication.feed.emptyVisitorAction"),
+            },
+          };
+
   const supabase = await createSupabaseServerClient();
   const page = await listFeedPage(supabase, {
     limit: FEED_PAGE_SIZE,
@@ -153,7 +184,6 @@ export default async function HomePage({
         <h1 className="font-display text-3xl leading-tight text-text-brand">
           {t("publication.feed.title")}
         </h1>
-        <p className="text-base text-text-muted">{t("publication.feed.intro")}</p>
       </header>
 
       <SearchForm key="feed" query={null} country={null} />
@@ -186,21 +216,18 @@ export default async function HomePage({
       {page.items.length === 0 ? (
         <section
           aria-labelledby="empty-title"
-          className="flex flex-col gap-2 rounded-surface border border-border bg-surface p-4"
+          className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4"
         >
           <h2 id="empty-title" className="text-lg font-medium text-text">
-            {followingView
-              ? t("publication.feed.emptyFollowingTitle")
-              : t("publication.feed.emptyTitle")}
+            {emptyState.title}
           </h2>
-          <p className="text-base text-text-muted">
-            {followingView
-              ? t("publication.feed.emptyFollowingText")
-              : t("publication.feed.emptyText")}
-          </p>
+          <p className="text-base text-text-muted">{emptyState.text}</p>
+          {emptyState.action ? (
+            <ButtonLink href={emptyState.action.href}>{emptyState.action.label}</ButtonLink>
+          ) : null}
         </section>
       ) : (
-        <ul className="flex flex-col gap-6">
+        <ul className="grid gap-6 md:grid-cols-2">
           {page.items.map((update) => (
             <li key={update.updateId}>
               <UpdateCard update={update} />

@@ -176,6 +176,9 @@ test("the availability Search filter and the withdrawal are operated from the ke
   await visitorPage.getByLabel(EN.search.label).focus();
   await expectFocusVisible(visitorPage);
   await visitorPage.keyboard.type(`Filter ${tag}`);
+  // The filters are closed by default. The keyboard opens them from their summary, then reaches the availability checkbox.
+  await tabTo(visitorPage, (info) => info.tag === "SUMMARY");
+  await visitorPage.keyboard.press("Enter");
   await tabTo(visitorPage, (info) => info.tag === "INPUT" && info.type === "checkbox");
   await visitorPage.keyboard.press("Space");
   await expect(visitorPage.getByLabel(EN.search.availableLabel)).toBeChecked();
