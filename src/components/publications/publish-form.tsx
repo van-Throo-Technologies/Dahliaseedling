@@ -1,5 +1,6 @@
 "use client";
 
+import { photoSrc } from "@/modules/capture/media-type";
 import { useActionState, useState } from "react";
 import { MediaPreview } from "@/components/capture/media-preview";
 import { FormMessage } from "@/design-system/components/form-message";
@@ -77,7 +78,11 @@ export function PublishForm({
                       : t("publication.publish.stayPrivate", { label: image.label })}
                   </span>
                 </span>
-                <MediaPreview src={`/media/${image.id}`} mime={image.mime} label={image.label} />
+                <MediaPreview
+                  src={photoSrc(image.id, image.mime)}
+                  mime={image.mime}
+                  label={image.label}
+                />
               </label>
             </li>
           ))}

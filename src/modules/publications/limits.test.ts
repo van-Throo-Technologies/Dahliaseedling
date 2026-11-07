@@ -13,14 +13,25 @@ describe("publication limits", () => {
     }
   });
 
-  it("keeps HEIC and HEIF private, because the bundled decoder cannot read the HEVC encoding", () => {
-    expect(isPubliclyShareable("image/heic")).toBe(false);
-    expect(isPubliclyShareable("image/heif")).toBe(false);
+  it("allows HEIC and HEIF to be published, because they are decoded when they are shared", () => {
+    expect(isPubliclyShareable("image/heic")).toBe(true);
+    expect(isPubliclyShareable("image/heif")).toBe(true);
   });
 
-  it("explains the HEIC limit in words that do not claim the photo was lost", () => {
-    const explanation = MESSAGES.en.publication.publish.privateOnly;
-    expect(explanation).toContain("stay private");
-    expect(explanation).not.toMatch(/lost|deleted/i);
+  it("keeps video and unknown types out of public sharing", () => {
+    expect(isPubliclyShareable("video/mp4")).toBe(false);
+    expect(isPubliclyShareable("application/octet-stream")).toBe(false);
+  });
+
+  it("explains a refusal in words that do not claim the photo was lost", () => {
+    const explanations = [
+      [MESSAGES.en.publication.publish.privateOnly, "private"],
+      [MESSAGES.nl.publication.publish.privateOnly, "privé"],
+      [MESSAGES.fr.publication.publish.privateOnly, "privé"],
+    ] as const;
+    for (const [explanation, stays] of explanations) {
+      expect(explanation).toContain(stays);
+      expect(explanation).not.toMatch(/lost|deleted|perdu|supprimé|verloren|gelöscht/i);
+    }
   });
 });

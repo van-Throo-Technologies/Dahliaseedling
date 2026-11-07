@@ -157,7 +157,7 @@ export async function publishUpdateAction(
         .download(row.storage_path);
       if (downloadError || !blob) throw new PublishFailure("errors.publication.photoNotRead");
 
-      const image = await makePublicImage(Buffer.from(await blob.arrayBuffer()));
+      const image = await makePublicImage(Buffer.from(await blob.arrayBuffer()), item.mimeType);
       const path = `${userId}/${crypto.randomUUID()}.webp`;
       const { error: uploadError } = await supabase.storage
         .from("public-media")

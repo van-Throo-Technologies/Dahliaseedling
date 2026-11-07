@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { photoSrc } from "@/modules/capture/media-type";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AttachSeriesForm } from "@/components/seedlings/attach-series-form";
@@ -466,7 +467,7 @@ export default async function SeedlingPage({
                     {first ? (
                       <div className="w-24">
                         <MediaPreview
-                          src={`/media/${first.id}`}
+                          src={photoSrc(first.id, first.mimeType)}
                           mime={first.mimeType}
                           label={t("seedlings.page.privatePhoto")}
                         />

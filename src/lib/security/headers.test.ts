@@ -60,6 +60,7 @@ describe("buildContentSecurityPolicy", () => {
       buildContentSecurityPolicy({ supabaseUrl: SUPABASE, development: true }),
     );
     expect(prod["script-src"]).not.toContain("'unsafe-eval'");
+    expect(prod["script-src"]).not.toContain("'wasm-unsafe-eval'");
     expect(dev["script-src"]).toContain("'unsafe-eval'");
     expect(dev["connect-src"]).toContain("ws:");
   });

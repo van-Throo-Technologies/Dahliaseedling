@@ -9,6 +9,11 @@ export const DERIVATIVE = {
   quality: 80,
   /** Refuses decompression bombs before any pixels are decoded. */
   maxInputPixels: 80_000_000,
+  /**
+   * Largest declared size of a HEIC or HEIF photo that is decoded for sharing: about 50 megapixels, which covers current phone main cameras. The decoder
+   * holds about four bytes per pixel, so this bounds the memory a single publish can use.
+   */
+  maxHeifPixels: 50_000_000,
   /** Largest public derivative the bucket accepts. */
   maxBytes: 5 * 1024 * 1024,
 } as const;
@@ -24,12 +29,15 @@ export const FEED_PAGE_SIZE = 12;
 /** How long a signed URL for a public image lasts. Suspension and deletion take effect when it expires. */
 export const PUBLIC_URL_SECONDS = 3600;
 
-/**
- * Formats that stay private in this build. The bundled libvips decodes AV1-based HEIF, but not the HEVC
- * encoding that phone cameras use for HEIC, so a public copy cannot be made. Private Capture still accepts them.
- */
-const PRIVATE_ONLY_MIME_TYPES: readonly string[] = ["image/heic", "image/heif"];
+/** The photograph types a public copy can be made from. HEIC and HEIF are decoded when they are published. Video is not shared publicly. */
+const SHAREABLE_PHOTO_TYPES: readonly string[] = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+];
 
 export function isPubliclyShareable(mimeType: string): boolean {
-  return !PRIVATE_ONLY_MIME_TYPES.includes(mimeType);
+  return SHAREABLE_PHOTO_TYPES.includes(mimeType);
 }

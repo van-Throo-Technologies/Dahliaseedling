@@ -3,31 +3,37 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
+import { isHeifMime } from "@/modules/capture/media-type";
 
 /**
- * Shows a photo or video. If the browser cannot display the file (HEIC is not displayed by most
- * non-Apple browsers), it says so and keeps the file. Saving never depends on the preview.
- * Photos are unoptimised on purpose: they are private originals behind a short-lived signed URL.
+ * Shows a photo or video. If the browser cannot display a file, the page says so and keeps the file. In Capture, a HEIC or HEIF photo
+ * the browser cannot show gets the save-first explanation, because its preview becomes available after saving.
+ * Saving never depends on the preview. Photos are unoptimised on purpose: they are behind an owner-only address.
  */
 export function MediaPreview({
   src,
   mime,
   label,
+  beforeSave = false,
 }: {
-  readonly src: string;
+  readonly src: string | null;
   readonly mime: string;
   readonly label: string;
+  /** True in Capture, before saving: a HEIC photo the browser cannot show then gets the save-first explanation. */
+  readonly beforeSave?: boolean;
 }) {
   const t = useT();
   const [failed, setFailed] = useState(false);
   const isVideo = mime.startsWith("video/");
+  const placeholder =
+    "flex aspect-square items-center justify-center rounded-control border border-border bg-surface p-3 text-center text-sm text-text-muted";
 
-  if (failed) {
-    return (
-      <div className="flex aspect-square items-center justify-center rounded-control border border-border bg-surface p-3 text-center text-sm text-text-muted">
-        {t("capture.capture.previewUnavailable")}
-      </div>
-    );
+  if (failed && beforeSave && isHeifMime(mime)) {
+    return <div className={placeholder}>{t("capture.capture.previewCannotShowYet")}</div>;
+  }
+
+  if (failed || src === null) {
+    return <div className={placeholder}>{t("capture.capture.previewUnavailable")}</div>;
   }
 
   if (isVideo) {

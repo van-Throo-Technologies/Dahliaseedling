@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { withSuperuser } from "../support/local-supabase";
@@ -298,7 +300,7 @@ test("the profile tabs show public seedlings, originated seedlings and the growe
   await context.close();
 });
 
-/** A HEIC-labelled file with a valid HEIC header. Private Capture accepts it; public sharing does not. */
+/** A HEIC-labelled file with a valid HEIC header and no picture data. Its size is not declared, so it cannot be decoded. */
 function fakeHeic(): Buffer {
   return Buffer.concat([
     Buffer.from("0000001866747970686569630000000068656963", "hex"),
@@ -306,28 +308,100 @@ function fakeHeic(): Buffer {
   ]);
 }
 
-test("a HEIC photo stays private, is explained, and cannot be chosen for a public Update", async ({
+const PHONE_HEIC = join(process.cwd(), "tests/fixtures/heic/portrait-rotated.heic");
+
+/** Captures one file under the given name and type, and returns the observation address. */
+async function captureFile(
+  page: Page,
+  name: string,
+  mimeType: string,
+  buffer: Buffer,
+): Promise<string> {
+  await page.goto("/capture");
+  await page.locator("#capture-photo").setInputFiles({ name, mimeType, buffer });
+  await page.getByRole("button", { name: "Save privately" }).click();
+  await expect(page).toHaveURL(/\/observations\/[0-9a-f-]{36}/);
+  return page.url().split("?")[0]!;
+}
+
+test("a HEIC photo from a phone, with no declared type, is previewed, kept privately, and shared as an upright public copy", async ({
   page,
-}) => {
+  browser,
+}, testInfo) => {
   await signUpAndSetUpProfile(page, "heic", "Heic Grower");
   await page.goto("/capture");
+  // An empty type is what some Android and Windows browsers report for a HEIC file. The name decides instead.
   await page
     .locator("#capture-photo")
-    .setInputFiles({ name: "bloom.heic", mimeType: "image/heic", buffer: fakeHeic() });
+    .setInputFiles({ name: "bloom.heic", mimeType: "", buffer: readFileSync(PHONE_HEIC) });
+  // A HEIC file has no preview until it is saved, so the page says when the preview will appear.
+  await expect(page.getByText(/can.t show a preview yet/)).toBeVisible();
   await page.getByRole("button", { name: "Save privately" }).click();
   await expect(page).toHaveURL(/\/observations\//);
-  await expect(page.getByText("Saved privately").first()).toBeVisible();
   const observation = page.url().split("?")[0]!;
 
-  // Make the seedling public through the explicit step, then look at the choices.
+  // Once saved, the owner sees the photograph from the preview route, upright at the source size, and the picture loads.
+  const shown = page.locator("main img").first();
+  await expect(shown).toBeVisible();
+  const previewSrc = (await shown.getAttribute("src")) ?? "";
+  expect(previewSrc).toMatch(/\/media\/[0-9a-f-]{36}\/preview$/);
+  await expect.poll(() => shown.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBe(200);
+  await expect.poll(() => shown.evaluate((el) => (el as HTMLImageElement).naturalHeight)).toBe(400);
+  const url = new URL(previewSrc, page.url()).toString();
+
+  // A repeat request with the same ETag is answered without a new body.
+  const first = await page.request.get(url);
+  expect(first.status()).toBe(200);
+  expect(first.headers()["content-type"]).toBe("image/webp");
+  expect(first.headers()["cache-control"]).toBe("private, no-cache");
+  const repeat = await page.request.get(url, {
+    headers: { "if-none-match": first.headers().etag! },
+  });
+  expect(repeat.status()).toBe(304);
+
+  // A signed-out visitor, and another grower, get the same 404 as for a missing file.
+  const signedOut = await browser.newContext();
+  expect((await signedOut.request.get(url)).status()).toBe(404);
+  await signedOut.close();
+  const other = await browser.newContext();
+  const otherPage = await other.newPage();
+  await signUpAndSetUpProfile(otherPage, "heicother", "Other Grower");
+  expect((await otherPage.request.get(url)).status()).toBe(404);
+  expect(
+    (
+      await otherPage.request.get(url, { headers: { "if-none-match": first.headers().etag! } })
+    ).status(),
+  ).toBe(404);
+  await other.close();
+
+  const caption = `Heic bloom ${crypto.randomUUID().slice(0, 8)}`;
+  await shareOnePhoto(page, observation, caption);
+  await expect(page.getByRole("status")).toContainText("Published");
+
+  const { context, page: visitor } = await visitorContext(browser, testInfo);
+  const card = await findInFeed(visitor, caption);
+  const src = await card.locator("img").first().getAttribute("src");
+  expect(src, "the Feed shows the public WebP copy, not the private HEIC").toContain(
+    "/public-media/",
+  );
+  expect(src).not.toContain("/private-media/");
+  await context.close();
+});
+
+test("a HEIC file that cannot be decoded is refused for sharing with a clear message, and nothing is published", async ({
+  page,
+}) => {
+  await signUpAndSetUpProfile(page, "heicbad", "Heic Unreadable");
+  const observation = await captureFile(page, "unreadable.heic", "image/heic", fakeHeic());
+
   await page.goto(observation);
   await page.getByRole("link", { name: "Share selected photos" }).click();
   await page.getByRole("button", { name: "Make Seedling public & continue" }).click();
-  await expect(page).toHaveURL(/\/share\?public=1/);
+  await page.getByLabel("Share photo 1").check();
+  await page.getByRole("button", { name: "Publish update" }).click();
 
-  await expect(page.getByLabel("photo 1 stays private")).toBeDisabled();
-  await expect(page.getByText("HEIC photos stay private for now.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Publish update" })).toHaveCount(0);
+  await expect(page.getByText("The photo could not be prepared for sharing.")).toBeVisible();
+  await expect(page).not.toHaveURL(/\/updates\//);
   await expectNoHorizontalOverflow(page);
 });
 
@@ -358,5 +432,30 @@ test("if the seedling stops being public before Publish, nothing is shared and t
   await expect(page).toHaveURL(/\/share\?public=1$/);
   await expect(page.getByRole("status").filter({ hasText: "Published" })).toHaveCount(0);
   await expect(page.getByLabel("Share photo 1")).toBeChecked();
+  await expectNoHorizontalOverflow(page);
+});
+
+/** A HEIF container that declares a 20000 by 20000 image, which is over the decoding limit. It holds no picture data. */
+function oversizedHeic(): Buffer {
+  const declared = Buffer.alloc(20);
+  declared.writeUInt32BE(20, 0);
+  declared.write("ispe", 4, "latin1");
+  declared.writeUInt32BE(20_000, 12);
+  declared.writeUInt32BE(20_000, 16);
+  return Buffer.concat([fakeHeic(), declared]);
+}
+
+test("a HEIC photo over the size limit is saved, shows a clear message in place of a preview", async ({
+  page,
+}) => {
+  await signUpAndSetUpProfile(page, "heicbig", "Heic Large");
+  const observation = await captureFile(page, "oversized.heic", "image/heic", oversizedHeic());
+
+  // The preview is refused with a 422, and the page replaces the picture with a plain message.
+  const refused = page.waitForResponse((response) => response.url().includes("/preview"));
+  await page.goto(observation);
+  const response = await refused;
+  expect(response.status()).toBe(422);
+  await expect(page.getByText("Preview not available in this browser")).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });

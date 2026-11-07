@@ -11,6 +11,7 @@ import { prepareUploadsAction, captureAction } from "@/modules/capture/actions";
 import { CAPTURE_LIMITS } from "@/modules/capture/limits";
 import { matchVoiceCommand, normaliseTranscript, type VoiceCommand } from "@/modules/capture/voice";
 import { validateSelection } from "@/modules/capture/validation";
+import { effectiveMimeType } from "@/modules/capture/media-type";
 import type { Msg } from "@/i18n/message";
 
 /** An upload problem whose message is already translated, so it can be shown as it is. Other errors are not shown raw. */
@@ -23,10 +24,11 @@ export interface HeldSeedlingChoice {
   readonly label: string;
 }
 
+/** url: the address of the preview, or null when the file has none on this device (a HEIC file, until it is saved). */
 interface Chosen {
   readonly key: string;
   readonly file: File;
-  readonly url: string;
+  readonly url: string | null;
 }
 
 type Mode = "new" | "existing" | "identifier";
@@ -69,6 +71,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
     const next: Chosen[] = [...chosen];
     for (const file of incoming) {
       if (next.length >= CAPTURE_LIMITS.maxFilesPerCapture) break;
+      // Every file gets a preview address. The browser shows it if it can; a HEIC file it cannot show gets the save-first explanation.
       const url = URL.createObjectURL(file);
       urls.current.push(url);
       next.push({ key: `${file.name}-${file.size}-${crypto.randomUUID()}`, file, url });
@@ -83,7 +86,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
 
   function removeFile(key: string) {
     const removed = chosen.find((item) => item.key === key);
-    if (removed) URL.revokeObjectURL(removed.url);
+    if (removed?.url) URL.revokeObjectURL(removed.url);
     const next = chosen.filter((item) => item.key !== key);
     setChosen(next);
     const check = validateSelection(next.map((item) => item.file));
@@ -123,7 +126,9 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
 
     try {
       if (!pathsForAttempt.current) {
-        const prepared = await prepareUploadsAction(chosen.map((item) => item.file.type));
+        const prepared = await prepareUploadsAction(
+          chosen.map((item) => effectiveMimeType(item.file)),
+        );
         if ("error" in prepared) throw new Error(prepared.error);
         pathsForAttempt.current = prepared.paths;
       }
@@ -136,7 +141,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
         const path = paths[index];
         if (!item || !path || uploadedPaths.current.has(item.key)) continue;
         const { error } = await browser.storage.from("private-media").upload(path, item.file, {
-          contentType: item.file.type,
+          contentType: effectiveMimeType(item.file),
           upsert: false,
         });
         // A retry after a dropped response finds the file already there. That is the same upload.
@@ -243,7 +248,12 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
           >
             {chosen.map((item) => (
               <li key={item.key} className="flex flex-col gap-2">
-                <MediaPreview src={item.url} mime={item.file.type} label={item.file.name} />
+                <MediaPreview
+                  src={item.url}
+                  mime={effectiveMimeType(item.file)}
+                  label={item.file.name}
+                  beforeSave
+                />
                 <button
                   type="button"
                   onClick={() => removeFile(item.key)}

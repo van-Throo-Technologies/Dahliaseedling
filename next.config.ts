@@ -29,7 +29,8 @@ const nextConfig: NextConfig = {
       "/notifications/:path*",
       "/capture/:path*",
       "/observations/:path*",
-      "/media/:path*",
+      // The original photograph address. The preview route sets its own owner-only policy, so it is not listed here.
+      "/media/:id",
       "/admin/:path*",
       "/api/account/:path*",
     ].map((source) => ({

@@ -1,4 +1,5 @@
 import { msg, type Msg } from "@/i18n/message";
+import { effectiveMimeType } from "./media-type";
 import { CAPTURE_LIMITS, ALLOWED_MIME_TYPES, maxBytesFor, extensionForMime } from "./limits";
 
 /*
@@ -24,10 +25,11 @@ export interface FileDescriptor {
 
 /** Describes why one file cannot be captured, or returns null if it can. */
 export function fileProblem(file: FileDescriptor): Msg | null {
-  if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
+  const mime = effectiveMimeType(file);
+  if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(mime)) {
     return msg("validation.capture.fileType");
   }
-  const limit = maxBytesFor(file.type);
+  const limit = maxBytesFor(mime);
   if (limit !== null && file.size > limit) {
     const megabytes = Math.round(limit / (1024 * 1024));
     return msg("validation.capture.fileSize", { megabytes });

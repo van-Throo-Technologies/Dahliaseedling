@@ -146,3 +146,13 @@ describe("voice command", () => {
     expect(matchVoiceCommand("")).toBeNull();
   });
 });
+
+describe("a HEIC or HEIF photo with no declared type", () => {
+  it("is accepted when its name says it is a HEIC file, so a supported photo is not refused", () => {
+    expect(fileProblem({ name: "IMG_0042.HEIC", type: "", size: 2_000_000 })).toBeNull();
+  });
+
+  it("is still refused when its name says it is not a supported file", () => {
+    expect(fileProblem({ name: "notes.gif", type: "", size: 2_000_000 })).not.toBeNull();
+  });
+});

@@ -110,7 +110,7 @@ export const en = {
     pending: "Publishing…",
     submit: "Publish update",
     privateOnly:
-      "HEIC photos stay private for now. Public sharing of HEIC isn't available yet. Choose JPEG, PNG or WebP photos to share.",
+      "This file cannot be shared publicly. It stays private, and your other photos are not affected.",
   },
   journey: {
     noPhoto: "No public photo yet.",
@@ -238,7 +238,7 @@ export const nl: typeof en = {
     pending: "Publiceren…",
     submit: "Update publiceren",
     privateOnly:
-      "HEIC-foto's blijven voorlopig privé. Openbaar delen van HEIC is nog niet beschikbaar. Kies JPEG-, PNG- of WebP-foto's om te delen.",
+      "Dit bestand kan niet openbaar worden gedeeld. Het blijft privé, en je andere foto's worden niet beïnvloed.",
   },
   journey: {
     noPhoto: "Nog geen openbare foto.",
@@ -366,7 +366,7 @@ export const fr: typeof en = {
     pending: "Publication…",
     submit: "Publier la mise à jour",
     privateOnly:
-      "Les photos HEIC restent privées pour le moment. Le partage public de HEIC n'est pas encore disponible. Choisissez des photos JPEG, PNG ou WebP à partager.",
+      "Ce fichier ne peut pas être partagé publiquement. Il reste privé, et vos autres photos ne sont pas affectées.",
   },
   journey: {
     noPhoto: "Pas encore de photo publique.",

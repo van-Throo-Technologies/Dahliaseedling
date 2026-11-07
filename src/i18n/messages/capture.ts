@@ -35,6 +35,8 @@ export const en = {
     stillHere: "Your photos are still here, so try again.",
     uploadFailed: "The upload did not finish. Try again.",
     previewUnavailable: "Preview not available in this browser. The file is still saved.",
+    previewCannotShowYet:
+      "This photo can be saved, but your browser can’t show a preview yet. You’ll be able to see it after saving.",
     privateMediaLabel: "Private photo or video",
   },
   voice: {
@@ -129,6 +131,8 @@ export const nl: typeof en = {
     uploadFailed: "De upload is niet voltooid. Probeer het opnieuw.",
     previewUnavailable:
       "Voorbeeld niet beschikbaar in deze browser. Het bestand is wel opgeslagen.",
+    previewCannotShowYet:
+      "Deze foto kan worden opgeslagen, maar je browser kan nog geen voorbeeld tonen. Je ziet de foto na het opslaan.",
     privateMediaLabel: "Privéfoto of -video",
   },
   voice: {
@@ -224,6 +228,8 @@ export const fr: typeof en = {
     uploadFailed: "L'envoi n'a pas abouti. Réessayez.",
     previewUnavailable:
       "Aperçu indisponible dans ce navigateur. Le fichier est tout de même enregistré.",
+    previewCannotShowYet:
+      "Cette photo peut être enregistrée, mais votre navigateur ne peut pas encore afficher d'aperçu. Vous pourrez la voir après l'enregistrement.",
     privateMediaLabel: "Photo ou vidéo privée",
   },
   voice: {

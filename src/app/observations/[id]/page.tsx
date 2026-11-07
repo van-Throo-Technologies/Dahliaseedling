@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { photoSrc } from "@/modules/capture/media-type";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteObservationForm } from "@/components/capture/delete-observation-form";
@@ -90,7 +91,7 @@ export default async function ObservationPage({
           {items.map((item) => (
             <li key={item.id}>
               <MediaPreview
-                src={`/media/${item.id}`}
+                src={photoSrc(item.id, item.mimeType)}
                 mime={item.mimeType}
                 label={t("capture.observation.yourPhoto")}
               />

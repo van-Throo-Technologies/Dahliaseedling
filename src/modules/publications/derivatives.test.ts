@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 import { DerivativeError, makePublicImage } from "./derivatives";
@@ -109,5 +111,46 @@ describe("public image derivatives", () => {
     const derivative = await makePublicImage(source);
     expect(derivative.data.byteLength).toBeLessThan(source.byteLength);
     expect(derivative.data.byteLength).toBeLessThanOrEqual(DERIVATIVE.maxBytes);
+  });
+});
+
+/*
+ * HEIC and HEIF. The fixtures are generated from synthetic images with macOS, so they contain no photograph and no location.
+ * They exercise the decoder path end to end: decoding, orientation, sizing and the metadata that the public copy must not keep.
+ */
+describe("HEIC and HEIF photographs", () => {
+  const fixture = (name: string) => readFileSync(join(process.cwd(), "tests/fixtures/heic", name));
+
+  it("becomes an upright WebP with the orientation applied and no metadata kept", async () => {
+    const image = await makePublicImage(fixture("portrait-rotated.heic"), "image/heic");
+    // The source is 400 by 200 with a quarter-turn orientation, so the upright image is 200 by 400.
+    expect(image.width).toBe(200);
+    expect(image.height).toBe(400);
+    const written = await sharp(image.data).metadata();
+    expect(written.format).toBe("webp");
+    expect(written.exif).toBeUndefined();
+    expect(written.orientation).toBeUndefined();
+  });
+
+  it("is reduced to the public long edge, like any other photograph", async () => {
+    const image = await makePublicImage(fixture("landscape-phone.heic"), "image/heif");
+    expect(image.width).toBe(DERIVATIVE.longEdge);
+    expect(image.height).toBe(Math.round((DERIVATIVE.longEdge * 3024) / 4032));
+    expect(image.data.length).toBeLessThanOrEqual(DERIVATIVE.maxBytes);
+  });
+
+  it("refuses a HEIF container that declares no size, before decoding anything", async () => {
+    await expect(
+      makePublicImage(Buffer.from("no declared size here"), "image/heic"),
+    ).rejects.toThrow(DerivativeError);
+  });
+
+  it("refuses a HEIF container that declares more pixels than the limit allows", async () => {
+    const declared = Buffer.alloc(20);
+    declared.writeUInt32BE(20, 0);
+    declared.write("ispe", 4, "latin1");
+    declared.writeUInt32BE(20_000, 12);
+    declared.writeUInt32BE(20_000, 16);
+    await expect(makePublicImage(declared, "image/heic")).rejects.toThrow(DerivativeError);
   });
 });
