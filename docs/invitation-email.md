@@ -42,7 +42,9 @@ The Supabase settings endpoint does not show the Site URL, the template or the s
 
 ## Controlled retest
 
-Recipient: `janinevanthroo@gmail.com`, the address you approved. No other recipient.
+Recipient: a fresh address that the founder names and approves. Do not use `janinevanthroo@gmail.com`: that account is already activated, so Supabase will not treat it as a new invitation. No other recipient.
+
+Before sending, confirm that the hosted Invite user template shows the photograph and the "Accept invitation" button, and that the Site URL and redirect list are unchanged.
 
 1. Check Gmail on desktop: sender "DahliaSeedling", subject, preview text, the layout, the button and the fallback link. Open "Show original" and confirm SPF, DKIM and DMARC pass.
 2. Check the same message on the Gmail mobile app: the button is tappable, and the text reads without zooming.
