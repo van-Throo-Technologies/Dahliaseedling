@@ -7,7 +7,7 @@ import { translateMsg } from "@/i18n/message";
 import { FormMessage } from "@/design-system/components/form-message";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
-import { prepareUploadsAction, captureAction } from "@/modules/capture/actions";
+import { prepareUploadsAction, captureAction, composePostAction } from "@/modules/capture/actions";
 import { CAPTURE_LIMITS } from "@/modules/capture/limits";
 import { matchVoiceCommand, normaliseTranscript, type VoiceCommand } from "@/modules/capture/voice";
 import { validateSelection } from "@/modules/capture/validation";
@@ -39,15 +39,42 @@ type Phase = "idle" | "uploading" | "saving";
  * only takes a photo needs one more tap. Notes, voice and time are optional and never block saving.
  * Uploads go straight to private storage, one file at a time. Retrying resumes the files not yet uploaded.
  */
-export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSeedlingChoice[] }) {
+/**
+ * The Capture flow. On the Capture page it stands alone. On the Feed it is embedded, and a grower who starts from a seedling passes that
+ * seedling as initialSeedlingId, so it is already chosen and nothing needs to be re-entered.
+ */
+export function CaptureFlow({
+  seedlings,
+  initialSeedlingId = null,
+  embedded = false,
+  composer = false,
+}: {
+  readonly seedlings: readonly HeldSeedlingChoice[];
+  readonly initialSeedlingId?: string | null;
+  readonly embedded?: boolean;
+  /** The Feed composer: photos only, with an optional caption and an explicit choice to share publicly now. */
+  readonly composer?: boolean;
+}) {
+  const Heading = embedded ? "h2" : "h1";
+  const startingSeedling =
+    initialSeedlingId !== null && seedlings.some((item) => item.id === initialSeedlingId)
+      ? initialSeedlingId
+      : null;
   const t = useT();
-  const [state, formAction] = useActionState(captureAction, IDLE_FORM_STATE);
+  const [state, formAction] = useActionState(
+    composer ? composePostAction : captureAction,
+    IDLE_FORM_STATE,
+  );
+  const [caption, setCaption] = useState("");
+  const [sharePublicly, setSharePublicly] = useState(false);
   const [chosen, setChosen] = useState<Chosen[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>("new");
+  const [mode, setMode] = useState<Mode>(
+    startingSeedling || (composer && seedlings.length > 0) ? "existing" : "new",
+  );
   const [seedlingSearch, setSeedlingSearch] = useState("");
   const [voiceNotice, setVoiceNotice] = useState<VoiceCommand | null>(null);
-  const [seedlingId, setSeedlingId] = useState(seedlings[0]?.id ?? "");
+  const [seedlingId, setSeedlingId] = useState(startingSeedling ?? seedlings[0]?.id ?? "");
   const [identifier, setIdentifier] = useState("");
   const [note, setNote] = useState("");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -170,6 +197,8 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
     form.set("voiceTranscript", voiceTranscript);
     form.set("observedAt", observedAt ? new Date(observedAt).toISOString() : "");
     form.set("paths", JSON.stringify(pathsForAttempt.current));
+    form.set("caption", caption);
+    form.set("share", composer && sharePublicly ? "public" : "private");
     startTransition(() => {
       formAction(form);
     });
@@ -181,15 +210,17 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
       ? t("capture.capture.uploadingShort")
       : phase === "saving"
         ? t("capture.capture.savingPrivately")
-        : t("capture.capture.save");
+        : composer && sharePublicly
+          ? t("capture.capture.composer.post")
+          : t("capture.capture.save");
   const message = state.status === "error" ? state.message : null;
 
   return (
     <div className="flex flex-col gap-6">
       <section aria-labelledby="media-title" className="flex flex-col gap-4">
-        <h1 id="media-title" className="font-display text-3xl text-text-brand">
+        <Heading id="media-title" className="font-display text-3xl text-text-brand">
           {t("capture.capture.title")}
-        </h1>
+        </Heading>
         <p className="text-base text-text-muted">{t("capture.capture.intro")}</p>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -208,21 +239,23 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
               disabled={busy}
             />
           </label>
-          <label
-            htmlFor="capture-video"
-            className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
-          >
-            {t("capture.capture.recordVideo")}
-            <input
-              id="capture-video"
-              type="file"
-              accept="video/*"
-              capture="environment"
-              className="sr-only"
-              onChange={(event) => addFiles(event.target.files)}
-              disabled={busy}
-            />
-          </label>
+          {composer ? null : (
+            <label
+              htmlFor="capture-video"
+              className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
+            >
+              {t("capture.capture.recordVideo")}
+              <input
+                id="capture-video"
+                type="file"
+                accept="video/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(event) => addFiles(event.target.files)}
+                disabled={busy}
+              />
+            </label>
+          )}
           <label
             htmlFor="capture-library"
             className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
@@ -231,7 +264,7 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
             <input
               id="capture-library"
               type="file"
-              accept="image/*,video/*"
+              accept={composer ? "image/*" : "image/*,video/*"}
               multiple
               className="sr-only"
               onChange={(event) => addFiles(event.target.files)}
@@ -380,80 +413,120 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
           ) : null}
         </fieldset>
 
-        <details className="rounded-surface border border-border bg-surface p-4">
-          <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
-            {t("capture.capture.addNote")}
-          </summary>
-          <div className="mt-4 flex flex-col gap-4">
-            <VoiceNote
-              onTranscript={(transcript) => {
-                setVoiceTranscript((current) =>
-                  current ? `${current} ${transcript}` : transcript,
-                );
-                setNote((current) => (current ? `${current} ${transcript}` : transcript));
-              }}
-              onCommand={handleVoiceCommand}
-              disabled={busy}
-            />
-            {voiceNotice === "new_seedling" ? (
-              <p role="status" className="text-sm text-text-muted">
-                {t("assistive.capture.newSeedlingApplied")}
-              </p>
-            ) : null}
-            {voiceNotice === "not_keeping" ? (
-              <div
-                role="status"
-                className="flex flex-col gap-2 rounded-control border border-border bg-background p-3"
-              >
-                <p className="text-base font-medium text-text">
-                  {t("assistive.voice.notKeepingHeading")}
-                </p>
-                {mode === "existing" && seedlingId ? (
-                  <Link
-                    href={`/seedlings/${seedlingId}/rehome`}
-                    className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
+        {composer ? null : (
+          <>
+            <details className="rounded-surface border border-border bg-surface p-4">
+              <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
+                {t("capture.capture.addNote")}
+              </summary>
+              <div className="mt-4 flex flex-col gap-4">
+                <VoiceNote
+                  onTranscript={(transcript) => {
+                    setVoiceTranscript((current) =>
+                      current ? `${current} ${transcript}` : transcript,
+                    );
+                    setNote((current) => (current ? `${current} ${transcript}` : transcript));
+                  }}
+                  onCommand={handleVoiceCommand}
+                  disabled={busy}
+                />
+                {voiceNotice === "new_seedling" ? (
+                  <p role="status" className="text-sm text-text-muted">
+                    {t("assistive.capture.newSeedlingApplied")}
+                  </p>
+                ) : null}
+                {voiceNotice === "not_keeping" ? (
+                  <div
+                    role="status"
+                    className="flex flex-col gap-2 rounded-control border border-border bg-background p-3"
                   >
-                    {t("assistive.voice.notKeepingAction")}
-                  </Link>
-                ) : (
-                  <p className="text-sm text-text-muted">{t("assistive.voice.notKeepingChoose")}</p>
-                )}
+                    <p className="text-base font-medium text-text">
+                      {t("assistive.voice.notKeepingHeading")}
+                    </p>
+                    {mode === "existing" && seedlingId ? (
+                      <Link
+                        href={`/seedlings/${seedlingId}/rehome`}
+                        className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
+                      >
+                        {t("assistive.voice.notKeepingAction")}
+                      </Link>
+                    ) : (
+                      <p className="text-sm text-text-muted">
+                        {t("assistive.voice.notKeepingChoose")}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+                <label htmlFor="capture-note" className="text-base font-medium text-text">
+                  {t("capture.capture.note")}
+                </label>
+                <textarea
+                  id="capture-note"
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  maxLength={CAPTURE_LIMITS.noteMaxLength}
+                  rows={3}
+                  disabled={busy}
+                  className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
+                />
               </div>
-            ) : null}
-            <label htmlFor="capture-note" className="text-base font-medium text-text">
-              {t("capture.capture.note")}
-            </label>
-            <textarea
-              id="capture-note"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              maxLength={CAPTURE_LIMITS.noteMaxLength}
-              rows={3}
-              disabled={busy}
-              className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
-            />
-          </div>
-        </details>
+            </details>
 
-        <details className="rounded-surface border border-border bg-surface p-4">
-          <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
-            {t("capture.capture.time")}
-          </summary>
-          <div className="mt-4 flex flex-col gap-2">
-            <label htmlFor="capture-observed" className="text-base font-medium text-text">
-              {t("capture.capture.timeLabel")}
+            <details className="rounded-surface border border-border bg-surface p-4">
+              <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
+                {t("capture.capture.time")}
+              </summary>
+              <div className="mt-4 flex flex-col gap-2">
+                <label htmlFor="capture-observed" className="text-base font-medium text-text">
+                  {t("capture.capture.timeLabel")}
+                </label>
+                <input
+                  id="capture-observed"
+                  type="datetime-local"
+                  value={observedAt}
+                  onChange={(event) => setObservedAt(event.target.value)}
+                  disabled={busy}
+                  className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
+                />
+                <p className="text-sm text-text-muted">{t("capture.capture.timeHint")}</p>
+              </div>
+            </details>
+          </>
+        )}
+
+        {composer ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="composer-caption" className="text-base font-medium text-text">
+                {t("capture.capture.composer.caption")}
+              </label>
+              <textarea
+                id="composer-caption"
+                rows={3}
+                maxLength={2000}
+                value={caption}
+                onChange={(event) => setCaption(event.target.value)}
+                disabled={busy}
+                className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
+              />
+            </div>
+            <label className="inline-flex min-h-11 items-start gap-3 text-base text-text">
+              <input
+                type="checkbox"
+                checked={sharePublicly}
+                onChange={(event) => setSharePublicly(event.target.checked)}
+                disabled={busy}
+                className="mt-1 h-6 w-6 shrink-0 accent-[var(--color-text-brand)]"
+              />
+              <span>
+                {t("capture.capture.composer.sharePublicly")}
+                <span className="block text-sm text-text-muted">
+                  {t("capture.capture.composer.sharePubliclyHint")}
+                </span>
+              </span>
             </label>
-            <input
-              id="capture-observed"
-              type="datetime-local"
-              value={observedAt}
-              onChange={(event) => setObservedAt(event.target.value)}
-              disabled={busy}
-              className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
-            />
-            <p className="text-sm text-text-muted">{t("capture.capture.timeHint")}</p>
           </div>
-        </details>
+        ) : null}
 
         {uploadError ? <FormMessage tone="error">{uploadError}</FormMessage> : null}
         {message && !uploadError ? <FormMessage tone="error">{message}</FormMessage> : null}
@@ -473,7 +546,15 @@ export function CaptureFlow({ seedlings }: { readonly seedlings: readonly HeldSe
         >
           {saveLabel}
         </button>
-        <p className="text-sm text-text-muted">{t("capture.capture.privacyNote")}</p>
+        <p className="text-sm text-text-muted">
+          {composer
+            ? t(
+                sharePublicly
+                  ? "capture.capture.composer.privacyPublic"
+                  : "capture.capture.composer.privacyPrivate",
+              )
+            : t("capture.capture.privacyNote")}
+        </p>
         <p className="text-sm">
           <Link href="/profile" className="text-text-brand underline underline-offset-4">
             {t("capture.capture.backToProfile")}

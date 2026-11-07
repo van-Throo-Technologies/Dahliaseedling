@@ -44,13 +44,10 @@ function observationIdFrom(url: string): string {
 test("a grower captures a photo into a new seedling in one tap and leaves", async ({ page }) => {
   await signUpAndSetUpProfile(page, "new", "Capture Grower");
 
-  // The primary navigation's Capture action is reachable from the profile page.
-  await page
-    .getByRole("navigation", { name: "Primary" })
-    .getByRole("link", { name: "Capture" })
-    .click();
-  await expect(page).toHaveURL(/\/capture$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Capture" })).toBeVisible();
+  // Posting starts in the Feed composer, which has no separate Capture tab.
+  await page.goto("/");
+  await page.getByText("Add a photo", { exact: true }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Capture" })).toBeVisible();
 
   await page
     .locator("#capture-photo")

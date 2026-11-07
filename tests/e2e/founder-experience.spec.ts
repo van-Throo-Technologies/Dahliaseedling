@@ -69,9 +69,9 @@ test("the current destination is shown without relying on colour alone", async (
     "page",
   );
 
-  await primary.getByRole("link", { name: "Capture" }).click();
-  await expect(page).toHaveURL(/\/capture$/);
-  await expect(primary.getByRole("link", { name: "Capture" })).toHaveAttribute(
+  await primary.getByRole("link", { name: "Notifications" }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(primary.getByRole("link", { name: "Notifications" })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -86,15 +86,13 @@ test("the current destination is shown without relying on colour alone", async (
     "aria-current",
     "page",
   );
-  await expect(primary.getByRole("link", { name: "Capture" })).not.toHaveAttribute(
+  await expect(primary.getByRole("link", { name: "Notifications" })).not.toHaveAttribute(
     "aria-current",
     "page",
   );
 
-  // Every destination is reachable with the keyboard, and each carries an accessible name.
-  for (const name of ["Home", "Capture", "Notifications", "Profile"]) {
-    await expect(primary.getByRole("link", { name })).toBeVisible();
-  }
+  // Three destinations, in order. Posting is not one of them: it starts in the composer on the Feed.
+  await expect(primary.getByRole("link")).toHaveText(["Home", "Notifications", "Profile"]);
 });
 
 test("a grower who has not finished setting up is not shown as being on Profile", async ({

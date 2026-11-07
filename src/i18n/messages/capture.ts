@@ -2,6 +2,15 @@
 
 export const en = {
   capture: {
+    composer: {
+      post: "Post photo",
+      caption: "Caption (optional)",
+      sharePublicly: "Share publicly now",
+      sharePubliclyHint:
+        "This photo is posted to the public Feed. If the seedling is private, it becomes public. Your other photos and notes stay private.",
+      privacyPrivate: "Only you can see this photo until you share it.",
+      privacyPublic: "Shared publicly in the Feed. The private original is never shown.",
+    },
     title: "Capture",
     intro: "Take a photo, and save it privately. You can add details later.",
     takePhoto: "Take photo",
@@ -97,6 +106,15 @@ export const en = {
 
 export const nl: typeof en = {
   capture: {
+    composer: {
+      post: "Foto plaatsen",
+      caption: "Onderschrift (optioneel)",
+      sharePublicly: "Nu openbaar delen",
+      sharePubliclyHint:
+        "Deze foto wordt openbaar geplaatst in de feed. Staat de zaailing op privé, dan wordt die openbaar. Je andere foto's en notities blijven privé.",
+      privacyPrivate: "Alleen jij ziet deze foto totdat je die deelt.",
+      privacyPublic: "Gedeeld in de feed. Het privé-origineel wordt nooit getoond.",
+    },
     title: "Vastleggen",
     intro: "Maak een foto en bewaar die privé. Je kunt later details toevoegen.",
     takePhoto: "Foto maken",
@@ -193,6 +211,15 @@ export const nl: typeof en = {
 
 export const fr: typeof en = {
   capture: {
+    composer: {
+      post: "Publier la photo",
+      caption: "Légende (facultatif)",
+      sharePublicly: "Partager publiquement maintenant",
+      sharePubliclyHint:
+        "Cette photo est publiée dans le fil public. Si le semis est privé, il devient public. Vos autres photos et notes restent privées.",
+      privacyPrivate: "Vous seul voyez cette photo tant que vous ne la partagez pas.",
+      privacyPublic: "Partagée publiquement dans le fil. L'original privé n'est jamais affiché.",
+    },
     title: "Capturer",
     intro:
       "Prenez une photo et enregistrez-la en privé. Vous pourrez ajouter des détails plus tard.",

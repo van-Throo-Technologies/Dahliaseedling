@@ -99,6 +99,7 @@ export const en = {
     privateObservations: "Your private observations",
     onlyYou: "Only you can see these. They are not shared with visitors or other growers.",
     privatePhoto: "Private photo or video",
+    addPhoto: "Add a photo",
     observed: "Observed",
     manage: "Manage this seedling",
     yearNeeded:
@@ -205,6 +206,7 @@ export const nl: typeof en = {
     privateObservations: "Jouw privéobservaties",
     onlyYou: "Alleen jij kunt deze zien. Ze worden niet gedeeld met bezoekers of andere kwekers.",
     privatePhoto: "Privéfoto of -video",
+    addPhoto: "Foto toevoegen",
     observed: "Waargenomen",
     manage: "Deze zaailing beheren",
     yearNeeded:
@@ -313,6 +315,7 @@ export const fr: typeof en = {
     onlyYou:
       "Vous seul pouvez les voir. Elles ne sont pas partagées avec les visiteurs ni avec les autres cultivateurs.",
     privatePhoto: "Photo ou vidéo privée",
+    addPhoto: "Ajouter une photo",
     observed: "Observé",
     manage: "Gérer ce semis",
     yearNeeded:

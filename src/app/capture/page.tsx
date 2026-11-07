@@ -3,8 +3,9 @@ import { CaptureFlow } from "@/components/capture/capture-flow";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
 import { requireParticipant } from "@/modules/identity/gate";
+import { heldSeedlingChoices } from "@/modules/capture/choices";
+import { isUuid } from "@/modules/capture/validation";
 import { labelWords } from "@/modules/seedlings/labels";
-import { displayLabels } from "@/modules/seedlings/repository";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslation();
@@ -15,29 +16,26 @@ export async function generateMetadata(): Promise<Metadata> {
  * The Seedlings offered for a Capture are the ones the signed-in grower currently holds, in the order the database returns them:
  * most recent capture first, then creation time, then identifier. Nothing else is offered. If the list cannot be read, the page
  * still offers New Seedling, so Capture never depends on the list.
+ *
+ * A seedling address (?seedling=…) starts the Capture on that seedling, so the grower does not choose it again. Only a seedling the
+ * grower holds can be chosen this way.
  */
-export default async function CapturePage() {
+export default async function CapturePage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<{ seedling?: string | string[] }>;
+}) {
   await requireParticipant("/capture");
   const { t } = await getTranslation();
   const words = labelWords(t);
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("held_seedling_candidates", { p_limit: 200 });
-  const candidates = data ?? [];
-  const labels = await displayLabels(
-    supabase,
-    candidates.map((item) => item.seedling_id),
-    words,
-  );
+  const { seedling } = await searchParams;
+  const requested = Array.isArray(seedling) ? seedling[0] : seedling;
 
   return (
     <CaptureFlow
-      seedlings={candidates.map((item) => {
-        const label = labels.get(item.seedling_id) ?? words.seedling;
-        return {
-          id: item.seedling_id,
-          label: item.working_name ? `${label} · ${item.working_name}` : label,
-        };
-      })}
+      seedlings={await heldSeedlingChoices(supabase, words)}
+      initialSeedlingId={requested && isUuid(requested) ? requested : null}
     />
   );
 }

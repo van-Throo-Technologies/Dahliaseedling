@@ -37,6 +37,7 @@ import { patternUsesYear } from "@/modules/seedlings/presentation";
 import { isUuid } from "@/modules/seedlings/validation";
 import { listObservationsForSeedling, mediaFor } from "@/modules/capture/repository";
 import { LocalTime } from "@/components/capture/local-time";
+import { ButtonLink } from "@/design-system/components/button-link";
 import { SeedlingJourney } from "@/components/publications/seedling-journey";
 import { listSeedlingJourney, seedlingCover, socialState } from "@/modules/publications/repository";
 import { MediaPreview } from "@/components/capture/media-preview";
@@ -359,6 +360,10 @@ export default async function SeedlingPage({
             </ul>
           )}
         </section>
+      ) : null}
+
+      {canEdit ? (
+        <ButtonLink href={`/?compose=${id}`}>{t("seedlings.page.addPhoto")}</ButtonLink>
       ) : null}
 
       {seedOffers.length > 0 || canEdit || query.seedNotice || query.seedError ? (

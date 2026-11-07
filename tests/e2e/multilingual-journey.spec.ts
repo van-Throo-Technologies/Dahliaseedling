@@ -146,9 +146,9 @@ test("a signed-in grower switches language across pages, and the stored content 
   await expectStoredSeedlingContent(page, identifier);
   await expect(page.getByText(MESSAGES.fr.seedlings.page.parentage, { exact: true })).toBeVisible();
 
-  // Navigation keeps French: the Capture link is in French, and following it stays in French.
-  await page.getByRole("link", { name: MESSAGES.fr.app.nav.capture }).first().click();
-  await expect(page).toHaveURL(/\/capture$/);
+  // Posting stays in French: the Feed composer is in French, and opening it stays in French.
+  await page.goto("/");
+  await page.getByText(MESSAGES.fr.publication.feed.addPhoto, { exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 
   // Back to English: the application changes, the stored content does not.

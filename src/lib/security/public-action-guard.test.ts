@@ -76,7 +76,7 @@ describe("on the public surface, every guarded action stops at the guard", () =>
     process.env.PUBLIC_SURFACE = "invitations";
     const actions = await allActions();
     const guarded = actions.filter((action) => !PUBLIC_ACTIONS.includes(action.name));
-    expect(guarded.length).toBe(58);
+    expect(guarded.length).toBe(59);
 
     for (const action of guarded) {
       dbTouched.mockClear();

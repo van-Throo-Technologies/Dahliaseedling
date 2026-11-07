@@ -25,6 +25,9 @@ export const en = {
     emptySetupAction: "Set up your profile",
     emptyVisitorText: "Sign in to share the first seedling from your garden.",
     emptyVisitorAction: "Sign in",
+    addPhoto: "Add a photo",
+    addPhotoSignIn: "Sign in to add a photo.",
+    addPhotoSetup: "Set up your profile to add a photo.",
   },
   update: {
     label: "Update",
@@ -153,6 +156,9 @@ export const nl: typeof en = {
     emptySetupAction: "Stel je profiel in",
     emptyVisitorText: "Log in om de eerste zaailing uit je tuin te delen.",
     emptyVisitorAction: "Inloggen",
+    addPhoto: "Foto toevoegen",
+    addPhotoSignIn: "Log in om een foto toe te voegen.",
+    addPhotoSetup: "Stel je profiel in om een foto toe te voegen.",
   },
   update: {
     label: "Update",
@@ -281,6 +287,9 @@ export const fr: typeof en = {
     emptySetupAction: "Configurez votre profil",
     emptyVisitorText: "Connectez-vous pour partager le premier semis de votre jardin.",
     emptyVisitorAction: "Se connecter",
+    addPhoto: "Ajouter une photo",
+    addPhotoSignIn: "Connectez-vous pour ajouter une photo.",
+    addPhotoSetup: "Configurez votre profil pour ajouter une photo.",
   },
   update: {
     label: "Mise à jour",

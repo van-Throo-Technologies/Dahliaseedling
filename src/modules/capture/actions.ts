@@ -14,9 +14,13 @@ import {
   CaptureError,
   deleteObservation,
   discardUploads,
+  mediaFor,
   moveObservation,
   updateObservationText,
 } from "./repository";
+import { publishUpdateAction } from "@/modules/publications/actions";
+import { getSeedling } from "@/modules/seedlings/repository";
+import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import {
   buildUploadPath,
   isUuid,
@@ -117,8 +121,16 @@ async function resolveChoice(
   return { seedlingId: found, newSeedling: false };
 }
 
-export async function captureAction(_previous: FormState, formData: FormData): Promise<FormState> {
-  refuseOnPublicSurface();
+/**
+ * Saves one capture: the chosen photos, the seedling choice and the optional note. Shared by the Capture action and the Feed composer,
+ * so the two follow the same rules. It returns the saved observation, or the form state to show.
+ */
+async function saveCapture(
+  formData: FormData,
+): Promise<
+  | { readonly ok: true; readonly observationId: string; readonly seedlingId: string }
+  | { readonly ok: false; readonly state: FormState }
+> {
   const { userId } = await requireParticipant("/capture");
 
   const choice = validateSeedlingChoice(
@@ -138,14 +150,17 @@ export async function captureAction(_previous: FormState, formData: FormData): P
   if (!observedAt.ok) Object.assign(fieldErrors, observedAt.fieldErrors);
   if (!paths.ok) Object.assign(fieldErrors, paths.fieldErrors);
   if (!choice.ok || !note.ok || !voice.ok || !observedAt.ok || !paths.ok) {
-    return invalid(fieldErrors);
+    return { ok: false, state: await invalid(fieldErrors) };
   }
 
   const target = await resolveChoice(choice.value);
   if (!target) {
-    return failureKey("errors.capture.seedlingUnavailable", {
-      identifier: (await getTranslation()).t("errors.capture.seedlingUnavailable"),
-    });
+    return {
+      ok: false,
+      state: await failureKey("errors.capture.seedlingUnavailable", {
+        identifier: (await getTranslation()).t("errors.capture.seedlingUnavailable"),
+      }),
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -160,12 +175,85 @@ export async function captureAction(_previous: FormState, formData: FormData): P
       paths: paths.value,
     });
   } catch (error) {
-    return failure(await captureMessage(error, "errors.capture.captureFailed"));
+    return {
+      ok: false,
+      state: await failure(await captureMessage(error, "errors.capture.captureFailed")),
+    };
   }
 
   revalidatePath("/profile");
   revalidatePath(`/seedlings/${saved.seedlingId}`);
-  redirect(`/observations/${saved.id}?saved=1`);
+  return { ok: true, observationId: saved.id, seedlingId: saved.seedlingId };
+}
+
+export async function captureAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  refuseOnPublicSurface();
+  const result = await saveCapture(formData);
+  if (!result.ok) return result.state;
+  redirect(`/observations/${result.observationId}?saved=1`);
+}
+
+async function setSeedlingVisibility(
+  seedlingId: string,
+  visibility: "public" | "private",
+): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("seedlings")
+    .update({ visibility })
+    .eq("id", seedlingId)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
+}
+
+/** A redirect thrown by Next.js is not a failure, so it must not undo the visibility change. */
+function isNavigation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    String((error as { digest: unknown }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
+/**
+ * Posts one photograph from the Feed composer. It saves the photograph privately, exactly as Capture does. Only when the grower chose
+ * to share it now does it publish a progress update with the caption, through the publication action. Publishing needs a public
+ * seedling, so a private seedling is made public for this post, and it is made private again if the post does not go through.
+ */
+export async function composePostAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  refuseOnPublicSurface();
+  const saved = await saveCapture(formData);
+  if (!saved.ok) return saved.state;
+  if (formData.get("share") !== "public") redirect(`/observations/${saved.observationId}?saved=1`);
+
+  const supabase = await createSupabaseServerClient();
+  const seedling = await getSeedling(supabase, saved.seedlingId);
+  const wasPublic = seedling?.visibility === "public";
+  if (!wasPublic && !(await setSeedlingVisibility(saved.seedlingId, "public"))) {
+    redirect(`/observations/${saved.observationId}/share?error=seedling`);
+  }
+
+  const photos = (await mediaFor(supabase, [saved.observationId])).get(saved.observationId) ?? [];
+  const post = new FormData();
+  post.set("observationId", saved.observationId);
+  post.set("clientKey", crypto.randomUUID());
+  post.set("caption", String(formData.get("caption") ?? ""));
+  for (const photo of photos) if (photo.kind === "image") post.append("mediaId", photo.id);
+
+  let result: FormState;
+  try {
+    result = await publishUpdateAction(IDLE_FORM_STATE, post);
+  } catch (error) {
+    if (!wasPublic && !isNavigation(error))
+      await setSeedlingVisibility(saved.seedlingId, "private");
+    throw error;
+  }
+  if (!wasPublic) await setSeedlingVisibility(saved.seedlingId, "private");
+  return result;
 }
 
 export async function updateObservationAction(

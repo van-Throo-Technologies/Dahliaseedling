@@ -31,17 +31,13 @@ test("visitor can browse, is prompted to sign in only when participating, and ca
 
   // Navigation is exactly the locked set, in order, with no Explore destination.
   const primary = page.getByRole("navigation", { name: "Primary" });
-  await expect(primary.getByRole("link")).toHaveText([
-    "Home",
-    "Capture",
-    "Notifications",
-    "Profile",
-  ]);
+  await expect(primary.getByRole("link")).toHaveText(["Home", "Notifications", "Profile"]);
   await expect(page.getByText("Explore", { exact: false })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Inbox" })).toBeVisible();
 
   // A participating action with no session leads to sign-in, preserving the destination.
-  await primary.getByRole("link", { name: "Capture" }).click();
+  await page.goto("/");
+  await page.getByRole("link", { name: "Sign in to add a photo." }).click();
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fcapture$/);
 
   // Create an account and set up the minimum profile.
@@ -61,10 +57,6 @@ test("visitor can browse, is prompted to sign in only when participating, and ca
   await expect(page).toHaveURL(/\/capture$/);
   await expect(page.getByRole("heading", { name: "Capture" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Take photo" })).toBeVisible();
-  await expect(primary.getByRole("link", { name: "Capture" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
   await expectNoHorizontalOverflow(page);
 
   // Edit the profile.

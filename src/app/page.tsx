@@ -4,6 +4,10 @@ import { FormMessage } from "@/design-system/components/form-message";
 import { UpdateCard } from "@/components/publications/update-card";
 import { SearchForm } from "@/components/search/search-form";
 import { SearchResultsView } from "@/components/search/search-results";
+import { CaptureFlow } from "@/components/capture/capture-flow";
+import { isUuid } from "@/modules/capture/validation";
+import { heldSeedlingChoices } from "@/modules/capture/choices";
+import { labelWords } from "@/modules/seedlings/labels";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
 import { getCurrentUser, getOwnProfile } from "@/modules/identity/session";
@@ -34,6 +38,7 @@ export default async function HomePage({
 }: {
   readonly searchParams: Promise<{
     view?: string;
+    compose?: string | string[];
     cursor?: string;
     q?: string | string[];
     country?: string | string[];
@@ -166,6 +171,13 @@ export default async function HomePage({
           };
 
   const supabase = await createSupabaseServerClient();
+  // A seedling page opens the composer with that seedling chosen. Only a seedling the grower holds is accepted.
+  const composeRequested = firstValue(query.compose);
+  const composeFor = composeRequested && isUuid(composeRequested) ? composeRequested : null;
+  const captureChoices =
+    ownProfile && !ownProfile.isSuspended && !followingView
+      ? await heldSeedlingChoices(supabase, labelWords(t))
+      : null;
   const page = await listFeedPage(supabase, {
     limit: FEED_PAGE_SIZE,
     before: cursor.value,
@@ -185,6 +197,35 @@ export default async function HomePage({
           {t("publication.feed.title")}
         </h1>
       </header>
+
+      {followingView ? null : captureChoices ? (
+        <details
+          open={composeFor !== null}
+          className="rounded-surface border border-border bg-surface p-4"
+        >
+          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-control bg-primary px-4 text-base font-medium text-on-primary">
+            {t("publication.feed.addPhoto")}
+          </summary>
+          <div className="pt-4">
+            <CaptureFlow
+              seedlings={captureChoices}
+              initialSeedlingId={composeFor}
+              embedded
+              composer
+            />
+          </div>
+        </details>
+      ) : viewer ? (
+        ownProfile ? null : (
+          <ButtonLink href="/profile/setup?next=%2Fcapture">
+            {t("publication.feed.addPhotoSetup")}
+          </ButtonLink>
+        )
+      ) : (
+        <ButtonLink href="/sign-in?next=%2Fcapture">
+          {t("publication.feed.addPhotoSignIn")}
+        </ButtonLink>
+      )}
 
       <SearchForm key="feed" query={null} country={null} />
 
