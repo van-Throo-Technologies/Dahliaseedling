@@ -147,11 +147,35 @@ test("a grower shares one chosen photo; a visitor sees only that photo, with its
   const hidden = await visitor.goto(`/observations/${observationId}`);
   expect(hidden?.status()).toBe(404);
 
+  // A visitor reading the Update sees no management menu.
+  await visitor.goto(updateUrl);
+  await expect(visitor.getByRole("button", { name: "Manage this update" })).toHaveCount(0);
+
   await context.close();
 
-  // The grower's own Update page keeps the grower's controls.
+  // The grower's own Update page keeps the controls in a menu beside the header, not between the photographs and the comments.
   await page.goto(updateUrl);
-  await expect(page.getByRole("heading", { name: "Manage this update" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Manage this update" })).toHaveCount(0);
+  const menu = page.getByRole("button", { name: "Manage this update" });
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+
+  // Choosing removal opens the explanation in a dialog. "Keep" closes it and leaves the Update in place.
+  await menu.click();
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "Remove this update" }).click();
+  const dialog = page.getByRole("dialog", { name: "Remove this update" });
+  await expect(dialog).toContainText("Removing it takes it off the Feed");
+  await dialog.getByRole("button", { name: "Keep this update" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(menu).toBeFocused();
+  await expect(page.getByText(caption).first()).toBeVisible();
+
+  // Confirming removal uses the same deletion as before, and returns the grower to their profile.
+  await menu.click();
+  await page.getByRole("button", { name: "Remove this update" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Remove this update" }).click();
+  await expect(page).toHaveURL(/\/profiles\/[0-9a-f-]{36}\?tab=updates&deleted=1$/);
 });
 
 test("opening Share changes nothing; leaving the private-seedling step keeps the seedling private", async ({

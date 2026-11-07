@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { formatDate, formatCount } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
@@ -17,9 +18,12 @@ import { displayedName } from "@/modules/identity/former-grower";
 export async function UpdateCard({
   update,
   showSeedling = true,
+  menu,
 }: {
   readonly update: UpdateSummary;
   readonly showSeedling?: boolean;
+  /** The author's own controls, shown beside the header. Other viewers get no menu. */
+  readonly menu?: ReactNode;
 }) {
   const { t, locale } = await getTranslation();
   const [lead, ...others] = update.images;
@@ -80,6 +84,7 @@ export async function UpdateCard({
               ) : null}
             </p>
           </div>
+          {menu}
         </header>
 
         {others.length > 0 ? (

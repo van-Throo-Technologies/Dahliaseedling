@@ -45,6 +45,7 @@ export const en = {
     manageText:
       "Removing it takes it off the Feed and the seedling's page. Your observation stays private and unchanged.",
     remove: "Remove this update",
+    keep: "Keep this update",
     unavailable: "This update is not available.",
   },
   social: {
@@ -176,6 +177,7 @@ export const nl: typeof en = {
     manageText:
       "Verwijderen haalt hem van de feed en van de pagina van de zaailing. Je observatie blijft privé en ongewijzigd.",
     remove: "Deze update verwijderen",
+    keep: "Deze update bewaren",
     unavailable: "Deze update is niet beschikbaar.",
   },
   social: {
@@ -307,6 +309,7 @@ export const fr: typeof en = {
     manageText:
       "La retirer la fait disparaître du fil et de la page du semis. Votre observation reste privée et inchangée.",
     remove: "Retirer cette mise à jour",
+    keep: "Garder cette mise à jour",
     unavailable: "Cette mise à jour n'est pas disponible.",
   },
   social: {

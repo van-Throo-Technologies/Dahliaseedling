@@ -4,11 +4,11 @@ import { MessagingFeedback } from "@/components/messaging/feedback-message";
 import { ReportControl } from "@/components/safety/report-control";
 import { CommentThread } from "@/components/publications/comment-thread";
 import { UpdateCard } from "@/components/publications/update-card";
+import { UpdateMenu } from "@/components/publications/update-menu";
 import { FormMessage } from "@/design-system/components/form-message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
 import { getCurrentUser } from "@/modules/identity/session";
-import { deleteUpdateAction } from "@/modules/publications/actions";
 import { getPublicUpdate, listComments } from "@/modules/publications/repository";
 import { isUuid } from "@/modules/capture/validation";
 
@@ -53,7 +53,7 @@ export default async function UpdatePage({
         <FormMessage tone="error">{t("errors.publication.updateNotRemoved")}</FormMessage>
       ) : null}
 
-      <UpdateCard update={update} />
+      <UpdateCard update={update} menu={isAuthor ? <UpdateMenu updateId={id} /> : undefined} />
 
       <MessagingFeedback error={query.messagingError} notice={query.messagingNotice} />
       {viewer && !isAuthor ? (
@@ -63,24 +63,6 @@ export default async function UpdatePage({
           returnTo={`/updates/${id}`}
           id="report-update"
         />
-      ) : null}
-
-      {isAuthor ? (
-        <section aria-labelledby="manage-title" className="flex flex-col gap-3">
-          <h2 id="manage-title" className="text-lg font-medium text-text">
-            {t("publication.update.manage")}
-          </h2>
-          <p className="text-base text-text-muted">{t("publication.update.manageText")}</p>
-          <form action={deleteUpdateAction}>
-            <input type="hidden" name="updateId" value={id} />
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center rounded-control border border-destructive px-4 text-base font-medium text-destructive"
-            >
-              {t("publication.update.remove")}
-            </button>
-          </form>
-        </section>
       ) : null}
 
       <CommentThread updateId={id} comments={comments} canPost canReport={viewer !== null} />
