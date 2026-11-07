@@ -29,6 +29,8 @@ The body, the button and the explanation are the wording the founder approved. T
 
 The Dutch and French versions are not written. The runbook requires a native-speaker review before either is sent.
 
+**Founder photograph.** The image is `supabase/email-templates/assets/founder-seedling.jpg`, the approved file (1040 × 1387, no location metadata). It is uploaded to the public `email-assets` bucket of the staging project, which is created by migration `20261112110000_email_assets_bucket.sql`. The template links to it at `https://hrtusetmffnynwntjbnm.supabase.co/storage/v1/object/public/email-assets/founder-seedling.jpg`. The bucket allows reads by object URL only. No policy lets anyone list, upload, update or delete. The private and public media buckets are not changed. To replace the photograph, upload the new file to `email-assets` and update the hosted template by hand, because Supabase stores the template in the dashboard.
+
 ## Hosted configuration (not applied; needs your approval)
 
 1. **Authentication, Email Templates, Invite user.** Set the subject from `invite-subject.txt`. Paste `invite.html` as the body. Paste `invite.txt` into the plain-text body if the dashboard offers one. Save. Leave the other templates unchanged.

@@ -5,5 +5,6 @@ These files are the source for the **Invite user** template in the hosted Supaba
 - `invite-subject.txt`: the subject line.
 - `invite.html`: the HTML body.
 - `invite.txt`: the plain-text body, sent with the HTML.
+- `assets/founder-seedling.jpg`: the founder's photograph, the file hosted in the public `email-assets` bucket. The template links to that hosted copy, not to this file.
 
 The only Supabase variables used are `{{ .SiteURL }}` and `{{ .TokenHash }}`. The link goes to `/auth/confirm`, which verifies the token on the server. Do not use `{{ .ConfirmationURL }}`, because it bypasses that check.
