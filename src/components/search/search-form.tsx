@@ -29,7 +29,7 @@ export async function SearchForm({
   const filtering = country !== null || available || seeds;
 
   return (
-    <form role="search" method="get" action="/" className="flex flex-col gap-3">
+    <form role="search" method="get" action="/explore" className="flex flex-col gap-3">
       <div className="flex gap-2">
         <label htmlFor="search-q" className="sr-only">
           {t("search.label")}

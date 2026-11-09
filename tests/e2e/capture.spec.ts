@@ -46,7 +46,7 @@ test("a grower captures a photo into a new seedling in one tap and leaves", asyn
 
   // Posting starts in the Feed composer, which has no separate Capture tab.
   await page.goto("/");
-  await page.getByText("Add a photo", { exact: true }).click();
+  await page.getByRole("link", { name: "What are you growing?" }).click();
   await expect(page.getByRole("heading", { level: 2, name: "Capture" })).toBeVisible();
 
   await page

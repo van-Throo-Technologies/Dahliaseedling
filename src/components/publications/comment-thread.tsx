@@ -1,15 +1,17 @@
 import { ReportControl } from "@/components/safety/report-control";
-import { deleteCommentAction } from "@/modules/publications/actions";
-import type { CommentNode } from "@/modules/publications/repository";
-import { formatDate } from "@/i18n/format";
+import { formatCount, formatDate } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
-import { CommentEditForm, CommentForm } from "./comment-form";
 import { displayedName } from "@/modules/identity/former-grower";
+import type { CommentNode } from "@/modules/publications/repository";
+import { CommentBranch } from "./comment-branch";
+import { CommentForm, ReplyForm } from "./comment-form";
+import { CommentOptions } from "./comment-options";
 
 /*
- * Comments on one Update, in the order they were posted, with replies under the comment they answer.
- * A removed comment keeps its place in the thread, so the replies beneath it still make sense.
- * Disclosure elements open the reply and edit forms, so they work without JavaScript.
+ * Comments on one Update, in the order they were posted. The composer is one "Add a comment" disclosure at the foot of the list. Each
+ * comment has a compact Reply disclosure, and its replies sit under a "View N replies" disclosure that starts collapsed. A removed
+ * comment keeps its place, so the replies beneath it still make sense. Only the author sees the three-dot menu; the database checks
+ * ownership on every change. All disclosures work without JavaScript.
  */
 
 export async function CommentThread({
@@ -26,8 +28,12 @@ export async function CommentThread({
 }) {
   const { t } = await getTranslation();
   return (
-    <section aria-labelledby="comments-title" className="flex flex-col gap-4">
-      <h2 id="comments-title" className="text-lg font-medium text-text">
+    <section
+      id="comments"
+      aria-labelledby="comments-title"
+      className="flex flex-col gap-3 scroll-mt-20"
+    >
+      <h2 id="comments-title" className="sr-only">
         {t("publication.comments.title")}
       </h2>
       {comments.length === 0 ? (
@@ -47,11 +53,18 @@ export async function CommentThread({
         </ul>
       )}
       {canPost ? (
-        <CommentForm
-          updateId={updateId}
-          label={t("publication.comments.add")}
-          submitLabel={t("publication.comments.post")}
-        />
+        <details>
+          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand">
+            {t("publication.comments.add")}
+          </summary>
+          <div className="pt-3">
+            <CommentForm
+              updateId={updateId}
+              label={t("publication.comments.yourComment")}
+              submitLabel={t("publication.comments.post")}
+            />
+          </div>
+        </details>
       ) : null}
     </section>
   );
@@ -71,93 +84,91 @@ async function CommentItem({
   readonly depth: number;
 }) {
   const { t, locale } = await getTranslation();
+  const name = displayedName(node.authorName, t("privacy.formerGrower"));
+  const byline = (
+    <p className="text-sm text-text-muted">
+      <span className="font-medium text-text">{name}</span> · {formatDate(node.createdAt, locale)}
+      {node.editedAt ? ` · ${t("publication.comments.edited")}` : null}
+    </p>
+  );
+  const replyCount = node.replies.length;
+  const summary =
+    replyCount === 1
+      ? t("publication.comments.viewReplies.one")
+      : t("publication.comments.viewReplies.other", { count: formatCount(replyCount, locale) });
+  const replies = (
+    <ul className="mt-2 flex flex-col gap-4">
+      {node.replies.map((reply) => (
+        <CommentItem
+          key={reply.id}
+          updateId={updateId}
+          node={reply}
+          canPost={canPost}
+          canReport={canReport}
+          depth={depth + 1}
+        />
+      ))}
+    </ul>
+  );
+
   return (
-    <li className={depth > 0 ? "ml-4 border-l border-border pl-4" : ""}>
-      <article
-        aria-label={t("publication.comments.byAuthor", {
-          name: displayedName(node.authorName, t("privacy.formerGrower")),
-        })}
-        className="flex flex-col gap-2"
-      >
-        <p className="text-sm text-text-muted">
-          <span className="font-medium text-text">
-            {displayedName(node.authorName, t("privacy.formerGrower"))}
-          </span>{" "}
-          · {formatDate(node.createdAt, locale)}
-          {node.editedAt ? ` · ${t("publication.comments.edited")}` : null}
-        </p>
-        {node.isRemoved ? (
-          <p className="text-base italic text-text-muted">{t("publication.comments.removed")}</p>
-        ) : (
-          <p className="whitespace-pre-line text-base text-text">{node.body}</p>
-        )}
-
-        {!node.isRemoved && node.isMine ? (
-          <div className="flex flex-col gap-2">
-            <details>
-              <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-brand">
-                {t("common.edit")}
-              </summary>
-              <div className="pt-2">
-                <CommentEditForm updateId={updateId} commentId={node.id} body={node.body ?? ""} />
-              </div>
-            </details>
-            <form action={deleteCommentAction}>
-              <input type="hidden" name="updateId" value={updateId} />
-              <input type="hidden" name="commentId" value={node.id} />
-              <button
-                type="submit"
-                className="inline-flex min-h-11 items-center text-base text-destructive underline"
-              >
-                {t("publication.comments.removeMine")}
-              </button>
-            </form>
-          </div>
-        ) : null}
-
-        {!node.isRemoved && !node.isMine && canReport ? (
-          <ReportControl
-            targetType="comment"
-            targetId={node.id}
-            returnTo={`/updates/${updateId}`}
-            id={`report-comment-${node.id}`}
-          />
-        ) : null}
-
-        {!node.isRemoved && canPost ? (
-          <details>
-            <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-brand">
-              {t("publication.comments.replyTo", {
-                name: displayedName(node.authorName, t("privacy.formerGrower")),
-              })}
-            </summary>
-            <div className="pt-2">
-              <CommentForm
-                updateId={updateId}
-                parentId={node.id}
-                label={t("publication.comments.replyTo", {
-                  name: displayedName(node.authorName, t("privacy.formerGrower")),
-                })}
-                submitLabel={t("publication.comments.postReply")}
-              />
-            </div>
-          </details>
-        ) : null}
-      </article>
-      {node.replies.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-4">
-          {node.replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
+    <li className={depth > 0 ? "ml-3 border-l border-border pl-3" : ""}>
+      <CommentBranch replyCount={replyCount} summary={summary} replies={replies}>
+        <article
+          aria-label={t("publication.comments.byAuthor", { name })}
+          className="flex flex-col gap-1"
+        >
+          {node.isRemoved ? (
+            <>
+              {byline}
+              <p className="text-base italic text-text-muted">
+                {t("publication.comments.removed")}
+              </p>
+            </>
+          ) : node.isMine ? (
+            <CommentOptions
               updateId={updateId}
-              node={reply}
-              canPost={canPost}
-              canReport={canReport}
-              depth={depth + 1}
+              commentId={node.id}
+              body={node.body ?? ""}
+              byline={byline}
             />
-          ))}
-        </ul>
-      ) : null}
+          ) : (
+            <>
+              {byline}
+              <p className="whitespace-pre-line text-base text-text">{node.body}</p>
+            </>
+          )}
+
+          {/* Reply and Report share a line. A disclosure that is open takes the whole line, so its form has room. */}
+          <div className="flex flex-wrap items-start gap-x-4">
+            {!node.isRemoved && canPost ? (
+              <details className="open:basis-full">
+                <summary className="inline-flex min-h-11 min-w-11 cursor-pointer items-center text-base font-medium text-text-brand">
+                  {t("publication.comments.reply")}
+                </summary>
+                <div className="pt-2">
+                  <ReplyForm
+                    updateId={updateId}
+                    parentId={node.id}
+                    label={t("publication.comments.replyTo", { name })}
+                    submitLabel={t("publication.comments.postReply")}
+                  />
+                </div>
+              </details>
+            ) : null}
+
+            {!node.isRemoved && !node.isMine && canReport ? (
+              <ReportControl
+                targetType="comment"
+                targetId={node.id}
+                returnTo={`/updates/${updateId}`}
+                id={`report-comment-${node.id}`}
+                className="open:basis-full"
+              />
+            ) : null}
+          </div>
+        </article>
+      </CommentBranch>
     </li>
   );
 }

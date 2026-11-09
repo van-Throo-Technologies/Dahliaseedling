@@ -21,14 +21,22 @@ interface ReportControlProps {
   readonly targetId: string;
   readonly returnTo: string;
   readonly id: string;
+  /** Layout only, for the caller's row. The disclosure's own look does not change. */
+  readonly className?: string;
 }
 
-export async function ReportControl({ targetType, targetId, returnTo, id }: ReportControlProps) {
+export async function ReportControl({
+  targetType,
+  targetId,
+  returnTo,
+  id,
+  className,
+}: ReportControlProps) {
   const { t } = await getTranslation();
   const reasonId = `${id}-reason`;
   const detailsId = `${id}-details`;
   return (
-    <details className="text-base">
+    <details className={`text-base ${className ?? ""}`}>
       <summary className="inline-flex min-h-11 cursor-pointer items-center text-text-brand underline underline-offset-4">
         {t(LABEL[targetType])}
       </summary>

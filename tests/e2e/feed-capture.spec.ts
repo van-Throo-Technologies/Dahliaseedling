@@ -34,8 +34,8 @@ test("a grower adds a photo from the Feed without leaving it, and it is saved pr
 }) => {
   await signUpAndSetUpProfile(page, "feed", "Feed Grower");
 
-  // The add-photo control is on the Feed, and opens the capture flow in place.
-  await page.getByText("Add a photo", { exact: true }).click();
+  // The creation row on the Feed opens the composer in place.
+  await page.getByRole("link", { name: "What are you growing?" }).click();
   await page
     .locator("#capture-photo")
     .setInputFiles({ name: "bloom.jpg", mimeType: "image/jpeg", buffer: await photo() });
@@ -76,7 +76,7 @@ test("a grower posts a photograph to the Feed in one composer submission, with a
   const caption = `Composer bloom ${crypto.randomUUID().slice(0, 8)}`;
 
   // Photo → share now → caption → Post. The seedling is created with the photograph, as in Capture.
-  await page.getByText("Add a photo", { exact: true }).click();
+  await page.getByRole("link", { name: "What are you growing?" }).click();
   await page
     .locator("#capture-photo")
     .setInputFiles({ name: "bloom.jpg", mimeType: "image/jpeg", buffer: await photo() });
@@ -133,7 +133,7 @@ test("from the Feed, a new photograph of an existing seedling is posted with the
 
   // Add a photo → photo → share now → Post. The composer already has the seedling selected.
   await page.goto("/");
-  await page.getByText("Add a photo", { exact: true }).click();
+  await page.getByRole("link", { name: "What are you growing?" }).click();
   await expect(page.getByRole("radio", { name: "One of my seedlings" })).toBeChecked();
   await page
     .locator("#capture-photo")

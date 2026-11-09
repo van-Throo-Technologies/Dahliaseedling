@@ -1,27 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FormMessage } from "@/design-system/components/form-message";
-import { UpdateCard } from "@/components/publications/update-card";
-import { SearchForm } from "@/components/search/search-form";
-import { SearchResultsView } from "@/components/search/search-results";
+import { redirect } from "next/navigation";
+import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { CaptureFlow } from "@/components/capture/capture-flow";
+import { UpdateCard } from "@/components/publications/update-card";
+import { FormMessage } from "@/design-system/components/form-message";
+import { ButtonLink } from "@/design-system/components/button-link";
+import { PhotoIcon } from "@/design-system/icons";
 import { isUuid } from "@/modules/capture/validation";
 import { heldSeedlingChoices } from "@/modules/capture/choices";
 import { labelWords } from "@/modules/seedlings/labels";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
+import { avatarHref } from "@/modules/identity/presentation";
 import { getCurrentUser, getOwnProfile } from "@/modules/identity/session";
-import { ButtonLink } from "@/design-system/components/button-link";
 import { FEED_PAGE_SIZE } from "@/modules/publications/limits";
 import { listFeedPage } from "@/modules/publications/repository";
 import { encodeCursor, validateFeedCursor } from "@/modules/publications/validation";
-import { searchPublic } from "@/modules/search/repository";
-import { validateSearch } from "@/modules/search/validation";
 
-/** A repeated query parameter counts as its first value, so a cursor or query can never be read twice. */
+/** A repeated query parameter counts as its first value, so a cursor can never be read twice. */
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
+
+/** Search moved to Explore. These parameters, from addresses that existed before, are passed on to it. */
+const EXPLORE_PARAMS = [
+  "q",
+  "country",
+  "available",
+  "seeds",
+  "seedlings",
+  "cultivars",
+  "growers",
+  "seedOffers",
+] as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslation();
@@ -29,9 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /*
- * Home is the public Feed, with one Search box above it. Visitors can read and search without an account.
- * With no query and no country the Feed is shown exactly as before. A query or a country replaces the Feed with
- * grouped results, and the address carries that state, so back, forward and refresh behave.
+ * Home is the Feed, with the grower's creation row above it. The row opens the composer for a signed-in grower, and a visitor is
+ * asked to sign in. Search and its filters live on Explore. Visitors can read the Feed without an account.
  */
 export default async function HomePage({
   searchParams,
@@ -51,82 +62,18 @@ export default async function HomePage({
   }>;
 }) {
   const query = await searchParams;
+  const exploreQuery = new URLSearchParams();
+  for (const key of EXPLORE_PARAMS) {
+    for (const value of [query[key]].flat()) {
+      if (value !== undefined) exploreQuery.append(key, value);
+    }
+  }
+  if (Array.from(exploreQuery).length > 0) redirect(`/explore?${exploreQuery.toString()}`);
+
   const { t } = await getTranslation();
   const viewer = await getCurrentUser();
-  const search = validateSearch({
-    q: query.q,
-    country: query.country,
-    available: query.available,
-    seeds: query.seeds,
-  });
-  const searchActive =
-    search.ok &&
-    (search.value.query !== null ||
-      search.value.country !== null ||
-      search.value.available ||
-      search.value.seeds);
-  const followingView = !searchActive && query.view === "following" && viewer !== null;
   const cursor = validateFeedCursor(query.cursor);
-
-  const heading = (
-    <header className="flex flex-col gap-3">
-      <h1 className="font-display text-3xl leading-tight text-text-brand">
-        {t("publication.feed.title")}
-      </h1>
-    </header>
-  );
-
-  if (!search.ok) {
-    const first = Object.values(search.fieldErrors)[0];
-    return (
-      <div className="flex flex-col gap-6">
-        {heading}
-        <SearchForm query={null} country={null} />
-        {first ? <FormMessage tone="error">{t(first.key, first.values)}</FormMessage> : null}
-        <Link href="/" className="text-base text-text-brand">
-          {t("publication.feed.backToFeed")}
-        </Link>
-      </div>
-    );
-  }
-
-  if (searchActive) {
-    const supabase = await createSupabaseServerClient();
-    const results = await searchPublic(supabase, search.value, {
-      seedlings: firstValue(query.seedlings),
-      cultivars: firstValue(query.cultivars),
-      growers: firstValue(query.growers),
-      seedOffers: firstValue(query.seedOffers),
-    });
-
-    // A typed identifier that belonged to a merged Seedling leads to the Seedling it was merged into, only when nothing else matched.
-    const retiredCanonicalId =
-      search.value.query !== null && results.seedlings.items.length === 0
-        ? await supabase
-            .rpc("resolve_retired_identifier", { p_query: search.value.query })
-            .then(({ data }) => (typeof data === "string" ? data : null))
-        : null;
-    return (
-      <div className="flex flex-col gap-6">
-        {heading}
-        <SearchForm
-          key={`${search.value.query ?? ""}|${search.value.country ?? ""}|${search.value.available}`}
-          query={search.value.query}
-          country={search.value.country}
-          available={search.value.available}
-          seeds={search.value.seeds}
-        />
-        <SearchResultsView
-          results={results}
-          query={search.value.query}
-          country={search.value.country}
-          available={search.value.available}
-          seeds={search.value.seeds}
-          retiredCanonicalId={retiredCanonicalId}
-        />
-      </div>
-    );
-  }
+  const followingView = viewer !== null && query.view === "following";
 
   if (!cursor.ok) {
     return (
@@ -139,7 +86,7 @@ export default async function HomePage({
     );
   }
 
-  const ownProfile = viewer && !followingView ? await getOwnProfile() : null;
+  const ownProfile = viewer ? await getOwnProfile() : null;
   const emptyState = followingView
     ? {
         title: t("publication.feed.emptyFollowingTitle"),
@@ -150,14 +97,14 @@ export default async function HomePage({
       ? {
           title: t("publication.feed.emptyGrowerTitle"),
           text: t("publication.feed.emptyGrowerText"),
-          action: { href: "/capture", label: t("publication.feed.emptyGrowerAction") },
+          action: { href: "/?compose=1", label: t("publication.feed.createPrompt") },
         }
       : viewer
         ? {
             title: t("publication.feed.emptyGrowerTitle"),
             text: t("publication.feed.emptySetupText"),
             action: {
-              href: "/profile/setup?next=%2Fcapture",
+              href: "/profile/setup?next=%2F",
               label: t("publication.feed.emptySetupAction"),
             },
           }
@@ -165,17 +112,19 @@ export default async function HomePage({
             title: t("publication.feed.emptyTitle"),
             text: t("publication.feed.emptyVisitorText"),
             action: {
-              href: "/sign-in?next=%2Fcapture",
+              href: "/sign-in?next=%2F",
               label: t("publication.feed.emptyVisitorAction"),
             },
           };
 
   const supabase = await createSupabaseServerClient();
-  // A seedling page opens the composer with that seedling chosen. Only a seedling the grower holds is accepted.
+  // The composer opens when the creation row asks for it. A seedling page opens it with that seedling chosen; only a seedling the
+  // grower holds is accepted.
   const composeRequested = firstValue(query.compose);
+  const composing = composeRequested !== undefined;
   const composeFor = composeRequested && isUuid(composeRequested) ? composeRequested : null;
   const captureChoices =
-    ownProfile && !ownProfile.isSuspended && !followingView
+    ownProfile && !ownProfile.isSuspended
       ? await heldSeedlingChoices(supabase, labelWords(t))
       : null;
   const page = await listFeedPage(supabase, {
@@ -191,56 +140,76 @@ export default async function HomePage({
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-3">
-        <h1 className="font-display text-3xl leading-tight text-text-brand">
-          {t("publication.feed.title")}
-        </h1>
-      </header>
+    <div className="flex flex-col gap-4">
+      <h1 className="sr-only">{t("publication.feed.title")}</h1>
 
-      {followingView ? null : captureChoices ? (
-        <details
-          open={composeFor !== null}
-          className="rounded-surface border border-border bg-surface p-4"
+      {ownProfile && !ownProfile.isSuspended ? (
+        <section
+          aria-label={t("publication.feed.createLabel")}
+          className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
         >
-          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-control bg-primary px-4 text-base font-medium text-on-primary">
-            {t("publication.feed.addPhoto")}
-          </summary>
-          <div className="pt-4">
-            <CaptureFlow
-              seedlings={captureChoices}
-              initialSeedlingId={composeFor}
-              embedded
-              composer
-            />
-          </div>
-        </details>
+          <ProfileAvatar
+            name={ownProfile.displayName}
+            url={ownProfile.avatarPath ? avatarHref(ownProfile.id) : null}
+          />
+          <Link
+            href="/?compose=1"
+            className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
+          >
+            {t("publication.feed.createPrompt")}
+          </Link>
+          <Link
+            href="/?compose=1#capture-photo"
+            aria-label={t("publication.feed.addPhotos")}
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control text-text-brand no-underline"
+          >
+            <PhotoIcon className="h-6 w-6" />
+          </Link>
+        </section>
       ) : viewer ? (
-        ownProfile ? null : (
-          <ButtonLink href="/profile/setup?next=%2Fcapture">
-            {t("publication.feed.addPhotoSetup")}
-          </ButtonLink>
-        )
+        <section
+          aria-label={t("publication.feed.createLabel")}
+          className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
+        >
+          <Link
+            href="/profile/setup?next=%2F%3Fcompose%3D1"
+            className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
+          >
+            {t("publication.feed.createPrompt")}
+          </Link>
+        </section>
       ) : (
-        <ButtonLink href="/sign-in?next=%2Fcapture">
-          {t("publication.feed.addPhotoSignIn")}
-        </ButtonLink>
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-surface border border-border bg-surface p-4">
+          <p className="text-base text-text">{t("publication.feed.signInInvite")}</p>
+          <ButtonLink href="/sign-in?next=%2F%3Fcompose%3D1">
+            {t("publication.feed.signInAction")}
+          </ButtonLink>
+        </section>
       )}
 
-      <SearchForm key="feed" query={null} country={null} />
+      {composing && captureChoices ? (
+        <section className="rounded-surface border border-border bg-surface p-4">
+          <CaptureFlow
+            seedlings={captureChoices}
+            initialSeedlingId={composeFor}
+            embedded
+            composer
+          />
+        </section>
+      ) : null}
 
-      {viewer ? (
-        <nav aria-label={t("publication.feed.viewLabel")}>
-          <ul className="flex flex-wrap gap-2">
-            <li>
-              <Link
-                href="/"
-                aria-current={followingView ? undefined : "page"}
-                className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
-              >
-                {t("publication.feed.everyone")}
-              </Link>
-            </li>
+      <nav aria-label={t("publication.feed.viewLabel")}>
+        <ul className="flex flex-wrap items-center gap-2">
+          <li>
+            <Link
+              href="/"
+              aria-current={followingView ? undefined : "page"}
+              className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
+            >
+              {t("publication.feed.everyone")}
+            </Link>
+          </li>
+          {viewer ? (
             <li>
               <Link
                 href="/?view=following"
@@ -250,9 +219,17 @@ export default async function HomePage({
                 {t("publication.feed.following")}
               </Link>
             </li>
-          </ul>
-        </nav>
-      ) : null}
+          ) : null}
+          <li className="ml-auto">
+            <Link
+              href="/explore"
+              className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
+            >
+              {t("publication.feed.explore")}
+            </Link>
+          </li>
+        </ul>
+      </nav>
 
       {page.items.length === 0 ? (
         <section
@@ -268,7 +245,7 @@ export default async function HomePage({
           ) : null}
         </section>
       ) : (
-        <ul className="grid gap-6 md:grid-cols-2">
+        <ul className="grid gap-4 md:grid-cols-2">
           {page.items.map((update) => (
             <li key={update.updateId}>
               <UpdateCard update={update} />

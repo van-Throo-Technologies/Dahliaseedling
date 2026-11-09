@@ -32,11 +32,17 @@ async function runAxe(page: Page): Promise<Array<{ id: string; impact: string | 
   });
 }
 
-test("Home opens on the Feed with a compact search, and the filters are closed until asked for", async ({
+test("Home opens on the Feed with a sign-in invitation, and search with closed filters lives on Explore", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Feed" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Feed" })).toBeAttached();
+  await expect(page.getByText("Sign in to share what you are growing.")).toBeVisible();
+  // Home has no search box of its own.
+  await expect(page.getByRole("searchbox")).toHaveCount(0);
+
+  // Search and its filters are on Explore.
+  await page.goto("/explore");
 
   // The explanatory introduction is gone.
   await expect(

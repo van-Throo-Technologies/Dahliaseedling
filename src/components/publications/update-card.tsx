@@ -10,9 +10,9 @@ import { LikeForm } from "./social-buttons";
 import { displayedName } from "@/modules/identity/former-grower";
 
 /*
- * One Update in the Feed or on a seedling's journey. The photograph comes first and fills the card's width, so it is the strongest
- * element. The grower's caption and author line follow, then the social actions. The card carries no identifiers, parentage or traits:
- * those live on the seedling page. Tapping a photo opens the persistent seedling page.
+ * One Update in the Feed or on a seedling's journey, in a social-feed order: the grower's identity first, then the caption, then the
+ * photographs, then the engagement row. The card carries no identifiers, parentage or traits: those live on the seedling page. Tapping
+ * a photo opens the persistent seedling page. The comment count opens the discussion on the Update's own page.
  */
 
 export async function UpdateCard({
@@ -41,28 +41,7 @@ export async function UpdateCard({
       aria-label={t("publication.update.byAuthor", { name: authorName })}
       className="flex flex-col overflow-hidden rounded-surface border border-border bg-surface"
     >
-      {lead ? (
-        <Link
-          href={seedlingHref}
-          aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
-          className="block focus-visible:outline-2"
-        >
-          <PublicPhoto
-            image={lead}
-            alt={t("publication.update.photoAlt", {
-              author: authorName,
-              seedling: seedlingLabel,
-            })}
-            flush
-          />
-        </Link>
-      ) : null}
-
-      <div className="flex flex-col gap-4 p-4">
-        {update.caption ? (
-          <p className="whitespace-pre-line text-base text-text">{update.caption}</p>
-        ) : null}
-
+      <div className="flex flex-col gap-3 p-4">
         <header className="flex items-center gap-3">
           <ProfileAvatar
             name={authorName}
@@ -87,35 +66,59 @@ export async function UpdateCard({
           {menu}
         </header>
 
-        {others.length > 0 ? (
-          <ul className="grid grid-cols-3 gap-2" aria-label={t("publication.update.morePhotos")}>
-            {others.map((image) => (
-              <li key={image.id}>
-                <Link
-                  href={seedlingHref}
-                  aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
-                  className="block"
-                >
-                  <PublicPhoto
-                    image={image}
-                    alt={t("publication.update.anotherPhoto", { seedling: seedlingLabel })}
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {update.caption ? (
+          <p className="whitespace-pre-line text-base text-text">{update.caption}</p>
         ) : null}
-
-        <footer className="flex flex-wrap items-center gap-3">
-          <LikeForm updateId={update.updateId} liked={update.likedByMe} count={update.likeCount} />
-          <Link
-            href={`/updates/${update.updateId}`}
-            className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
-          >
-            {commentText}
-          </Link>
-        </footer>
       </div>
+
+      {lead ? (
+        <Link
+          href={seedlingHref}
+          aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
+          className="block focus-visible:outline-2"
+        >
+          <PublicPhoto
+            image={lead}
+            alt={t("publication.update.photoAlt", {
+              author: authorName,
+              seedling: seedlingLabel,
+            })}
+            flush
+          />
+        </Link>
+      ) : null}
+
+      {others.length > 0 ? (
+        <ul
+          className="grid grid-cols-3 gap-2 px-4 pt-3"
+          aria-label={t("publication.update.morePhotos")}
+        >
+          {others.map((image) => (
+            <li key={image.id}>
+              <Link
+                href={seedlingHref}
+                aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
+                className="block"
+              >
+                <PublicPhoto
+                  image={image}
+                  alt={t("publication.update.anotherPhoto", { seedling: seedlingLabel })}
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <footer className="flex flex-wrap items-center gap-3 p-4">
+        <LikeForm updateId={update.updateId} liked={update.likedByMe} count={update.likeCount} />
+        <Link
+          href={`/updates/${update.updateId}#comments`}
+          className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
+        >
+          {commentText}
+        </Link>
+      </footer>
     </article>
   );
 }

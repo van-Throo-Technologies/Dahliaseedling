@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { MoreIcon } from "@/design-system/icons";
 import { useT } from "@/i18n/client";
 import { deleteUpdateAction } from "@/modules/publications/actions";
+import { useDismissOnOutsideTap } from "./use-dismiss";
 
 /*
  * The author's controls for one Update, behind a three-dot button beside the header. Removing is a second step: the explanation of
@@ -20,14 +21,7 @@ export function UpdateMenu({ updateId }: { readonly updateId: string }) {
   const titleId = useId();
   const textId = useId();
 
-  useEffect(() => {
-    if (!open) return;
-    function closeOnOutsideTap(event: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("pointerdown", closeOnOutsideTap);
-    return () => document.removeEventListener("pointerdown", closeOnOutsideTap);
-  }, [open]);
+  useDismissOnOutsideTap(rootRef, open, () => setOpen(false));
 
   function closeOnEscape(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== "Escape") return;

@@ -113,7 +113,10 @@ test("a signed-in grower switches language across pages, and the stored content 
   const observation = await captureOnePhoto(page, await makePhoto());
   const updateUrl = await shareOnePhoto(page, observation, CAPTION);
   await page.goto(updateUrl);
-  await page.getByLabel(MESSAGES.en.publication.comments.add).fill(COMMENT);
+  await page.locator("summary", { hasText: MESSAGES.en.publication.comments.add }).click();
+  await page
+    .getByLabel(MESSAGES.en.publication.comments.yourComment, { exact: true })
+    .fill(COMMENT);
   await page.getByRole("button", { name: MESSAGES.en.publication.comments.post }).click();
   await expect(page.getByText(COMMENT).first()).toBeVisible();
 
@@ -133,13 +136,17 @@ test("a signed-in grower switches language across pages, and the stored content 
   await page.goto(updateUrl);
   await expect(page.getByText(CAPTION).first()).toBeVisible();
   await expect(page.getByText(COMMENT).first()).toBeVisible();
-  await expect(page.getByLabel(MESSAGES.nl.publication.comments.add)).toBeVisible();
+  await expect(
+    page.locator("summary", { hasText: MESSAGES.nl.publication.comments.add }),
+  ).toBeVisible();
 
   // Dutch to French on the Update, then the Seedling again.
   await switchLanguage(page, "nl", "fr");
   await expect(page.getByText(CAPTION).first()).toBeVisible();
   await expect(page.getByText(COMMENT).first()).toBeVisible();
-  await expect(page.getByLabel(MESSAGES.fr.publication.comments.add)).toBeVisible();
+  await expect(
+    page.locator("summary", { hasText: MESSAGES.fr.publication.comments.add }),
+  ).toBeVisible();
 
   await page.goto(seedlingUrl);
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
@@ -148,7 +155,7 @@ test("a signed-in grower switches language across pages, and the stored content 
 
   // Posting stays in French: the Feed composer is in French, and opening it stays in French.
   await page.goto("/");
-  await page.getByText(MESSAGES.fr.publication.feed.addPhoto, { exact: true }).click();
+  await page.getByRole("link", { name: MESSAGES.fr.publication.feed.createPrompt }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 
   // Back to English: the application changes, the stored content does not.

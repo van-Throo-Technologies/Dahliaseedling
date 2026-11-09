@@ -6,6 +6,7 @@ import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { useT } from "@/i18n/client";
+import { useExpandReplies } from "./comment-branch";
 
 /** Posts a comment, or a reply when a parent is given. The label always names what the text is for. */
 export function CommentForm({
@@ -13,11 +14,14 @@ export function CommentForm({
   parentId,
   label,
   submitLabel,
+  onSaved,
 }: {
   readonly updateId: string;
   readonly parentId?: string;
   readonly label: string;
   readonly submitLabel: string;
+  /** Called only after a successful post, never after an error. */
+  readonly onSaved?: () => void;
 }) {
   const t = useT();
   const [state, action] = useActionState(addCommentAction, IDLE_FORM_STATE);
@@ -26,8 +30,10 @@ export function CommentForm({
 
   // A posted comment clears the box. An error keeps what was typed, so nothing is lost.
   useEffect(() => {
-    if (state.status === "saved") formRef.current?.reset();
-  }, [state]);
+    if (state.status !== "saved") return;
+    formRef.current?.reset();
+    onSaved?.();
+  }, [state, onSaved]);
 
   return (
     <form ref={formRef} action={action} className="flex flex-col gap-3">
@@ -55,18 +61,48 @@ export function CommentForm({
   );
 }
 
+/** A reply under one comment. A saved reply opens that comment's replies, so the new reply is visible. */
+export function ReplyForm({
+  updateId,
+  parentId,
+  label,
+  submitLabel,
+}: {
+  readonly updateId: string;
+  readonly parentId: string;
+  readonly label: string;
+  readonly submitLabel: string;
+}) {
+  const expandReplies = useExpandReplies();
+  return (
+    <CommentForm
+      updateId={updateId}
+      parentId={parentId}
+      label={label}
+      submitLabel={submitLabel}
+      onSaved={expandReplies ?? undefined}
+    />
+  );
+}
+
 /** Edits the signed-in author's own comment. Only the author's form is ever rendered with this. */
 export function CommentEditForm({
   updateId,
   commentId,
   body,
+  onSaved,
 }: {
   readonly updateId: string;
   readonly commentId: string;
   readonly body: string;
+  /** Called after a successful save, so the caller can show the comment text again. */
+  readonly onSaved?: () => void;
 }) {
   const t = useT();
   const [state, action] = useActionState(editCommentAction, IDLE_FORM_STATE);
+  useEffect(() => {
+    if (state.status === "saved") onSaved?.();
+  }, [state, onSaved]);
   return (
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="updateId" value={updateId} />

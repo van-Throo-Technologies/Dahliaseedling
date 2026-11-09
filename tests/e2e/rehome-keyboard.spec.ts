@@ -172,7 +172,7 @@ test("the availability Search filter and the withdrawal are operated from the ke
   // Visitor: the availability filter, the query and the search are operated from the keyboard.
   const visitor = await browser.newContext();
   const visitorPage = await visitor.newPage();
-  await visitorPage.goto("/");
+  await visitorPage.goto("/explore");
   await visitorPage.getByLabel(EN.search.label).focus();
   await expectFocusVisible(visitorPage);
   await visitorPage.keyboard.type(`Filter ${tag}`);

@@ -95,12 +95,12 @@ test("a visitor finds public seedlings and cultivars without an account, and a p
   ).toBeVisible();
   await createSeedling(page, PRIVATE_NAME, "private");
 
-  // A visitor with no account searches from Home.
+  // A visitor with no account searches from Explore.
   const visitor = await browser.newContext({ ...testInfo.project.use });
   const visitorPage = await visitor.newPage();
-  await visitorPage.goto("/");
+  await visitorPage.goto("/explore");
   await expect(visitorPage.getByRole("heading", { level: 1 })).toHaveText(
-    MESSAGES.en.publication.feed.title,
+    MESSAGES.en.publication.feed.explore,
   );
   await expect(visitorPage.getByRole("search")).toBeVisible();
 
@@ -148,7 +148,7 @@ test("the country filter uses the grower's canonical country, and switching lang
 
   const visitor = await browser.newContext();
   const visitorPage = await visitor.newPage();
-  await visitorPage.goto("/");
+  await visitorPage.goto("/explore");
 
   // The grower is in the Netherlands, so NL finds the seedling and BE does not.
   await search(visitorPage, WORKING_NAME, "NL");

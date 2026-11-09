@@ -68,6 +68,16 @@ export function InboxIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PhotoIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.75" />
+      <path d="m21 16-5-5-8 8" />
+    </Icon>
+  );
+}
+
 export function MoreIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

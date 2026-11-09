@@ -247,24 +247,37 @@ test("comments, replies, likes, follows and Save work for a grower; a visitor is
     "false",
   );
 
-  // A comment, then a reply to it.
-  await page.getByLabel("Add a comment").fill("Lovely colour");
+  // A comment, from the one collapsed composer.
+  await page.locator("summary", { hasText: "Add a comment" }).click();
+  await page.getByLabel("Your comment", { exact: true }).fill("Lovely colour");
   await page.getByRole("button", { name: "Post comment" }).click();
   await expect(page.getByText("Lovely colour").first()).toBeVisible();
-  await page.getByText("Reply to Social Grower").first().click();
+
+  // Another reader sees the comment, and no author controls.
+  const { context: reader, page: readerPage } = await visitorContext(browser, testInfo);
+  await readerPage.goto(updateUrl);
+  await expect(readerPage.getByText("Lovely colour").first()).toBeVisible();
+  await expect(readerPage.getByRole("button", { name: "Comment options" })).toHaveCount(0);
+  await reader.close();
+
+  // A reply, opened from the comment's own Reply control. Replies start collapsed.
+  await page.getByText("Reply", { exact: true }).first().click();
   await page.getByLabel("Reply to Social Grower").last().fill("Thank you");
   await page.getByRole("button", { name: "Post reply" }).click();
+  // Posting a reply opens its comment's replies, so the new reply is visible at once.
   await expect(page.getByRole("paragraph").filter({ hasText: /^Thank you$/ })).toBeVisible();
 
-  // Edit and remove an own comment.
-  await page.getByText("Edit", { exact: true }).first().click();
+  // Edit and remove an own comment, from the comment's three-dot menu.
+  await page.getByRole("button", { name: "Comment options" }).first().click();
+  await page.getByRole("button", { name: "Edit comment" }).click();
   await page.getByLabel("Edit your comment").first().fill("Lovely colour, truly");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(
     page.getByRole("paragraph").filter({ hasText: /^Lovely colour, truly$/ }),
   ).toBeVisible();
   await expect(page.getByText("edited").first()).toBeVisible();
-  await page.getByRole("button", { name: "Remove my comment" }).first().click();
+  await page.getByRole("button", { name: "Comment options" }).first().click();
+  await page.getByRole("button", { name: "Delete comment" }).click();
   await expect(page.getByText("This comment was removed.")).toBeVisible();
   // The reply under the removed comment survives it.
   await expect(page.getByRole("paragraph").filter({ hasText: /^Thank you$/ })).toBeVisible();
