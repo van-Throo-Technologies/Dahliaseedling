@@ -74,7 +74,10 @@ export function CaptureFlow({
   );
   const [seedlingSearch, setSeedlingSearch] = useState("");
   const [voiceNotice, setVoiceNotice] = useState<VoiceCommand | null>(null);
-  const [seedlingId, setSeedlingId] = useState(startingSeedling ?? seedlings[0]?.id ?? "");
+  // The Feed composer starts with no seedling chosen, so a photo is never filed under one the grower did not pick.
+  const [seedlingId, setSeedlingId] = useState(
+    startingSeedling ?? (composer ? "" : (seedlings[0]?.id ?? "")),
+  );
   const [identifier, setIdentifier] = useState("");
   const [note, setNote] = useState("");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -146,6 +149,11 @@ export function CaptureFlow({
     const check = validateSelection(chosen.map((item) => item.file));
     if (!check.ok) {
       setProblem(translateProblem(check.fieldErrors));
+      return;
+    }
+    // The seedling a photo is saved to must be one the grower can see as chosen. A choice the search has hidden is not a choice.
+    if (mode === "existing" && !shownSeedlings.some((item) => item.id === seedlingId)) {
+      setProblem(t("capture.capture.chooseSeedling"));
       return;
     }
     setUploadError(null);
@@ -365,14 +373,18 @@ export function CaptureFlow({
                       <select
                         aria-label={t("assistive.capture.question")}
                         value={
-                          shownSeedlings.some((item) => item.id === seedlingId)
-                            ? seedlingId
-                            : shownSeedlings[0]?.id
+                          shownSeedlings.some((item) => item.id === seedlingId) ? seedlingId : ""
                         }
-                        onChange={(event) => setSeedlingId(event.target.value)}
-                        size={Math.min(Math.max(shownSeedlings.length, 2), 6)}
+                        onChange={(event) => {
+                          setSeedlingId(event.target.value);
+                          setProblem(null);
+                        }}
+                        size={Math.min(Math.max(shownSeedlings.length + 1, 2), 6)}
                         className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
                       >
+                        <option value="" disabled>
+                          {t("capture.capture.chooseSeedling")}
+                        </option>
                         {shownSeedlings.map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.label}

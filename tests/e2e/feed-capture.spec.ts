@@ -120,7 +120,7 @@ test("from a seedling page, a second photograph is posted with that seedling alr
   await expect(page).toHaveURL(/\/updates\/[0-9a-f-]{36}\?published=1/);
 });
 
-test("from the Feed, a new photograph of an existing seedling is posted with the most recent seedling already chosen", async ({
+test("from the Feed, a new photograph of an existing seedling is posted once the grower chooses that seedling", async ({
   page,
 }) => {
   await signUpAndSetUpProfile(page, "feedsecond", "Feed Second Grower");
@@ -131,14 +131,49 @@ test("from the Feed, a new photograph of an existing seedling is posted with the
   await page.getByRole("button", { name: "Save privately" }).click();
   await expect(page).toHaveURL(/\/observations\//);
 
-  // Add a photo → photo → share now → Post. The composer already has the seedling selected.
+  // Prompt → photo → choose the seedling → share now → Post. Nothing is preselected, so the grower chooses it.
   await page.goto("/");
   await page.getByRole("link", { name: "What are you growing?" }).click();
   await expect(page.getByRole("radio", { name: "One of my seedlings" })).toBeChecked();
+  await page.locator('select:has(option[value=""])').selectOption({ index: 1 });
   await page
     .locator("#capture-photo")
     .setInputFiles({ name: "second.jpg", mimeType: "image/jpeg", buffer: await photo() });
   await page.getByRole("checkbox", { name: /Share publicly now/ }).check();
   await page.getByRole("button", { name: "Post photo" }).click();
   await expect(page).toHaveURL(/\/updates\/[0-9a-f-]{36}\?published=1/);
+});
+
+test("the Feed composer files a photo only under a seedling the grower chooses", async ({
+  page,
+}) => {
+  await signUpAndSetUpProfile(page, "choose", "Choice Grower");
+  // Two seedlings, so the most recent one is not the only choice.
+  for (const name of ["first.jpg", "second.jpg"]) {
+    await page.goto("/capture");
+    await page
+      .locator("#capture-photo")
+      .setInputFiles({ name, mimeType: "image/jpeg", buffer: await photo() });
+    await page.getByRole("button", { name: "Save privately" }).click();
+    await expect(page).toHaveURL(/\/observations\//);
+  }
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "What are you growing?" }).click();
+  // The seedling list opens with nothing chosen, so the grower has to choose.
+  const seedlingChoice = page.locator('select:has(option[value=""])');
+  await expect(seedlingChoice).toHaveValue("");
+  await page
+    .locator("#capture-photo")
+    .setInputFiles({ name: "bloom.jpg", mimeType: "image/jpeg", buffer: await photo() });
+  await page.getByRole("button", { name: "Save privately" }).click();
+  await expect(
+    page.locator('p[role="alert"]').filter({ hasText: "Choose a seedling" }),
+  ).toBeVisible();
+  await expect(page).not.toHaveURL(/\/observations\//);
+
+  // Once a seedling is chosen, the same photo goes to it.
+  await seedlingChoice.selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Save privately" }).click();
+  await expect(page).toHaveURL(/\/observations\//);
 });
