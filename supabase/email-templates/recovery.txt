@@ -1,0 +1,16 @@
+DahliaSeedling
+
+Reset your password
+
+We received a request to reset the password for your DahliaSeedling account. Choose a new password with the link below.
+
+Choose a new password:
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery
+
+If the link doesn't work, copy it into your browser's address bar.
+
+Why did you receive this email?
+
+Someone asked to reset the password for this address. If you did not ask, you can ignore this message: your password stays the same. The link works once and expires after a short time.
+
+DahliaSeedling

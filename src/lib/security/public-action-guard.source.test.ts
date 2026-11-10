@@ -43,7 +43,7 @@ describe("the public action guard covers every server action", () => {
   );
 
   it("inventories the expected number of actions", () => {
-    expect(actions.length).toBe(64);
+    expect(actions.length).toBe(66);
   });
 
   it("permits exactly the five journey actions, and each of them is unguarded", () => {

@@ -1,12 +1,12 @@
 import { safeNextPath } from "@/lib/http/safe-next";
 
 /*
- * Decisions for the email links that establish a session: sign-up confirmation and invitation. The link carries a one-time token hash
+ * Decisions for the email links that establish a session: sign-up confirmation, invitation and password recovery. The link carries a one-time token hash
  * and a type. The route exchanges it on the server, and this module decides what the visitor sees next. It holds no secrets and reads
  * no environment, so it can be tested on its own. Results are short codes, never free text, so they are safe to log and to put in a URL.
  */
 
-export const CONFIRM_TYPES = ["signup", "invite"] as const;
+export const CONFIRM_TYPES = ["signup", "invite", "recovery"] as const;
 export type ConfirmType = (typeof CONFIRM_TYPES)[number];
 
 export type ConfirmFailure = "expired" | "invalid";
@@ -45,6 +45,10 @@ export function destinationAfterConfirm(input: {
   const next = safeNextPath(input.next, "/");
   if (input.type === "invite") {
     return `/auth/set-password?next=${encodeURIComponent(next)}`;
+  }
+  // A recovery link leads only to the new-password page. It never reaches onboarding or the invitation page.
+  if (input.type === "recovery") {
+    return "/auth/reset-password";
   }
   if (!input.hasProfile) {
     return `/profile/setup?next=${encodeURIComponent(next)}&confirmed=1`;

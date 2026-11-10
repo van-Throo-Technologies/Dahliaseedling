@@ -14,9 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SignInPage({
   searchParams,
 }: {
-  readonly searchParams: Promise<{ next?: string | string[]; confirm?: string | string[] }>;
+  readonly searchParams: Promise<{
+    next?: string | string[];
+    confirm?: string | string[];
+    reset?: string | string[];
+  }>;
 }) {
-  const { next, confirm } = await searchParams;
+  const { next, confirm, reset } = await searchParams;
   const destination = safeNextPath(Array.isArray(next) ? next[0] : next, "/");
   const { t } = await getTranslation();
 
@@ -41,6 +45,9 @@ export default async function SignInPage({
         <p className="text-base text-text-muted">{t("identity.signIn.intro")}</p>
       </div>
       {confirmation ? <FormMessage tone="error">{confirmation}</FormMessage> : null}
+      {(Array.isArray(reset) ? reset[0] : reset) === "1" ? (
+        <FormMessage tone="success">{t("identity.recovery.resetDone")}</FormMessage>
+      ) : null}
       <SignInForm next={destination} />
     </section>
   );

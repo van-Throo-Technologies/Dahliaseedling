@@ -40,6 +40,14 @@ export function SignInForm({ next }: { readonly next: string }) {
         required
         error={errors.password}
       />
+      <p className="-mt-3 text-base">
+        <Link
+          href="/forgot-password"
+          className="font-medium text-text-brand underline underline-offset-4"
+        >
+          {t("identity.recovery.forgotLink")}
+        </Link>
+      </p>
 
       <SubmitButton pendingLabel={t("identity.signIn.submitting")}>
         {t("identity.signIn.submit")}

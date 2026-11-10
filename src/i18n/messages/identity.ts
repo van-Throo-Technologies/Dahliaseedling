@@ -45,6 +45,27 @@ export const en = {
     notInvited:
       "This page is only for finishing an invitation. Your password is already set, so nothing changes here. If you have forgotten your password, contact us.",
   },
+  recovery: {
+    forgotLink: "Forgot password?",
+    forgotTitle: "Reset your password",
+    forgotIntro:
+      "Enter the email address of your account. If it belongs to an account, we will send a link to choose a new password.",
+    forgotSubmit: "Send reset link",
+    forgotSubmitting: "Sending…",
+    forgotSent:
+      "If an account exists for that address, a reset link is on its way. Check your inbox and spam folder.",
+    forgotRateLimited: "Too many reset requests. Wait a few minutes, then try again.",
+    expired: "That reset link has expired or has already been used. Request a new one below.",
+    invalid: "That reset link is not valid. Request a new one below.",
+    resetTitle: "Choose a new password",
+    resetIntro: "Choose a new password for your account.",
+    resetSubmit: "Save new password",
+    resetSubmitting: "Saving…",
+    resetError: "We could not save your password. Request a new reset link and try again.",
+    resetDone: "Your password is updated. Sign in with it to continue.",
+    resetClosed:
+      "This page is only for choosing a new password from a reset link. Request a new link to continue.",
+  },
   fields: {
     email: "Email",
     password: "Password",
@@ -157,6 +178,28 @@ export const nl: typeof en = {
     closedTitle: "Alleen op uitnodiging",
     notInvited:
       "Deze pagina is alleen om een uitnodiging af te ronden. Je wachtwoord is al ingesteld, dus hier verandert niets. Ben je je wachtwoord vergeten, neem dan contact met ons op.",
+  },
+  recovery: {
+    forgotLink: "Wachtwoord vergeten?",
+    forgotTitle: "Stel je wachtwoord opnieuw in",
+    forgotIntro:
+      "Vul het e-mailadres van je account in. Hoort het bij een account, dan sturen we een link om een nieuw wachtwoord te kiezen.",
+    forgotSubmit: "Stuur resetlink",
+    forgotSubmitting: "Bezig met versturen…",
+    forgotSent:
+      "Als er een account bij dat adres hoort, is er een resetlink onderweg. Kijk in je inbox en in je spammap.",
+    forgotRateLimited: "Er zijn te veel resetverzoeken. Wacht even en probeer het opnieuw.",
+    expired: "Die resetlink is verlopen of al gebruikt. Vraag hieronder een nieuwe aan.",
+    invalid: "Die resetlink is niet geldig. Vraag hieronder een nieuwe aan.",
+    resetTitle: "Kies een nieuw wachtwoord",
+    resetIntro: "Kies een nieuw wachtwoord voor je account.",
+    resetSubmit: "Sla nieuw wachtwoord op",
+    resetSubmitting: "Bezig met opslaan…",
+    resetError:
+      "We konden je wachtwoord niet opslaan. Vraag een nieuwe resetlink aan en probeer het opnieuw.",
+    resetDone: "Je wachtwoord is bijgewerkt. Log in met het nieuwe wachtwoord om verder te gaan.",
+    resetClosed:
+      "Deze pagina is alleen bedoeld om een nieuw wachtwoord te kiezen via een resetlink. Vraag een nieuwe link aan om verder te gaan.",
   },
   fields: {
     email: "E-mailadres",
@@ -273,6 +316,30 @@ export const fr: typeof en = {
     closedTitle: "Sur invitation uniquement",
     notInvited:
       "Cette page sert uniquement à finaliser une invitation. Votre mot de passe est déjà défini, rien ne change ici. Si vous l'avez oublié, contactez-nous.",
+  },
+  recovery: {
+    forgotLink: "Mot de passe oublié ?",
+    forgotTitle: "Réinitialiser votre mot de passe",
+    forgotIntro:
+      "Saisissez l'adresse e-mail de votre compte. Si elle correspond à un compte, nous enverrons un lien pour choisir un nouveau mot de passe.",
+    forgotSubmit: "Envoyer le lien",
+    forgotSubmitting: "Envoi…",
+    forgotSent:
+      "Si un compte existe pour cette adresse, un lien de réinitialisation est en route. Vérifiez votre boîte de réception et vos indésirables.",
+    forgotRateLimited:
+      "Trop de demandes de réinitialisation. Attendez quelques minutes, puis réessayez.",
+    expired:
+      "Ce lien de réinitialisation a expiré ou a déjà été utilisé. Demandez-en un nouveau ci-dessous.",
+    invalid: "Ce lien de réinitialisation n'est pas valide. Demandez-en un nouveau ci-dessous.",
+    resetTitle: "Choisissez un nouveau mot de passe",
+    resetIntro: "Choisissez un nouveau mot de passe pour votre compte.",
+    resetSubmit: "Enregistrer le nouveau mot de passe",
+    resetSubmitting: "Enregistrement…",
+    resetError:
+      "Nous n'avons pas pu enregistrer votre mot de passe. Demandez un nouveau lien et réessayez.",
+    resetDone: "Votre mot de passe est mis à jour. Connectez-vous avec celui-ci pour continuer.",
+    resetClosed:
+      "Cette page sert uniquement à choisir un nouveau mot de passe depuis un lien de réinitialisation. Demandez un nouveau lien pour continuer.",
   },
   fields: {
     email: "Adresse e-mail",

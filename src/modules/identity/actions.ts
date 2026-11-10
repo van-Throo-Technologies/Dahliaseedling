@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslation } from "@/i18n/server";
@@ -10,6 +11,7 @@ import { logEvent } from "@/lib/logging/log";
 import { signUpRefusalFrom } from "./auth-flow";
 import { requireParticipant } from "./gate";
 import { invitationPasswordPending } from "./password-setup";
+import { RESET_COOKIE } from "./password-reset";
 import type { FormState } from "./form-state";
 import {
   insertOwnProfile,
@@ -270,4 +272,62 @@ export async function updateProfileAction(
   revalidatePath("/profile");
   revalidatePath(`/profiles/${userId}`);
   return { status: "saved", message: t("identity.edit.saved") };
+}
+
+/*
+ * Asks for a password-reset email. The answer is the same whether or not an account exists for the address, so this form cannot be used to
+ * learn which addresses have accounts. Supabase sends the email from its reset template, which carries a token hash for the confirmation route.
+ */
+export async function requestPasswordResetAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { t } = await getTranslation();
+  const email = validateEmail(formData.get("email"));
+  if (!email.ok) return invalid(email.fieldErrors, echo(formData, ["email"]));
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email.value);
+  if (error?.status === 429) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.recovery.forgotRateLimited"),
+      values: echo(formData, ["email"]),
+    };
+  }
+  return { status: "saved", message: t("identity.recovery.forgotSent") };
+}
+
+/*
+ * Sets a new password after a reset link. It needs the session the link created and the short-lived mark the link left in this browser.
+ * Without both, the visitor is sent to request a new link. The session is ended afterwards, so the new password is what signs the visitor in.
+ */
+export async function setRecoveredPasswordAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { t } = await getTranslation();
+  const user = await getCurrentUser();
+  const marked = (await cookies()).has(RESET_COOKIE);
+  if (!user || !marked) redirect("/forgot-password?link=expired");
+
+  const password = validatePassword(formData.get("password"));
+  if (!password.ok) return invalid(password.fieldErrors);
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.updateUser({ password: password.value });
+  if (error) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.recovery.resetError"),
+      values: {},
+    };
+  }
+
+  (await cookies()).delete(RESET_COOKIE);
+  // Every session ends, including any other device, so a new password replaces whatever was signed in before.
+  await supabase.auth.signOut({ scope: "global" });
+  redirect("/sign-in?reset=1");
 }

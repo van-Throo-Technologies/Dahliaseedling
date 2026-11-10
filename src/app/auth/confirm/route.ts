@@ -8,9 +8,11 @@ import {
   confirmTypeFrom,
   destinationAfterConfirm,
   type ConfirmFailure,
+  type ConfirmType,
   tokenHashFrom,
 } from "@/modules/identity/auth-flow";
 import { findProfile } from "@/modules/identity/profile-repository";
+import { RESET_COOKIE, resetCookieOptions } from "@/modules/identity/password-reset";
 
 /*
  * Confirms a sign-up or accepts an invitation. The email link carries a one-time token hash, which this route exchanges for a session
@@ -42,15 +44,17 @@ function redirectTo(
   return response;
 }
 
-function refuse(failure: ConfirmFailure): NextResponse {
+function refuse(failure: ConfirmFailure, type: ConfirmType | null): NextResponse {
   logEvent("warn", "auth_confirm", { outcome: "refused", code: failure, route: "auth.confirm" });
+  // A recovery link that fails goes back to the forgot-password page, which says why. Other links keep their sign-in notice.
+  if (type === "recovery") return redirectTo(`/forgot-password?link=${failure}`);
   return redirectTo(`/sign-in?confirm=${failure}`);
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
   const type = confirmTypeFrom(request.nextUrl.searchParams.get("type"));
   const tokenHash = tokenHashFrom(request.nextUrl.searchParams.get("token_hash"));
-  if (!type || !tokenHash) return refuse("invalid");
+  if (!type || !tokenHash) return refuse("invalid", type);
 
   const config = parseAppConfig(process.env);
   const pending: PendingCookie[] = [];
@@ -66,7 +70,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   });
 
   const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-  if (error || !data.user) return refuse(confirmFailureFrom(error?.code));
+  if (error || !data.user) return refuse(confirmFailureFrom(error?.code), type);
 
   const profile = await findProfile(supabase, data.user.id);
   const destination = destinationAfterConfirm({
@@ -78,5 +82,6 @@ export async function GET(request: NextRequest): Promise<Response> {
   logEvent("info", "auth_confirm", { outcome: "confirmed", code: type, route: "auth.confirm" });
   const response = redirectTo(destination);
   for (const { name, value, options } of pending) response.cookies.set(name, value, options);
+  if (type === "recovery") response.cookies.set(RESET_COOKIE, "1", resetCookieOptions);
   return response;
 }

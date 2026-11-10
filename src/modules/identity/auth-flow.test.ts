@@ -10,10 +10,10 @@ import {
 const TOKEN = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6";
 
 describe("confirmation link parameters", () => {
-  it("accepts only the sign-up and invitation link types", () => {
+  it("accepts only the sign-up, invitation and password recovery link types", () => {
     expect(confirmTypeFrom("signup")).toBe("signup");
     expect(confirmTypeFrom("invite")).toBe("invite");
-    expect(confirmTypeFrom("recovery")).toBeNull();
+    expect(confirmTypeFrom("recovery")).toBe("recovery");
     expect(confirmTypeFrom("email_change")).toBeNull();
     expect(confirmTypeFrom("")).toBeNull();
     expect(confirmTypeFrom(null)).toBeNull();
@@ -83,5 +83,24 @@ describe("where a confirmed visitor goes", () => {
       hasProfile: false,
     });
     expect(destination).toBe("/auth/set-password?next=%2F");
+  });
+});
+describe("where a confirmed link leads", () => {
+  it("sends a recovery link to the new-password page, whether or not there is a profile", () => {
+    expect(destinationAfterConfirm({ type: "recovery", next: "/capture", hasProfile: true })).toBe(
+      "/auth/reset-password",
+    );
+    expect(destinationAfterConfirm({ type: "recovery", next: null, hasProfile: false })).toBe(
+      "/auth/reset-password",
+    );
+  });
+
+  it("keeps invitations on the invitation password page, and sign-up on profile setup", () => {
+    expect(destinationAfterConfirm({ type: "invite", next: "/", hasProfile: true })).toBe(
+      "/auth/set-password?next=%2F",
+    );
+    expect(destinationAfterConfirm({ type: "signup", next: "/", hasProfile: false })).toBe(
+      "/profile/setup?next=%2F&confirmed=1",
+    );
   });
 });

@@ -18,6 +18,9 @@ const PUBLIC_PATHS: readonly string[] = [
   "/auth/confirm",
   "/auth/set-password",
   "/sign-in",
+  // Password recovery: the request, the reset link's return page, and the new-password page.
+  "/forgot-password",
+  "/auth/reset-password",
   "/legal/privacy",
   "/legal/terms",
   "/api/health",
@@ -26,8 +29,9 @@ const PUBLIC_PATHS: readonly string[] = [
 ];
 
 /**
- * The only server actions the public surface runs. Every other action refuses on that surface, before it does anything. These five are
- * the invitation request, sign-in, password setup, onboarding, and the language switch that appears in the header of each public page.
+ * The only server actions the public surface runs. Every other action refuses on that surface, before it does anything. These seven are
+ * the invitation request, sign-in, password setup, onboarding, the language switch in the header of each public page, and the two password
+ * recovery actions: asking for a reset email and setting the new password from a reset link.
  */
 export const PUBLIC_ACTIONS: readonly string[] = [
   "submitInvitationRequestAction",
@@ -35,6 +39,8 @@ export const PUBLIC_ACTIONS: readonly string[] = [
   "setPasswordAction",
   "createProfileAction",
   "setLocaleAction",
+  "requestPasswordResetAction",
+  "setRecoveredPasswordAction",
 ];
 
 /** Static files the allowed pages load: the compiled scripts and styles, and the one founder photograph. */
