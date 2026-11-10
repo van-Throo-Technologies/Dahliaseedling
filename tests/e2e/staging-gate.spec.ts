@@ -104,6 +104,38 @@ test("the next address after the gate cannot send the visitor off the site", asy
   expect(target.pathname).toBe("/");
 });
 
+test("a request with no body is refused as malformed, with no session", async ({ request }) => {
+  const response = await request.post("/api/staging-access", { maxRedirects: 0 });
+  expect(response.status()).toBe(400);
+  expect(response.headers()["set-cookie"]).toBeUndefined();
+});
+
+test("a malformed multipart body is refused as malformed, with no session", async ({ request }) => {
+  const response = await request.post("/api/staging-access", {
+    headers: { "content-type": "multipart/form-data" },
+    data: "not a real multipart body",
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(400);
+  expect(response.headers()["set-cookie"]).toBeUndefined();
+});
+
+test("a JSON body is refused as malformed, with no session", async ({ request }) => {
+  const response = await request.post("/api/staging-access", {
+    data: { password: PASSWORD, next: "/" },
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(400);
+  expect(response.headers()["set-cookie"]).toBeUndefined();
+});
+
+test("an empty form counts as a wrong password, and sets no session", async ({ request }) => {
+  const response = await request.post("/api/staging-access", { form: {}, maxRedirects: 0 });
+  expect(response.status()).toBe(303);
+  expect(response.headers().location).toContain("error=1");
+  expect(response.headers()["set-cookie"]).toBeUndefined();
+});
+
 // Last, because it uses up this connection's allowance of wrong attempts, and every request in this file shares that connection.
 test("repeated wrong passwords stop the gate from checking the password for a while", async ({
   request,

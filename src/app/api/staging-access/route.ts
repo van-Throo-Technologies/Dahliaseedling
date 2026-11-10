@@ -35,7 +35,13 @@ export async function POST(request: Request): Promise<Response> {
   const address = visitorAddress(request.headers) ?? "unknown";
   const nowSeconds = Math.floor(Date.now() / 1000);
 
-  const form = await request.formData();
+  // A request whose body is missing or not form data is refused as malformed. It counts as neither a password attempt nor a session.
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return new Response(null, { status: 400, headers: NO_STORE });
+  }
   const submitted = form.get("password");
   const next = safeNextPath(typeof form.get("next") === "string" ? String(form.get("next")) : null);
 
