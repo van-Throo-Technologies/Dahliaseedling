@@ -60,7 +60,11 @@ describe("open self-registration", () => {
     signUp.mockResolvedValue({ data: { user: { id: "u1" }, session: null }, error: null });
     await signUpAction(IDLE_FORM_STATE, signUpForm());
     expect(createClient).toHaveBeenCalledTimes(1);
-    expect(signUp).toHaveBeenCalledWith({ email: EMAIL, password: PASSWORD });
+    expect(signUp).toHaveBeenCalledWith({
+      email: EMAIL,
+      password: PASSWORD,
+      options: { captchaToken: undefined },
+    });
   });
 
   it("asks a new grower to confirm their address when confirmation is on", async () => {

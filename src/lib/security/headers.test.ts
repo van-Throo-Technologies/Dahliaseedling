@@ -4,6 +4,7 @@ import {
   originOf,
   PERMISSIONS_POLICY,
   securityHeaders,
+  TURNSTILE_ORIGIN,
 } from "./headers";
 
 const SUPABASE = "https://abcdefgh.supabase.co";
@@ -46,10 +47,19 @@ describe("buildContentSecurityPolicy", () => {
     expect(d["base-uri"]).toBe("'self'");
   });
 
-  it("does not allow any third-party script origin", () => {
+  it("allows no third-party script origin except the Turnstile bot check", () => {
     const d = directives(buildContentSecurityPolicy({ supabaseUrl: SUPABASE, development: false }));
     expect(d["script-src"]).not.toContain(SUPABASE);
-    expect(d["script-src"]).not.toMatch(/https?:/);
+    expect(d["script-src"]!.replace(TURNSTILE_ORIGIN, "")).not.toMatch(/https?:/);
+    expect(d["script-src"]).toContain(TURNSTILE_ORIGIN);
+  });
+
+  it("frames and connects only to the Turnstile origin, not to any other third party", () => {
+    const d = directives(buildContentSecurityPolicy({ supabaseUrl: SUPABASE, development: false }));
+    expect(d["frame-src"]).toBe(TURNSTILE_ORIGIN);
+    expect(d["connect-src"]!.replace(TURNSTILE_ORIGIN, "").replace(SUPABASE, "")).not.toMatch(
+      /https?:/,
+    );
   });
 
   it("allows eval and the development socket only in development", () => {
@@ -68,7 +78,7 @@ describe("buildContentSecurityPolicy", () => {
   it("still builds a valid policy when the Supabase URL is absent", () => {
     const d = directives(buildContentSecurityPolicy({ development: false }));
     expect(d["img-src"]).toBe("'self' blob: data:");
-    expect(d["connect-src"]).toBe("'self'");
+    expect(d["connect-src"]).toBe("'self' https://challenges.cloudflare.com");
   });
 });
 

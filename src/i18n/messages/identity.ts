@@ -24,8 +24,12 @@ export const en = {
     saved: "Check your email to confirm your account, then sign in.",
     genericError:
       "We could not create an account with those details. Try signing in, or use a different email.",
-    invitationOnly:
-      "New accounts are by invitation only for now. If you have been invited, open the link in your invitation email.",
+    invitationOnly: "Creating accounts is not available right now. Please try again later.",
+  },
+  captcha: {
+    label: "Security check",
+    missing: "Please complete the security check before you continue.",
+    failed: "The security check did not pass or has expired. Please try again.",
   },
   confirm: {
     expired:
@@ -158,8 +162,12 @@ export const nl: typeof en = {
     saved: "Controleer je e-mail om je account te bevestigen, en log daarna in.",
     genericError:
       "We konden met deze gegevens geen account aanmaken. Probeer in te loggen, of gebruik een ander e-mailadres.",
-    invitationOnly:
-      "Nieuwe accounts zijn voorlopig alleen op uitnodiging. Heb je een uitnodiging ontvangen, open dan de link in die e-mail.",
+    invitationOnly: "Het aanmaken van accounts is nu niet beschikbaar. Probeer het later opnieuw.",
+  },
+  captcha: {
+    label: "Beveiligingscontrole",
+    missing: "Rond eerst de beveiligingscontrole af voordat je verdergaat.",
+    failed: "De beveiligingscontrole is niet geslaagd of verlopen. Probeer het opnieuw.",
   },
   confirm: {
     expired:
@@ -296,7 +304,12 @@ export const fr: typeof en = {
     genericError:
       "Nous n'avons pas pu créer de compte avec ces informations. Essayez de vous connecter, ou utilisez une autre adresse e-mail.",
     invitationOnly:
-      "Les nouveaux comptes sont pour l'instant sur invitation uniquement. Si vous avez reçu une invitation, ouvrez le lien de l'e-mail d'invitation.",
+      "La création de comptes n'est pas disponible pour le moment. Réessayez plus tard.",
+  },
+  captcha: {
+    label: "Vérification de sécurité",
+    missing: "Veuillez effectuer la vérification de sécurité avant de continuer.",
+    failed: "La vérification de sécurité n'a pas abouti ou a expiré. Réessayez.",
   },
   confirm: {
     expired:

@@ -8,9 +8,11 @@ import { TextField } from "@/design-system/components/form-fields";
 import { useT } from "@/i18n/client";
 import { signInAction } from "@/modules/identity/actions";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
+import { TurnstileWidget } from "@/components/identity/turnstile-widget";
 
 export function SignInForm({ next }: { readonly next: string }) {
   const t = useT();
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
   const [state, action] = useActionState(signInAction, IDLE_FORM_STATE);
   const errors = state.status === "error" ? state.fieldErrors : {};
   const values = state.status === "error" ? state.values : undefined;
@@ -48,6 +50,15 @@ export function SignInForm({ next }: { readonly next: string }) {
           {t("identity.recovery.forgotLink")}
         </Link>
       </p>
+
+      {siteKey ? (
+        <TurnstileWidget
+          siteKey={siteKey}
+          action="sign-in"
+          label={t("identity.captcha.label")}
+          resetSignal={state}
+        />
+      ) : null}
 
       <SubmitButton pendingLabel={t("identity.signIn.submitting")}>
         {t("identity.signIn.submit")}

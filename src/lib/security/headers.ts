@@ -22,6 +22,12 @@ export function originOf(url: string | undefined): string | null {
   }
 }
 
+/*
+ * Cloudflare Turnstile, the bot check on the sign-up, sign-in and password-reset forms. Its script and challenge frame come only from this
+ * origin, and nothing else is added. It is the one third-party origin the policy allows.
+ */
+export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
 export function buildContentSecurityPolicy(input: HeaderInput): string {
   const supabase = originOf(input.supabaseUrl);
   const supabaseSocket = supabase ? supabase.replace(/^http/, "ws") : null;
@@ -29,12 +35,13 @@ export function buildContentSecurityPolicy(input: HeaderInput): string {
 
   return [
     "default-src 'self'",
-    `script-src ${list("'self'", "'unsafe-inline'", input.development ? "'unsafe-eval'" : null)}`,
+    `script-src ${list("'self'", "'unsafe-inline'", TURNSTILE_ORIGIN, input.development ? "'unsafe-eval'" : null)}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src ${list("'self'", "blob:", "data:", supabase)}`,
     "font-src 'self' data:",
     `media-src ${list("'self'", "blob:", supabase)}`,
-    `connect-src ${list("'self'", supabase, supabaseSocket, input.development ? "ws:" : null)}`,
+    `connect-src ${list("'self'", supabase, supabaseSocket, TURNSTILE_ORIGIN, input.development ? "ws:" : null)}`,
+    `frame-src ${TURNSTILE_ORIGIN}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

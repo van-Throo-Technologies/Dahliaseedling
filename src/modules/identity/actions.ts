@@ -9,6 +9,7 @@ import { safeNextPath } from "@/lib/http/safe-next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { logEvent } from "@/lib/logging/log";
 import { signUpRefusalFrom } from "./auth-flow";
+import { captchaFailedFrom, captchaRequired, captchaTokenFrom } from "./captcha";
 import { requireParticipant } from "./gate";
 import { invitationPasswordPending } from "./password-setup";
 import { RESET_COOKIE } from "./password-reset";
@@ -86,13 +87,30 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
     return invalid(fieldErrors, echo(formData, ["email"]));
   }
 
+  if (captchaRequired(process.env) && captchaTokenFrom(formData) === undefined) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.captcha.missing"),
+      values: echo(formData, ["email"]),
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email: email.value, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password,
+    options: { captchaToken: captchaTokenFrom(formData) },
+  });
   if (error) {
     return {
       status: "error",
       fieldErrors: {},
-      message: t("identity.signIn.badCredentials"),
+      message: t(
+        captchaFailedFrom(error.code)
+          ? "identity.captcha.failed"
+          : "identity.signIn.badCredentials",
+      ),
       values: echo(formData, ["email"]),
     };
   }
@@ -116,10 +134,20 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
     );
   }
 
+  if (captchaRequired(process.env) && captchaTokenFrom(formData) === undefined) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.captcha.missing"),
+      values: echo(formData, ["email"]),
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
+    options: { captchaToken: captchaTokenFrom(formData) },
   });
   if (error) {
     const refusal = signUpRefusalFrom(error.code);
@@ -127,9 +155,11 @@ export async function signUpAction(_previous: FormState, formData: FormData): Pr
       status: "error",
       fieldErrors: {},
       message: t(
-        refusal === "invitationOnly"
-          ? "identity.signUp.invitationOnly"
-          : "identity.signUp.genericError",
+        captchaFailedFrom(error.code)
+          ? "identity.captcha.failed"
+          : refusal === "invitationOnly"
+            ? "identity.signUp.invitationOnly"
+            : "identity.signUp.genericError",
       ),
       values: echo(formData, ["email"]),
     };
@@ -286,8 +316,27 @@ export async function requestPasswordResetAction(
   const email = validateEmail(formData.get("email"));
   if (!email.ok) return invalid(email.fieldErrors, echo(formData, ["email"]));
 
+  if (captchaRequired(process.env) && captchaTokenFrom(formData) === undefined) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.captcha.missing"),
+      values: echo(formData, ["email"]),
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email.value);
+  const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
+    captchaToken: captchaTokenFrom(formData),
+  });
+  if (captchaFailedFrom(error?.code)) {
+    return {
+      status: "error",
+      fieldErrors: {},
+      message: t("identity.captcha.failed"),
+      values: echo(formData, ["email"]),
+    };
+  }
   if (error?.status === 429) {
     return {
       status: "error",
