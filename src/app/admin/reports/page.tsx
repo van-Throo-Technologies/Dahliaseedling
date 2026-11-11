@@ -8,6 +8,7 @@ import type { MessageKey } from "@/i18n/translator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isAdministrator, listAdminReports } from "@/modules/admin/repository";
 
+import { AdminNav } from "@/components/admin/admin-nav";
 const NOTICE: Record<string, MessageKey> = {
   resolved: "admin.reports.notices.resolved",
   removed: "admin.reports.notices.removed",
@@ -50,6 +51,7 @@ export default async function AdminReportsPage({
 
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
+      <AdminNav current="reports" />
       <div className="flex flex-col gap-2">
         <h1 id="page-title" className="font-display text-3xl text-text-brand">
           {t("admin.reports.title")}

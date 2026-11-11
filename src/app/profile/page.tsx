@@ -12,6 +12,7 @@ import { getTranslation } from "@/i18n/server";
 import { labelWords } from "@/modules/seedlings/labels";
 import { displayLabels, listHeldSeedlings } from "@/modules/seedlings/repository";
 import { displayedName } from "@/modules/identity/former-grower";
+import { isAdministrator } from "@/modules/admin/repository";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslation();
@@ -25,6 +26,7 @@ export default async function ProfilePage({
 }) {
   const { notice } = await searchParams;
   const { profile, userId } = await requireAccount("/profile");
+  const administrator = await isAdministrator(await createSupabaseServerClient());
   const { t, locale } = await getTranslation();
   const avatarUrl = profile.avatarPath ? avatarHref(profile.id) : null;
   const suspendedNotice =
@@ -76,6 +78,11 @@ export default async function ProfilePage({
           <ButtonLink href="/feedback" variant="secondary">
             {t("feedback.title")}
           </ButtonLink>
+          {administrator ? (
+            <ButtonLink href="/admin/invitations" variant="secondary">
+              {t("admin.nav.administration")}
+            </ButtonLink>
+          ) : null}
         </div>
         <InstallGuidance />
       </section>

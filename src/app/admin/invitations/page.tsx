@@ -22,6 +22,7 @@ type RequestRow = {
   readonly created_at: string;
 };
 
+import { AdminNav } from "@/components/admin/admin-nav";
 const NOTICE: Record<string, MessageKey> = {
   approved: "invitations.admin.notices.approved",
   declined: "invitations.admin.notices.declined",
@@ -65,6 +66,7 @@ export default async function AdminInvitationsPage({
 
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-8">
+      <AdminNav current="invitations" />
       <div className="flex flex-col gap-2">
         <h1 id="page-title" className="font-display text-3xl text-text-brand">
           {t("invitations.admin.title")}

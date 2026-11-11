@@ -7,6 +7,7 @@ import type { MessageKey } from "@/i18n/translator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isAdministrator } from "@/modules/admin/repository";
 
+import { AdminNav } from "@/components/admin/admin-nav";
 const NOTICE: Record<string, MessageKey> = {
   suspended: "admin.accounts.notices.suspended",
   restored: "admin.accounts.notices.restored",
@@ -42,6 +43,7 @@ export default async function AdminAccountsPage({
 
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
+      <AdminNav current="accounts" />
       <div className="flex flex-col gap-2">
         <h1 id="page-title" className="font-display text-3xl text-text-brand">
           {t("admin.accounts.title")}

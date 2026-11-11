@@ -10,6 +10,7 @@ import { setFeedbackStatusAction } from "@/modules/feedback/actions";
 import { FEEDBACK_CATEGORIES, isFeedbackCategory } from "@/modules/feedback/validation";
 import { isAdministrator } from "@/modules/admin/repository";
 
+import { AdminNav } from "@/components/admin/admin-nav";
 const STATUSES = ["new", "reviewing", "resolved"] as const;
 type Status = (typeof STATUSES)[number];
 
@@ -74,6 +75,7 @@ export default async function AdminFeedbackPage({
 
   return (
     <section aria-labelledby="page-title" className="flex flex-col gap-6">
+      <AdminNav current="feedback" />
       <div className="flex flex-col gap-2">
         <h1 id="page-title" className="font-display text-3xl text-text-brand">
           {t("feedback.admin.title")}

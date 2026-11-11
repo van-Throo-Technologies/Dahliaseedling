@@ -5,6 +5,10 @@
  */
 
 export const en = {
+  nav: {
+    label: "Administration",
+    administration: "Administration",
+  },
   accounts: {
     title: "Accounts",
     link: "Accounts",
@@ -91,6 +95,10 @@ export const en = {
 };
 
 export const nl: typeof en = {
+  nav: {
+    label: "Beheer",
+    administration: "Beheer",
+  },
   accounts: {
     title: "Accounts",
     link: "Accounts",
@@ -178,6 +186,10 @@ export const nl: typeof en = {
 };
 
 export const fr: typeof en = {
+  nav: {
+    label: "Administration",
+    administration: "Administration",
+  },
   accounts: {
     title: "Comptes",
     link: "Comptes",
