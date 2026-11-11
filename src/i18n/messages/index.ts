@@ -20,6 +20,7 @@ import * as privacy from "./privacy";
 import * as feedback from "./feedback";
 import * as launch from "./launch";
 import * as invitations from "./invitations";
+import * as landing from "./landing";
 
 /*
  * One dictionary per area and language. Each area's nl and fr are typed against its English, so a missing or
@@ -49,6 +50,7 @@ export const MESSAGES = {
     feedback: feedback.en,
     launch: launch.en,
     invitations: invitations.en,
+    landing: landing.en,
   },
   nl: {
     app: app.nl,
@@ -73,6 +75,7 @@ export const MESSAGES = {
     feedback: feedback.nl,
     launch: launch.nl,
     invitations: invitations.nl,
+    landing: landing.nl,
   },
   fr: {
     app: app.fr,
@@ -97,6 +100,7 @@ export const MESSAGES = {
     feedback: feedback.fr,
     launch: launch.fr,
     invitations: invitations.fr,
+    landing: landing.fr,
   },
 };
 

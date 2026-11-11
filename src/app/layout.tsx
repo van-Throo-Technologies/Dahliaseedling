@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { AppShell } from "@/components/app-shell/app-shell";
 import { dmSans, fraunces } from "@/design-system/fonts";
 import { LocaleProvider } from "@/i18n/client";
 import { getTranslation } from "@/i18n/server";
@@ -35,7 +34,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={locale} className={`${dmSans.variable} ${fraunces.variable}`}>
       <body className="min-h-dvh bg-background font-sans text-text antialiased">
         <LocaleProvider locale={locale} messages={messages}>
-          <AppShell>{children}</AppShell>
+          {children}
         </LocaleProvider>
       </body>
     </html>

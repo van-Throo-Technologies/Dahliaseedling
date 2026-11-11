@@ -1,14 +1,17 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type APIRequestContext, type Browser } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
+import { LOCALE_NAMES } from "../../src/i18n/locales";
 import { localSupabase, withSuperuser } from "../support/local-supabase";
 
 /*
- * Invitation requests, end to end. The public form is used exactly as a visitor would use it. The administrator reviews the requests
- * with an ordinary sign-in, so the same access rules apply as for any administrator.
+ * The personal landing page at /join, and the administrator review of invitation requests. The public request form has been removed:
+ * growers register directly, and /join is the founder's letter with a registration call and a browse link. The review backend is unchanged,
+ * so the review tests create their requests directly in the test database, as the test superuser, rather than through the removed form.
  */
 
 const EN = MESSAGES.en;
+const L = EN.landing;
 const PASSWORD = "correct-horse-battery";
 const REASON = "I grow dahlias from seed and want to share real plants.";
 
@@ -16,17 +19,14 @@ function uniqueEmail(label: string): string {
   return `${label}-${crypto.randomUUID()}@example.test`;
 }
 
-async function submitRequest(browser: Browser, email: string): Promise<void> {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto("/join");
-  await page.getByLabel(EN.invitations.join.name, { exact: true }).fill("Anna de Vries");
-  await page.getByLabel(EN.invitations.join.country, { exact: true }).selectOption("NL");
-  await page.getByLabel(EN.invitations.join.email, { exact: true }).fill(email);
-  await page.getByLabel(EN.invitations.join.reason, { exact: true }).fill(REASON);
-  await page.getByRole("button", { name: EN.invitations.join.submit, exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText(EN.invitations.join.received);
-  await context.close();
+/** Creates a pending invitation request as the test superuser. The public form no longer exists, so the review tests use this instead. */
+async function seedRequest(email: string): Promise<void> {
+  await withSuperuser((db) =>
+    db.query(
+      "insert into public.invitation_requests (client_key, name, country_code, email, reason) values ($1, $2, $3, $4, $5)",
+      [crypto.randomUUID(), "Anna de Vries", "NL", email, REASON],
+    ),
+  );
 }
 
 async function administratorContext(browser: Browser, request: APIRequestContext) {
@@ -62,117 +62,106 @@ async function storedStatus(email: string): Promise<string | undefined> {
   });
 }
 
-test("a visitor's request is stored as pending, and creates no account", async ({ browser }) => {
-  const email = uniqueEmail("ask");
-  await submitRequest(browser, email);
-
-  expect(await storedStatus(email)).toBe("pending");
-  const accounts = await withSuperuser(
-    async (db) =>
-      (await db.query("select count(*)::int as n from auth.users where email = $1", [email]))
-        .rows[0],
-  );
-  expect(accounts.n).toBe(0);
-});
-
-test("the hero shows the founder's photograph with its alt text, and the page still works without it", async ({
-  page,
-}) => {
-  await page.goto("/join");
-  const photograph = page.getByRole("img", { name: EN.invitations.join.heroAlt, exact: true });
-  await expect(photograph).toBeVisible();
-  expect(
-    await photograph.evaluate((element) => (element as HTMLImageElement).naturalWidth),
-  ).toBeGreaterThan(0);
-});
-
-test("without the photograph, the heading and the request form still work", async ({ page }) => {
-  await page.route("**/images/dahlia-founder.jpg", (route) => route.abort());
-  await page.goto("/join");
-  await expect(
-    page.getByRole("heading", { name: EN.invitations.join.heroHeading, level: 1, exact: true }),
-  ).toBeVisible();
-  await expect(page.getByLabel(EN.invitations.join.email, { exact: true })).toBeVisible();
-});
-
-test("the hero leads with the heading, and its button takes a visitor to the form without horizontal scrolling", async ({
-  page,
-}) => {
-  await page.goto("/join");
-  await expect(
-    page.getByRole("heading", { name: EN.invitations.join.heroHeading, level: 1, exact: true }),
-  ).toBeVisible();
-
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
-
-  await page.getByRole("link", { name: EN.invitations.join.requestCta, exact: true }).click();
-  await expect(page.getByLabel(EN.invitations.join.email, { exact: true })).toBeInViewport();
-});
-
-test("on a phone, the fixed navigation covers neither the focused field nor the submit button", async ({
-  page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== "phone",
-    "The bottom navigation is fixed only on phone-sized screens.",
-  );
-  await page.goto("/join");
-
-  const bar = await page
-    .getByRole("navigation", { name: EN.app.nav.label, exact: true })
-    .boundingBox();
-  expect(bar).not.toBeNull();
-  const overlaps = (box: { x: number; y: number; width: number; height: number } | null) =>
-    box !== null && box.y < bar!.y + bar!.height && box.y + box.height > bar!.y;
-
-  const reason = page.getByLabel(EN.invitations.join.reason, { exact: true });
-  await reason.focus();
-  expect(overlaps(await reason.boundingBox())).toBe(false);
-
-  const submit = page.getByRole("button", { name: EN.invitations.join.submit, exact: true });
-  await submit.focus();
-  expect(overlaps(await submit.boundingBox())).toBe(false);
-
-  await page.mouse.wheel(0, 5000);
-  await expect(submit).toBeInViewport();
-  expect(overlaps(await submit.boundingBox())).toBe(false);
-});
-
-test("the request page tells the founder's story before the form", async ({ page }) => {
-  await page.goto("/join");
-  await expect(
-    page.getByRole("heading", { name: EN.invitations.join.storyHeading, exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText(EN.invitations.join.signOffRole, { exact: true })).toBeVisible();
-});
-
-test("a filled honeypot gets the same answer, and nothing is stored", async ({ browser }) => {
-  const email = uniqueEmail("bot");
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto("/join");
-  await page.getByLabel(EN.invitations.join.name, { exact: true }).fill("Automated Visitor");
-  await page.getByLabel(EN.invitations.join.country, { exact: true }).selectOption("NL");
-  await page.getByLabel(EN.invitations.join.email, { exact: true }).fill(email);
-  await page.getByLabel(EN.invitations.join.reason, { exact: true }).fill(REASON);
-  await page.locator("input[name='website']").evaluate((element) => {
-    (element as HTMLInputElement).value = "https://spam.example";
+test.describe("the personal landing page", () => {
+  test("is public, and shows the founder's approved photograph with its alt text", async ({
+    page,
+  }) => {
+    await page.goto("/join");
+    await expect(page.getByRole("heading", { name: L.title, level: 1, exact: true })).toBeVisible();
+    const photograph = page.getByRole("img", { name: L.photoAlt, exact: true });
+    await expect(photograph).toBeVisible();
+    expect(
+      await photograph.evaluate((element) => (element as HTMLImageElement).naturalWidth),
+    ).toBeGreaterThan(0);
   });
-  await page.getByRole("button", { name: EN.invitations.join.submit, exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText(EN.invitations.join.received);
-  await context.close();
 
-  expect(await storedStatus(email)).toBeUndefined();
-});
+  test("tells the founder's story in full, and is signed off by the founder", async ({ page }) => {
+    await page.goto("/join");
+    await expect(page.getByText(L.p1, { exact: true })).toBeVisible();
+    await expect(page.getByText(L.p5, { exact: true })).toBeVisible();
+    await expect(page.getByText(L.p10, { exact: true })).toBeVisible();
+    await expect(page.getByText(L.signature, { exact: true })).toBeVisible();
+  });
 
-test("an invalid request shows the field errors and stores nothing", async ({ page }) => {
-  await page.goto("/join");
-  await page.getByRole("button", { name: EN.invitations.join.submit, exact: true }).click();
-  await expect(page.getByText(EN.invitations.errors.email, { exact: true })).toBeVisible();
-  await expect(page.getByText(EN.invitations.errors.name, { exact: true })).toBeVisible();
+  test("the primary call takes a visitor to registration", async ({ page }) => {
+    await page.goto("/join");
+    const cta = page.getByRole("link", { name: L.primaryCta, exact: true });
+    await expect(cta).toHaveAttribute("href", "/sign-up");
+    await cta.click();
+    await expect(page).toHaveURL(/\/sign-up$/);
+  });
+
+  test("the secondary call takes a visitor to the feed to look around first", async ({ page }) => {
+    await page.goto("/join");
+    const browse = page.getByRole("link", { name: L.secondaryCta, exact: true });
+    await expect(browse).toHaveAttribute("href", "/");
+    await browse.click();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("is a letter, not the application: no header sign-in, no navigation, no notifications or profile", async ({
+    page,
+  }) => {
+    await page.goto("/join");
+    await expect(page.getByRole("navigation", { name: EN.app.nav.label, exact: true })).toHaveCount(
+      0,
+    );
+    await expect(
+      page.getByRole("link", { name: EN.app.nav.notifications, exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("link", { name: EN.app.nav.profile, exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveCount(0);
+    await expect(page.getByText(L.kicker, { exact: true })).toBeVisible();
+  });
+
+  test("offers the three languages as discreet text at the end of the letter", async ({ page }) => {
+    await page.goto("/join");
+    for (const code of ["en", "nl", "fr"] as const) {
+      await expect(page.getByText(LOCALE_NAMES[code], { exact: true }).first()).toBeVisible();
+    }
+    await expect(page.getByRole("combobox")).toHaveCount(0);
+  });
+
+  test("on a phone, the title and opening come before the photograph, which leaves the first screen for the words", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "The phone order applies to phone-sized screens.");
+    await page.goto("/join");
+    const heading = await page
+      .getByRole("heading", { name: L.title, level: 1, exact: true })
+      .boundingBox();
+    const photo = await page.getByRole("img", { name: L.photoAlt, exact: true }).boundingBox();
+    const viewport = page.viewportSize();
+    expect(heading).not.toBeNull();
+    expect(photo).not.toBeNull();
+    expect(heading!.y).toBeLessThan(photo!.y);
+    expect(photo!.height).toBeLessThan(viewport!.height * 0.6);
+  });
+
+  test("has no horizontal scrolling on a phone or a desktop", async ({ page }) => {
+    await page.goto("/join");
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test("carries social preview metadata for a 1200 × 630 image", async ({ page }) => {
+    await page.goto("/join");
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", L.title);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      /\/images\/og-join\.jpg$/,
+    );
+    await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute(
+      "content",
+      "1200",
+    );
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+      "content",
+      "summary_large_image",
+    );
+  });
 });
 
 test("the review page is not found for a visitor, so the requests stay hidden", async ({
@@ -188,8 +177,8 @@ test("an administrator declines one request, approves another, and records the i
 }) => {
   const declinedEmail = uniqueEmail("declined");
   const approvedEmail = uniqueEmail("approved");
-  await submitRequest(browser, declinedEmail);
-  await submitRequest(browser, approvedEmail);
+  await seedRequest(declinedEmail);
+  await seedRequest(approvedEmail);
 
   const { context, page } = await administratorContext(browser, request);
   await page.goto("/admin/invitations");
@@ -228,7 +217,7 @@ test("a captured administrator decision, replayed to its own page, is processed"
   request,
 }) => {
   const email = uniqueEmail("replay");
-  await submitRequest(browser, email);
+  await seedRequest(email);
 
   const { context, page } = await administratorContext(browser, request);
   await page.goto("/admin/invitations");
@@ -255,8 +244,7 @@ test("a captured administrator decision, replayed to its own page, is processed"
     ),
   );
 
-  // Control: the same captured request, sent to its own page, is processed. The public surface refuses this action on its own deployment; see
-  // the public-surface tests, which replay the request to the join route there.
+  // Control: the same captured request, sent to its own page, is processed.
   await context.request.post(new URL("/admin/invitations", page.url()).toString(), {
     headers: replayHeaders,
     data: body,
@@ -270,7 +258,7 @@ test("the crafted administrator request, sent to its own page, is processed (con
   request,
 }) => {
   const email = uniqueEmail("crafted");
-  await submitRequest(browser, email);
+  await seedRequest(email);
   const { context, page } = await administratorContext(browser, request);
   await page.goto("/admin/invitations");
   const [row] = await withSuperuser(

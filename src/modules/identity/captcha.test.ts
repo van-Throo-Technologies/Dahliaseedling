@@ -85,7 +85,7 @@ describe("captcha rules", () => {
     const next = actionsText.indexOf("export async function", start + 1);
     const setPassword = actionsText.slice(start, next === -1 ? undefined : next);
     expect(setPassword).not.toContain("captcha");
-    const confirmRoute = readFileSync("src/app/auth/confirm/route.ts", "utf8");
+    const confirmRoute = readFileSync("src/app/(app)/auth/confirm/route.ts", "utf8");
     expect(confirmRoute).not.toContain("captcha");
   });
 
