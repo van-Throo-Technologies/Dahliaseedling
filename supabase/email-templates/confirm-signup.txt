@@ -1,0 +1,16 @@
+DahliaSeedling
+
+Confirm your account
+
+Thanks for signing up. Confirm this email address with the link below, then sign in to set up your profile.
+
+Confirm your account:
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
+
+If the link doesn't work, copy it into your browser's address bar.
+
+Why did you receive this email?
+
+A new DahliaSeedling account was requested for this address. If that was not you, ignore this message: the account is only confirmed when this link is used. The link works once and expires after a short time.
+
+DahliaSeedling

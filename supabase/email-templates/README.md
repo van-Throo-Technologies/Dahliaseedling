@@ -15,4 +15,14 @@ Password recovery (**Reset password** template):
 - `recovery.html`: the HTML body. Its button and fallback link are `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery`.
 - `recovery.txt`: the plain-text body.
 
-A recovery link lands on `/auth/reset-password`, through the same server-side check as the other links. Each template must be pasted into its own Supabase template, by hand.
+A recovery link lands on `/auth/reset-password`, through the same server-side check as the other links.
+
+Sign-up confirmation (**Confirm signup** template):
+
+- `confirm-signup-subject.txt`: the subject line.
+- `confirm-signup.html`: the HTML body. Its button and fallback link are `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`.
+- `confirm-signup.txt`: the plain-text body.
+
+A confirmation link verifies the token on the server, sets the session cookies on the redirect, and sends a first-time grower to profile setup. The default `{{ .ConfirmationURL }}` must not be used for this template: it sends the session in the URL fragment, which the server cannot read, so the grower lands on the public feed without a session.
+
+Each template must be pasted into its own Supabase template, by hand.
