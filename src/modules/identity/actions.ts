@@ -10,7 +10,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { logEvent } from "@/lib/logging/log";
 import { signUpRefusalFrom } from "./auth-flow";
 import { requireParticipant } from "./gate";
-import { selfRegistrationOpen } from "./registration";
 import { invitationPasswordPending } from "./password-setup";
 import { RESET_COOKIE } from "./password-reset";
 import type { FormState } from "./form-state";
@@ -104,20 +103,6 @@ export async function signInAction(_previous: FormState, formData: FormData): Pr
 export async function signUpAction(_previous: FormState, formData: FormData): Promise<FormState> {
   refuseOnPublicSurface();
   const { t } = await getTranslation();
-  // Refused before validation or any Supabase call. Invitations do not use this action, so the refusal leaves them alone.
-  if (!selfRegistrationOpen(process.env)) {
-    logEvent("warn", "auth_sign_up", {
-      outcome: "refused",
-      code: "invitation_only",
-      route: "sign-up",
-    });
-    return {
-      status: "error",
-      fieldErrors: {},
-      message: t("identity.signUp.invitationOnly"),
-      values: echo(formData, ["email"]),
-    };
-  }
   const email = validateEmail(formData.get("email"));
   const password = validatePassword(formData.get("password"));
 
