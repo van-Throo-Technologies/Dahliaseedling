@@ -32,6 +32,15 @@ export function HomeIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </Icon>
+  );
+}
+
 export function CaptureIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

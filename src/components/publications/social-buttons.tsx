@@ -23,10 +23,13 @@ export function LikeForm({
   updateId,
   liked,
   count,
+  showCount = true,
 }: {
   readonly updateId: string;
   readonly liked: boolean;
   readonly count: number;
+  /** The Feed shows the count in its own line, so its button can say only Like. */
+  readonly showCount?: boolean;
 }) {
   const t = useT();
   return (
@@ -35,7 +38,7 @@ export function LikeForm({
       <input type="hidden" name="on" value={liked ? "0" : "1"} />
       <button type="submit" aria-pressed={liked} className={liked ? controlOn : control}>
         {liked ? t("publication.social.liked") : t("publication.social.like")}
-        <span className="ml-2 text-sm font-normal">{count}</span>
+        {showCount ? <span className="ml-2 text-sm font-normal">{count}</span> : null}
       </button>
     </form>
   );

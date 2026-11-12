@@ -101,27 +101,27 @@ function SeedlingCard({
     <li>
       <Link
         href={`/seedlings/${result.seedlingId}`}
-        className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-3 text-text no-underline"
+        className="flex flex-col gap-2 rounded-control text-text no-underline focus-visible:outline-2"
       >
         {result.cover ? (
-          <PublicPhoto image={result.cover} alt={label} />
+          <PublicPhoto image={result.cover} alt={label} square />
         ) : (
-          <div className="flex min-h-24 items-center rounded-surface bg-background p-4 text-sm text-text-muted">
+          <div className="flex aspect-square items-center justify-center rounded-control bg-background p-3 text-center text-sm text-text-muted">
             {t("search.seedling.noImage")}
           </div>
         )}
-        <div className="flex flex-col gap-1">
-          <span className="text-base font-medium text-text-brand">{label}</span>
-          {result.workingName && result.primaryIdentifier ? (
-            <span className="text-base text-text">{result.workingName}</span>
-          ) : null}
-          <span className="text-sm text-text-muted">
-            {t("search.seedling.grownBy", { name: result.holderName })}
-            {" · "}
-            {countryName(result.holderCountry, locale)}
-          </span>
-          <span className="text-sm text-text-muted">{t(REASON_KEY[result.reason])}</span>
-        </div>
+        <span className="min-w-0 truncate text-sm font-medium text-text-brand">{label}</span>
+        {result.workingName && result.primaryIdentifier ? (
+          <span className="min-w-0 truncate text-sm text-text">{result.workingName}</span>
+        ) : null}
+        <span className="min-w-0 truncate text-xs text-text-muted">
+          {t("search.seedling.grownBy", { name: result.holderName })}
+          {" · "}
+          {countryName(result.holderCountry, locale)}
+        </span>
+        <span className="min-w-0 truncate text-xs text-text-muted">
+          {t(REASON_KEY[result.reason])}
+        </span>
       </Link>
     </li>
   );
@@ -420,7 +420,7 @@ export async function SearchResultsView({
           <h3 id="group-seedlings" className="text-lg font-medium text-text">
             {t("search.groups.seedlings")}
           </h3>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
             {seedlings.map((result) => (
               <SeedlingCard
                 key={result.seedlingId}

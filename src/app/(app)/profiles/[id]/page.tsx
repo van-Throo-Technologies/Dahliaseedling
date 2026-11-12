@@ -237,7 +237,7 @@ export default async function PublicProfilePage({
             : t("identity.publicProfile.noOriginated")}
         </p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {seedlings.map((seedling) => (
             <li key={seedling.id}>
               <Link
@@ -245,7 +245,7 @@ export default async function PublicProfilePage({
                 className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-3 no-underline"
               >
                 {seedling.cover ? (
-                  <PublicPhoto image={seedling.cover} alt="" />
+                  <PublicPhoto image={seedling.cover} alt="" square />
                 ) : (
                   <span className="rounded-surface bg-background p-6 text-sm text-text-muted">
                     {t("identity.publicProfile.noPhoto")}

@@ -18,22 +18,34 @@ export function AppFooter() {
       <nav aria-label={t("launch.footer.label")}>
         <ul className="flex flex-wrap gap-x-5 gap-y-3 text-sm">
           <li>
-            <Link href="/legal/privacy" className="text-text-brand underline underline-offset-4">
+            <Link
+              href="/legal/privacy"
+              className="inline-flex min-h-11 items-center text-text-brand underline underline-offset-4"
+            >
               {t("launch.footer.privacyInfo")}
             </Link>
           </li>
           <li>
-            <Link href="/legal/terms" className="text-text-brand underline underline-offset-4">
+            <Link
+              href="/legal/terms"
+              className="inline-flex min-h-11 items-center text-text-brand underline underline-offset-4"
+            >
               {t("launch.footer.terms")}
             </Link>
           </li>
           <li>
-            <Link href="/privacy" className="text-text-brand underline underline-offset-4">
+            <Link
+              href="/privacy"
+              className="inline-flex min-h-11 items-center text-text-brand underline underline-offset-4"
+            >
               {t("launch.footer.accountPrivacy")}
             </Link>
           </li>
           <li>
-            <Link href={feedbackHref} className="text-text-brand underline underline-offset-4">
+            <Link
+              href={feedbackHref}
+              className="inline-flex min-h-11 items-center text-text-brand underline underline-offset-4"
+            >
               {t("launch.footer.feedback")}
             </Link>
           </li>

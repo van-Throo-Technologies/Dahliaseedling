@@ -137,7 +137,7 @@ test("a grower shares one chosen photo; a visitor sees only that photo, with its
   expect(bytes.includes(Buffer.from(LOCATION_MARKER))).toBe(false);
 
   // Tapping the photo opens the persistent seedling page.
-  await card.locator('a[aria-label^="Open"]').first().click();
+  await card.locator('a[href^="/seedlings/"]').first().click();
   await expect(visitor).toHaveURL(/\/seedlings\/[0-9a-f-]{36}$/);
   await expect(visitor.getByRole("heading", { name: "Journey" })).toBeVisible();
   await expect(visitor.getByText(caption).first()).toBeVisible();

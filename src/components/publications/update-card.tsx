@@ -4,16 +4,47 @@ import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { formatDate, formatCount } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
 import { avatarHref } from "@/modules/identity/presentation";
-import type { UpdateSummary } from "@/modules/publications/repository";
+import type { PublicImage, UpdateSummary } from "@/modules/publications/repository";
 import { PublicPhoto } from "./public-photo";
 import { LikeForm } from "./social-buttons";
 import { displayedName } from "@/modules/identity/former-grower";
 
 /*
- * One Update in the Feed or on a seedling's journey, in a social-feed order: the grower's identity first, then the caption, then the
- * photographs, then the engagement row. The card carries no identifiers, parentage or traits: those live on the seedling page. Tapping
- * a photo opens the persistent seedling page. The comment count opens the discussion on the Update's own page.
+ * One Update in the Feed or on a seedling's journey. The order is the grower and the date, then the text, then a labelled link to the
+ * Seedling when the Update has one, then the photographs, then the counts, then the actions.
+ *
+ * An Update does not have to belong to a Seedling in order to be shown. An ordinary Update has no Seedling line; a Seedling-linked Update
+ * shows it. The card carries no identifiers, parentage or traits: those live on the Seedling page.
+ *
+ * A photograph is never cropped: tapping it opens the full picture in a new tab.
  */
+
+/** A photograph that opens at full size. The link is the photograph itself, so no extra control is needed to reach it. */
+function FullSizePhoto({
+  image,
+  alt,
+  label,
+  square = false,
+  flush = false,
+}: {
+  readonly image: PublicImage;
+  readonly alt: string;
+  readonly label: string;
+  readonly square?: boolean;
+  readonly flush?: boolean;
+}) {
+  return (
+    <a
+      href={image.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      className="block rounded-control focus-visible:outline-2"
+    >
+      <PublicPhoto image={image} alt={alt} square={square} flush={flush} />
+    </a>
+  );
+}
 
 export async function UpdateCard({
   update,
@@ -30,11 +61,21 @@ export async function UpdateCard({
   const seedlingHref = `/seedlings/${update.seedlingId}`;
   const seedlingLabel = update.seedlingName ?? t("publication.update.unnamedSeedling");
   const authorName = displayedName(update.authorName, t("privacy.formerGrower"));
+  const photos = update.images.length;
+  const likes = update.likeCount;
   const comments = update.commentCount;
+  const likeText =
+    likes === 1
+      ? t("publication.update.likes.one")
+      : t("publication.update.likes.other", { count: formatCount(likes, locale) });
   const commentText =
     comments === 1
       ? t("publication.update.comments.one")
       : t("publication.update.comments.other", { count: formatCount(comments, locale) });
+  const photoText =
+    photos === 1
+      ? t("publication.update.photos.one")
+      : t("publication.update.photos.other", { count: formatCount(photos, locale) });
 
   return (
     <article
@@ -47,21 +88,16 @@ export async function UpdateCard({
             name={authorName}
             url={update.authorHasAvatar ? avatarHref(update.authorId) : null}
           />
-          <div className="flex min-w-0 flex-col">
-            <Link href={`/profiles/${update.authorId}`} className="font-medium text-text-brand">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <Link
+              href={`/profiles/${update.authorId}`}
+              className="inline-flex min-h-11 items-center font-medium text-text-brand"
+            >
               {authorName}
             </Link>
-            <p className="text-sm text-text-muted">
+            <time dateTime={update.publishedAt} className="text-sm text-text-muted">
               {t("publication.update.shared", { date: formatDate(update.publishedAt, locale) })}
-              {showSeedling && update.seedlingName ? (
-                <>
-                  {" · "}
-                  <Link href={seedlingHref} className="text-text-brand">
-                    {update.seedlingName}
-                  </Link>
-                </>
-              ) : null}
-            </p>
+            </time>
           </div>
           {menu}
         </header>
@@ -69,23 +105,25 @@ export async function UpdateCard({
         {update.caption ? (
           <p className="whitespace-pre-line text-base text-text">{update.caption}</p>
         ) : null}
+
+        {showSeedling ? (
+          <Link
+            href={seedlingHref}
+            className="inline-flex min-h-11 max-w-full items-center gap-2 self-start rounded-control border border-border bg-background px-3 text-sm text-text no-underline"
+          >
+            <span className="text-text-muted">{t("publication.update.seedlingLabel")}</span>
+            <span className="min-w-0 truncate font-medium text-text-brand">{seedlingLabel}</span>
+          </Link>
+        ) : null}
       </div>
 
       {lead ? (
-        <Link
-          href={seedlingHref}
-          aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
-          className="block focus-visible:outline-2"
-        >
-          <PublicPhoto
-            image={lead}
-            alt={t("publication.update.photoAlt", {
-              author: authorName,
-              seedling: seedlingLabel,
-            })}
-            flush
-          />
-        </Link>
+        <FullSizePhoto
+          image={lead}
+          alt={t("publication.update.photoAlt", { author: authorName, seedling: seedlingLabel })}
+          label={t("publication.update.openFullSize")}
+          flush
+        />
       ) : null}
 
       {others.length > 0 ? (
@@ -95,30 +133,38 @@ export async function UpdateCard({
         >
           {others.map((image) => (
             <li key={image.id}>
-              <Link
-                href={seedlingHref}
-                aria-label={t("publication.update.openSeedling", { seedling: seedlingLabel })}
-                className="block"
-              >
-                <PublicPhoto
-                  image={image}
-                  alt={t("publication.update.anotherPhoto", { seedling: seedlingLabel })}
-                />
-              </Link>
+              <FullSizePhoto
+                image={image}
+                alt={t("publication.update.anotherPhoto", { seedling: seedlingLabel })}
+                label={t("publication.update.openFullSize")}
+                square
+              />
             </li>
           ))}
         </ul>
       ) : null}
 
-      <footer className="flex flex-wrap items-center gap-3 p-4">
-        <LikeForm updateId={update.updateId} liked={update.likedByMe} count={update.likeCount} />
-        <Link
-          href={`/updates/${update.updateId}#comments`}
-          className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
-        >
-          {commentText}
-        </Link>
-      </footer>
+      <div className="flex flex-col gap-3 p-4">
+        <p className="flex flex-wrap gap-x-3 text-sm text-text-muted">
+          {photos > 1 ? <span>{photoText}</span> : null}
+          <span>{likeText}</span>
+          <span>{commentText}</span>
+        </p>
+        <footer className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+          <LikeForm
+            updateId={update.updateId}
+            liked={update.likedByMe}
+            count={update.likeCount}
+            showCount={false}
+          />
+          <Link
+            href={`/updates/${update.updateId}#comments`}
+            className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand transition-colors hover:border-text-brand"
+          >
+            {t("publication.update.comment")}
+          </Link>
+        </footer>
+      </div>
     </article>
   );
 }

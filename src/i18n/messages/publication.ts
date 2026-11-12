@@ -5,6 +5,13 @@
 
 export const en = {
   feed: {
+    railRecent: "Recently shared",
+    railVisitorText: "Create an account to share the seedlings you grow and follow other growers.",
+    railSignIn: "Sign in to share",
+    railLabel: "Discover",
+    railTitle: "Discover",
+    railText: "Search seedlings, cultivars and growers, and see what is available to share.",
+    railExplore: "Open Explore",
     title: "Feed",
     everyone: "For You",
     following: "Following",
@@ -45,6 +52,11 @@ export const en = {
     anotherPhoto: "Another photo from {seedling}",
     unnamedSeedling: "a seedling",
     comments: { one: "1 comment", other: "{count} comments" },
+    seedlingLabel: "Seedling",
+    openFullSize: "Open photo at full size (opens in a new tab)",
+    likes: { one: "1 like", other: "{count} likes" },
+    photos: { one: "1 photo", other: "{count} photos" },
+    comment: "Comment",
     published:
       "Published. Visitors can now see this Update on the Feed and on the seedling's page.",
     manage: "Manage this update",
@@ -148,6 +160,14 @@ export const en = {
 
 export const nl: typeof en = {
   feed: {
+    railRecent: "Recent gedeeld",
+    railVisitorText:
+      "Maak een account om de zaailingen die je kweekt te delen en andere kwekers te volgen.",
+    railSignIn: "Inloggen om te delen",
+    railLabel: "Ontdekken",
+    railTitle: "Ontdekken",
+    railText: "Zoek naar zaailingen, cultivars en kwekers, en zie wat er te delen is.",
+    railExplore: "Naar Ontdekken",
     title: "Start-feed",
     everyone: "Voor jou",
     following: "Gevolgd",
@@ -188,6 +208,11 @@ export const nl: typeof en = {
     anotherPhoto: "Nog een foto van {seedling}",
     unnamedSeedling: "een zaailing",
     comments: { one: "1 reactie", other: "{count} reacties" },
+    seedlingLabel: "Zaailing",
+    openFullSize: "Foto op volledige grootte openen (opent in een nieuw tabblad)",
+    likes: { one: "1 keer geliked", other: "{count} keer geliked" },
+    photos: { one: "1 foto", other: "{count} foto's" },
+    comment: "Reageren",
     published:
       "Gepubliceerd. Bezoekers kunnen deze update nu zien op de feed en op de pagina van de zaailing.",
     manage: "Deze update beheren",
@@ -291,6 +316,15 @@ export const nl: typeof en = {
 
 export const fr: typeof en = {
   feed: {
+    railRecent: "Partagés récemment",
+    railVisitorText:
+      "Créez un compte pour partager les semis que vous cultivez et suivre d'autres cultivateurs.",
+    railSignIn: "Se connecter pour partager",
+    railLabel: "Découvrir",
+    railTitle: "Découvrir",
+    railText:
+      "Recherchez des semis, des cultivars et des cultivateurs, et voyez ce qui peut être partagé.",
+    railExplore: "Ouvrir Explorer",
     title: "Fil d'actualité",
     everyone: "Pour vous",
     following: "Abonnements",
@@ -331,6 +365,11 @@ export const fr: typeof en = {
     anotherPhoto: "Une autre photo de {seedling}",
     unnamedSeedling: "un semis",
     comments: { one: "1 commentaire", other: "{count} commentaires" },
+    seedlingLabel: "Semis",
+    openFullSize: "Ouvrir la photo en taille réelle (s'ouvre dans un nouvel onglet)",
+    likes: { one: "1 mention j'aime", other: "{count} mentions j'aime" },
+    photos: { one: "1 photo", other: "{count} photos" },
+    comment: "Commenter",
     published:
       "Publié. Les visiteurs peuvent maintenant voir cette mise à jour dans le fil et sur la page du semis.",
     manage: "Gérer cette mise à jour",

@@ -4,6 +4,7 @@ export const en = {
   description:
     "A community and continuation platform for genetically unique dahlias grown from seed.",
   nav: {
+    explore: "Explore",
     label: "Primary",
     home: "Home",
     capture: "Capture",
@@ -30,6 +31,7 @@ export const nl: typeof en = {
   description:
     "Een gemeenschap en platform voor genetisch unieke dahlia\u0027s die uit zaad zijn gekweekt.",
   nav: {
+    explore: "Ontdekken",
     label: "Hoofdnavigatie",
     home: "Start",
     capture: "Vastleggen",
@@ -56,6 +58,7 @@ export const fr: typeof en = {
   description:
     "Une communauté et une plateforme de continuité pour des dahlias génétiquement uniques, cultivés à partir de semis.",
   nav: {
+    explore: "Explorer",
     label: "Navigation principale",
     home: "Accueil",
     capture: "Capturer",

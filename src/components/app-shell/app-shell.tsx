@@ -18,13 +18,15 @@ export async function AppShell({ children }: { readonly children: ReactNode }) {
     <>
       <a
         href="#main"
-        className="sr-only z-50 rounded-control bg-surface px-4 py-2 text-text-brand focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-50 rounded-control bg-surface px-4 py-2 text-text-brand focus:not-sr-only focus:inline-flex focus:min-h-11 focus:items-center focus:fixed focus:left-4 focus:top-4"
       >
         {t("app.skip")}
       </a>
       <AppHeader signedIn={user !== null} />
-      <PrimaryNav />
-      <AppMain>{children}</AppMain>
+      <div className="lg:flex lg:items-start lg:gap-8">
+        <PrimaryNav />
+        <AppMain>{children}</AppMain>
+      </div>
       <AppFooter />
     </>
   );

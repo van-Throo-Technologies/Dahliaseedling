@@ -98,7 +98,12 @@ test("the current destination is shown without relying on colour alone", async (
   );
 
   // Three destinations, in order. Posting is not one of them: it starts in the composer on the Feed.
-  await expect(primary.getByRole("link")).toHaveText(["Home", "Notifications", "Profile"]);
+  await expect(primary.getByRole("link")).toHaveText([
+    "Home",
+    "Explore",
+    "Notifications",
+    "Profile",
+  ]);
 });
 
 test("a grower who has not finished setting up is not shown as being on Profile", async ({

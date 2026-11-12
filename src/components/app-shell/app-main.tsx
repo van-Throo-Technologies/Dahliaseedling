@@ -9,10 +9,13 @@ import type { ReactNode } from "react";
  */
 export function AppMain({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
-  const width = pathname === "/" ? "max-w-5xl" : "max-w-2xl";
+  const width = pathname === "/" ? "max-w-6xl" : "max-w-2xl";
 
   return (
-    <main id="main" className={`mx-auto w-full ${width} px-4 pb-28 pt-6 md:pb-12 md:pt-8`}>
+    <main
+      id="main"
+      className={`mx-auto w-full ${width} min-w-0 lg:flex-1 px-4 pb-28 pt-6 md:pb-12 md:pt-8`}
+    >
       {children}
     </main>
   );
