@@ -17,11 +17,14 @@ export function CommentOptions({
   commentId,
   body,
   byline,
+  bodyClassName = "whitespace-pre-line text-base text-text",
 }: {
   readonly updateId: string;
   readonly commentId: string;
   readonly body: string;
   readonly byline: ReactNode;
+  /** How the comment's text is styled. The conversation dialog draws it in a bubble. */
+  readonly bodyClassName?: string;
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -34,7 +37,9 @@ export function CommentOptions({
   useDismissOnOutsideTap(rootRef, open, closeMenu);
 
   function closeOnEscape(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Escape") return;
+    // With the menu open, Escape closes only the menu, not the conversation around it.
+    if (event.key !== "Escape" || !open) return;
+    event.preventDefault();
     setOpen(false);
     triggerRef.current?.focus();
   }
@@ -103,7 +108,7 @@ export function CommentOptions({
           </button>
         </div>
       ) : (
-        <p className="whitespace-pre-line text-base text-text">{body}</p>
+        <p className={bodyClassName}>{body}</p>
       )}
     </div>
   );

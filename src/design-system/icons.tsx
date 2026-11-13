@@ -87,6 +87,33 @@ export function PhotoIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function SendIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M22 2 11 13" />
+      <path d="M22 2 15 22l-4-9-9-4 20-7z" />
+    </Icon>
+  );
+}
+
+export function ThumbIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M7 10v11" />
+      <path d="M15 5.9 14 10h5.4a2 2 0 0 1 2 2.3l-1.3 7.1A2 2 0 0 1 18.1 21H7V10l4-7a2.2 2.2 0 0 1 4 2.9Z" />
+      <path d="M3 10h4v11H3Z" />
+    </Icon>
+  );
+}
+
+export function CommentIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" />
+    </Icon>
+  );
+}
+
 export function MoreIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

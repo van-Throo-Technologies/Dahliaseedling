@@ -254,7 +254,13 @@ export default async function HomePage({
           <ul className="flex flex-col gap-6">
             {page.items.map((update) => (
               <li key={update.updateId}>
-                <UpdateCard update={update} inlineComments={{ signedIn: viewer !== null }} />
+                <UpdateCard
+                  update={update}
+                  inlineComments={{
+                    signedIn: viewer !== null,
+                    viewerName: ownProfile?.displayName ?? "",
+                  }}
+                />
               </li>
             ))}
           </ul>

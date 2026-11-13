@@ -1,24 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
+import { CommentIcon } from "@/design-system/icons";
 import { useLocale, useT } from "@/i18n/client";
 import { formatCount } from "@/i18n/format";
 import { CommentForm } from "./comment-form";
+import { ConversationDialog } from "./conversation-dialog";
+import { InitialsAvatar } from "./initials-avatar";
 import { LikeForm } from "./social-buttons";
 
 /*
- * The count line and action row of a Feed card. Comment opens the discussion directly beneath the row, with the composer below it and
- * its text box focused. The conversation stays open after a post, and the new comment appears in it. The count is the server's count,
- * which the Feed refreshes after a post, so it moves up by exactly one. Success is announced to screen readers only. A visitor gets a
- * sign-in link in place of the conversation.
+ * The Feed card's counts and quiet action row. Comment opens the conversation in a dialog, with the post beside it and the discussion
+ * and composer beneath. The discussion and the post context are rendered on the server and passed in, so nothing is fetched on click.
+ * A visitor gets a sign-in link in place of Comment.
  *
- * The discussion and the composer are the same components the Update page uses, so the same action, validation and permission checks
- * apply. The discussion is rendered on the server and passed in, so nothing is fetched on click.
+ * When a comment is posted, the composer clears and the conversation stays open. The new comment arrives with the refreshed discussion,
+ * and the discussion scrolls to it. The count is the server's count, so it moves up by exactly one.
  */
 
-const actionClass =
-  "inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand transition-colors hover:border-text-brand";
+const quietAction =
+  "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium text-text-muted transition-colors hover:bg-background hover:text-text-brand";
 
 export function FeedActions({
   updateId,
@@ -28,6 +30,8 @@ export function FeedActions({
   likeText,
   commentCount,
   signedIn,
+  viewerName,
+  context,
   discussion,
 }: {
   readonly updateId: string;
@@ -38,7 +42,11 @@ export function FeedActions({
   readonly likeText: string;
   readonly commentCount: number;
   readonly signedIn: boolean;
-  /** The most recent comments on this Update, rendered on the server. */
+  /** The viewer's display name, shown in the composer's placeholder. Empty when the viewer has none. */
+  readonly viewerName: string;
+  /** The post beside the conversation: the photograph, the grower, the caption and the Seedling. */
+  readonly context: ReactNode;
+  /** The discussion, rendered on the server. */
   readonly discussion: ReactNode;
 }) {
   const t = useT();
@@ -46,84 +54,98 @@ export function FeedActions({
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
-  const panelId = useId();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const commentText =
     commentCount === 1
       ? t("publication.update.comments.one")
       : t("publication.update.comments.other", { count: formatCount(commentCount, locale) });
 
-  // Focus moves into the composer when the discussion opens, so the text can be typed at once. The composer's own box is used:
-  // the discussion's reply boxes come first in the page, and they sit inside closed disclosures that cannot take focus.
-  useEffect(() => {
-    if (open) composerRef.current?.querySelector("textarea")?.focus();
-  }, [open]);
-
   const close = useCallback(() => {
     setOpen(false);
     toggleRef.current?.focus();
   }, []);
 
-  return (
-    <div className="flex flex-col gap-3 p-4">
-      <p className="flex flex-wrap gap-x-3 text-sm text-text-muted">
-        {photoText ? <span>{photoText}</span> : null}
-        <span>{likeText}</span>
-        <span>{commentText}</span>
-      </p>
-      <footer className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
-        <LikeForm updateId={updateId} liked={liked} count={likeCount} showCount={false} />
-        {signedIn ? (
-          <button
-            ref={toggleRef}
-            type="button"
-            aria-expanded={open}
-            aria-controls={panelId}
-            onClick={() => setOpen((isOpen) => !isOpen)}
-            className={actionClass}
-          >
-            {t("publication.update.comment")}
-          </button>
-        ) : (
-          <Link
-            href={`/sign-in?next=${encodeURIComponent(`/updates/${updateId}#comments`)}`}
-            className={actionClass}
-          >
-            {t("publication.comments.signInToComment")}
-          </Link>
-        )}
-      </footer>
+  // The new comment comes with the refreshed discussion. Scroll once it has been painted, so it is in view.
+  const handleSaved = useCallback(() => {
+    requestAnimationFrame(() => {
+      const scroller = scrollRef.current;
+      scroller?.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    });
+  }, []);
 
-      <div
-        id={panelId}
-        hidden={!open}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") close();
-        }}
-      >
-        {open ? (
-          <div className="flex flex-col gap-4">
-            {discussion}
-            <div ref={composerRef}>
-              <CommentForm
-                updateId={updateId}
-                label={t("publication.comments.yourComment")}
-                submitLabel={t("publication.comments.send")}
-                submitOnEnter
-              />
-            </div>
-          </div>
-        ) : null}
+  const placeholder = viewerName
+    ? t("publication.comments.commentAs", { name: viewerName })
+    : t("publication.comments.placeholder");
+
+  return (
+    <>
+      <div className="flex flex-col gap-2 p-4">
+        <p className="flex flex-wrap gap-x-3 text-[13px] text-text-muted">
+          {photoText ? <span>{photoText}</span> : null}
+          <span>{likeText}</span>
+          <span>{commentText}</span>
+        </p>
+        <footer className="-mx-1 flex items-center gap-1 border-t border-border pt-2">
+          <LikeForm updateId={updateId} liked={liked} count={likeCount} showCount={false} quiet />
+          {signedIn ? (
+            <button
+              ref={toggleRef}
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setOpen(true)}
+              className={quietAction}
+            >
+              <CommentIcon className="size-[18px]" />
+              {t("publication.update.comment")}
+            </button>
+          ) : (
+            <Link
+              href={`/sign-in?next=${encodeURIComponent(`/updates/${updateId}#comments`)}`}
+              className={quietAction}
+            >
+              <CommentIcon className="size-[18px]" />
+              {t("publication.comments.signInToComment")}
+            </Link>
+          )}
+        </footer>
       </div>
 
-      {commentCount > 0 ? (
-        <Link
-          href={`/updates/${updateId}#comments`}
-          className="inline-flex min-h-11 items-center text-base font-medium text-text-brand"
-        >
-          {t("publication.comments.viewAll")}
-        </Link>
+      {signedIn ? (
+        <ConversationDialog
+          open={open}
+          onClose={close}
+          title={
+            <>
+              {t("publication.comments.conversation")}
+              <span className="font-sans text-sm font-normal text-text-muted">
+                {" "}
+                · {commentText}
+              </span>
+            </>
+          }
+          context={context}
+          discussion={discussion}
+          scrollRef={scrollRef}
+          composerRef={composerRef}
+          composer={
+            <div className="flex items-end gap-2.5">
+              <InitialsAvatar name={viewerName || "?"} tone="you" />
+              <div className="min-w-0 flex-1">
+                <CommentForm
+                  updateId={updateId}
+                  label={t("publication.comments.yourComment")}
+                  submitLabel={t("publication.comments.send")}
+                  submitOnEnter
+                  pill
+                  placeholder={placeholder}
+                  onSaved={handleSaved}
+                />
+              </div>
+            </div>
+          }
+        />
       ) : null}
-    </div>
+    </>
   );
 }

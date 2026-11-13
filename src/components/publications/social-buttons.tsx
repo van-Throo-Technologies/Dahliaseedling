@@ -7,6 +7,7 @@ import {
   toggleSeedlingFollowAction,
 } from "@/modules/publications/actions";
 import { useT } from "@/i18n/client";
+import { ThumbIcon } from "@/design-system/icons";
 
 /*
  * Social controls are plain forms that call server actions. They work without JavaScript. A visitor who
@@ -24,14 +25,33 @@ export function LikeForm({
   liked,
   count,
   showCount = true,
+  quiet = false,
 }: {
   readonly updateId: string;
   readonly liked: boolean;
   readonly count: number;
   /** The Feed shows the count in its own line, so its button can say only Like. */
   readonly showCount?: boolean;
+  /** The quiet action of a conversation card: an icon and a word, no border. */
+  readonly quiet?: boolean;
 }) {
   const t = useT();
+  if (quiet) {
+    return (
+      <form action={toggleLikeAction}>
+        <input type="hidden" name="updateId" value={updateId} />
+        <input type="hidden" name="on" value={liked ? "0" : "1"} />
+        <button
+          type="submit"
+          aria-pressed={liked}
+          className={`flex min-h-11 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium transition-colors hover:bg-background ${liked ? "font-semibold text-text-brand" : "text-text-muted hover:text-text-brand"}`}
+        >
+          <ThumbIcon className="size-[18px]" fill={liked ? "currentColor" : "none"} />
+          {liked ? t("publication.social.liked") : t("publication.social.like")}
+        </button>
+      </form>
+    );
+  }
   return (
     <form action={toggleLikeAction}>
       <input type="hidden" name="updateId" value={updateId} />

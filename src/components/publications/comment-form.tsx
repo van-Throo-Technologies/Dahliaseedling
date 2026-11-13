@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useActionState, useEffect, useId, useRef, type KeyboardEvent } from "react";
+import { useFormStatus } from "react-dom";
 import { addCommentAction, editCommentAction } from "@/modules/publications/actions";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
 import { useT } from "@/i18n/client";
+import { SendIcon } from "@/design-system/icons";
 import { useExpandReplies } from "./comment-branch";
 
 /*
@@ -29,6 +31,8 @@ function resultKey(result: object): number {
  *
  * With submitOnEnter, Enter sends and Shift+Enter starts a new line. That applies only where a fine pointer is present, so a phone's
  * keyboard keeps its own Enter key. Enter that ends an IME composition never sends.
+ *
+ * With pill, the box is one compact row with a placeholder and an icon Send button. The button shows once the box has text.
  */
 export function CommentForm({
   updateId,
@@ -36,6 +40,8 @@ export function CommentForm({
   label,
   submitLabel,
   submitOnEnter = false,
+  pill = false,
+  placeholder,
   onSaved,
 }: {
   readonly updateId: string;
@@ -43,6 +49,9 @@ export function CommentForm({
   readonly label: string;
   readonly submitLabel: string;
   readonly submitOnEnter?: boolean;
+  /** The compact single-row composer of a conversation. */
+  readonly pill?: boolean;
+  readonly placeholder?: string;
   /** Called only after a successful post, never after an error, with the text that was posted. */
   readonly onSaved?: (posted: { readonly body: string }) => void;
 }) {
@@ -86,26 +95,39 @@ export function CommentForm({
     >
       <input type="hidden" name="updateId" value={updateId} />
       {parentId ? <input type="hidden" name="parentId" value={parentId} /> : null}
-      <div className="flex flex-col gap-2">
-        <label htmlFor={bodyId} className="text-base font-medium text-text">
-          {label}
-        </label>
-        <textarea
-          id={bodyId}
-          name="body"
-          rows={3}
-          maxLength={2000}
-          required
-          onKeyDown={(event) => {
-            if (!submitOnEnter || event.key !== "Enter" || event.shiftKey) return;
-            if (event.nativeEvent.isComposing) return;
-            if (!window.matchMedia("(pointer: fine)").matches) return;
-            event.preventDefault();
-            event.currentTarget.form?.requestSubmit();
-          }}
-          className="w-full rounded-control border border-border bg-surface p-3 text-base text-text"
-        />
-      </div>
+      {pill ? (
+        <div className="flex items-end gap-1.5 rounded-control border border-border bg-background py-1 pr-1 pl-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-text-brand">
+          <label htmlFor={bodyId} className="sr-only">
+            {label}
+          </label>
+          <textarea
+            id={bodyId}
+            name="body"
+            rows={1}
+            maxLength={2000}
+            required
+            placeholder={placeholder}
+            onKeyDown={sendOnEnter(submitOnEnter)}
+            className="peer min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-base text-text outline-none placeholder:text-text-muted [field-sizing:content]"
+          />
+          <SendIconButton label={submitLabel} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <label htmlFor={bodyId} className="text-base font-medium text-text">
+            {label}
+          </label>
+          <textarea
+            id={bodyId}
+            name="body"
+            rows={3}
+            maxLength={2000}
+            required
+            onKeyDown={sendOnEnter(submitOnEnter)}
+            className="w-full rounded-control border border-border bg-surface p-3 text-base text-text"
+          />
+        </div>
+      )}
       {state.status === "error" && state.message ? (
         <FormMessage tone="error">{state.message}</FormMessage>
       ) : null}
@@ -114,8 +136,39 @@ export function CommentForm({
           {state.message}
         </p>
       ) : null}
-      <SubmitButton pendingLabel={t("publication.comments.posting")}>{submitLabel}</SubmitButton>
+      {pill ? null : (
+        <SubmitButton pendingLabel={t("publication.comments.posting")}>{submitLabel}</SubmitButton>
+      )}
     </form>
+  );
+}
+
+/** Enter sends on a fine pointer. Shift+Enter, and Enter that ends an IME composition, keep their own meaning. */
+function sendOnEnter(enabled: boolean) {
+  return (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!enabled || event.key !== "Enter" || event.shiftKey) return;
+    if (event.nativeEvent.isComposing) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  };
+}
+
+/**
+ * The icon Send button of the compact composer. It takes focus only once the box has text, because the placeholder is shown exactly
+ * while the box is empty. A reset after a post empties the box, so the button hides again with no state of its own.
+ */
+function SendIconButton({ label }: { readonly label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      aria-label={label}
+      disabled={pending}
+      className="invisible inline-flex size-10 shrink-0 items-center justify-center rounded-control bg-primary text-on-primary transition-colors hover:brightness-95 peer-[:not(:placeholder-shown)]:visible disabled:opacity-60"
+    >
+      <SendIcon width={18} height={18} />
+    </button>
   );
 }
 

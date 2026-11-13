@@ -5,7 +5,7 @@ import { formatDate, formatCount } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
 import { avatarHref } from "@/modules/identity/presentation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { FEED_COMMENT_LIMIT } from "@/modules/publications/limits";
+import Image from "next/image";
 import {
   listComments,
   type PublicImage,
@@ -54,12 +54,14 @@ function FullSizePhoto({
   );
 }
 
-/** The most recent comments on a Feed card. Rendered on the server with the card, so they show as soon as Comment is pressed. */
+/** The discussion of a Feed card, as the conversation dialog shows it. Rendered on the server with the card, so it is ready at once. */
 async function FeedDiscussion({
   updateId,
+  growerId,
   signedIn,
 }: {
   readonly updateId: string;
+  readonly growerId: string;
   readonly signedIn: boolean;
 }) {
   const comments = await listComments(await createSupabaseServerClient(), updateId);
@@ -69,8 +71,9 @@ async function FeedDiscussion({
       comments={comments}
       canPost={signedIn}
       canReport={signedIn}
-      limit={FEED_COMMENT_LIMIT}
       composer={false}
+      variant="conversation"
+      growerId={growerId}
       sectionId={`feed-comments-${updateId}`}
     />
   );
@@ -87,7 +90,7 @@ export async function UpdateCard({
   /** The author's own controls, shown beside the header. Other viewers get no menu. */
   readonly menu?: ReactNode;
   /** The Feed opens the composer on the card. Other places keep the link to the Update page. */
-  readonly inlineComments?: { readonly signedIn: boolean };
+  readonly inlineComments?: { readonly signedIn: boolean; readonly viewerName: string };
 }) {
   const { t, locale } = await getTranslation();
   const [lead, ...others] = update.images;
@@ -110,6 +113,39 @@ export async function UpdateCard({
       ? t("publication.update.photos.one")
       : t("publication.update.photos.other", { count: formatCount(photos, locale) });
 
+  // The post beside the conversation dialog. The photograph is a strip at the top on a phone, and fills the left side on a wide screen.
+  const conversationContext = (
+    <>
+      {lead ? (
+        <Image
+          src={lead.url}
+          alt={t("publication.update.photoAlt", { author: authorName, seedling: seedlingLabel })}
+          width={lead.width}
+          height={lead.height}
+          unoptimized
+          loading="lazy"
+          sizes="(min-width: 900px) 40vw, 72px"
+          className="size-[72px] shrink-0 rounded-control bg-background object-cover min-[900px]:h-auto min-[900px]:max-h-[56vh] min-[900px]:w-full min-[900px]:object-contain"
+        />
+      ) : null}
+      <div className="flex min-w-0 flex-col gap-1 min-[900px]:gap-2 min-[900px]:p-5">
+        <p className="truncate font-display text-base font-semibold text-text-brand">
+          {authorName}
+        </p>
+        {update.caption ? (
+          <p className="line-clamp-2 whitespace-pre-line text-sm text-text min-[900px]:line-clamp-none min-[900px]:text-base">
+            {update.caption}
+          </p>
+        ) : null}
+        {showSeedling ? (
+          <span className="self-start rounded-control border border-border px-2.5 py-1 text-sm text-text-muted">
+            {seedlingLabel}
+          </span>
+        ) : null}
+      </div>
+    </>
+  );
+
   return (
     <article
       aria-label={t("publication.update.byAuthor", { name: authorName })}
@@ -131,6 +167,14 @@ export async function UpdateCard({
             <time dateTime={update.publishedAt} className="text-sm text-text-muted">
               {t("publication.update.shared", { date: formatDate(update.publishedAt, locale) })}
             </time>
+            {inlineComments ? (
+              <Link
+                href={`/updates/${update.updateId}`}
+                className="self-start text-sm text-text-muted underline underline-offset-2 hover:text-text-brand"
+              >
+                {t("publication.update.viewUpdate")}
+              </Link>
+            ) : null}
           </div>
           {menu}
         </header>
@@ -186,8 +230,14 @@ export async function UpdateCard({
           likeText={likeText}
           commentCount={comments}
           signedIn={inlineComments.signedIn}
+          viewerName={inlineComments.viewerName}
+          context={conversationContext}
           discussion={
-            <FeedDiscussion updateId={update.updateId} signedIn={inlineComments.signedIn} />
+            <FeedDiscussion
+              updateId={update.updateId}
+              growerId={update.authorId}
+              signedIn={inlineComments.signedIn}
+            />
           }
         />
       ) : (

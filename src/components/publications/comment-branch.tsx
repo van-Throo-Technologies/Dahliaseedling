@@ -19,11 +19,14 @@ export function CommentBranch({
   summary,
   replies,
   children,
+  compact = false,
 }: {
   readonly replyCount: number;
   readonly summary: string;
   readonly replies: ReactNode;
   readonly children: ReactNode;
+  /** The conversation dialog's smaller disclosure. */
+  readonly compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const expand = useCallback(() => setOpen(true), []);
@@ -37,7 +40,13 @@ export function CommentBranch({
           open={open}
           onToggle={(event) => setOpen(event.currentTarget.open)}
         >
-          <summary className="inline-flex min-h-11 cursor-pointer items-center text-base text-text-muted">
+          <summary
+            className={
+              compact
+                ? "inline-flex min-h-9 cursor-pointer items-center text-[13px] font-semibold text-text-muted hover:text-text-brand"
+                : "inline-flex min-h-11 cursor-pointer items-center text-base text-text-muted"
+            }
+          >
             {summary}
           </summary>
           {replies}
