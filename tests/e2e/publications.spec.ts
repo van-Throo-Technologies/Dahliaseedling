@@ -248,9 +248,8 @@ test("comments, replies, likes, follows and Save work for a grower; a visitor is
   );
 
   // A comment, from the one collapsed composer.
-  await page.locator("summary", { hasText: "Add a comment" }).click();
   await page.getByLabel("Your comment", { exact: true }).fill("Lovely colour");
-  await page.getByRole("button", { name: "Post comment" }).click();
+  await page.getByRole("button", { name: "Send" }).click();
   await expect(page.getByText("Lovely colour").first()).toBeVisible();
 
   // Another reader sees the comment, and no author controls.
@@ -293,7 +292,7 @@ test("comments, replies, likes, follows and Save work for a grower; a visitor is
   await expectNoHorizontalOverflow(page);
 });
 
-test("on the Feed, Comment opens a focused composer under the post; the comment appears there without leaving Home", async ({
+test("on the Feed, Comment opens the discussion and a composer together; the new comment joins it at once, and a failed post keeps the draft", async ({
   page,
   browser,
 }, testInfo) => {
@@ -302,6 +301,18 @@ test("on the Feed, Comment opens a focused composer under the post; the comment 
   const caption = `Feed comment ${crypto.randomUUID().slice(0, 8)}`;
   const updateUrl = await shareOnePhoto(page, observation, caption);
 
+  // The Update already has a comment and a reply, written on its own page, so the Feed has a real discussion to show.
+  await page.goto(updateUrl);
+  await page.getByLabel("Your comment", { exact: true }).fill("An existing comment");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("An existing comment").first()).toBeVisible();
+  await page.getByText("Reply", { exact: true }).first().click();
+  await page.getByLabel("Reply to Feed Commenter").last().fill("An existing reply");
+  await page.getByRole("button", { name: "Post reply" }).click();
+  await expect(
+    page.getByRole("paragraph").filter({ hasText: /^An existing reply$/ }),
+  ).toBeVisible();
+
   // A visitor gets a sign-in link on the card, and no composer.
   const { context, page: visitor } = await visitorContext(browser, testInfo);
   const visitorCard = await findInFeed(visitor, caption);
@@ -309,28 +320,66 @@ test("on the Feed, Comment opens a focused composer under the post; the comment 
   await expect(visitorCard.getByRole("button", { name: "Comment", exact: true })).toHaveCount(0);
   await context.close();
 
-  // The grower opens the composer from the card. It is focused, and the page does not change address.
+  // Comment shows the existing discussion and a focused composer together, with no second click.
   const card = await findInFeed(page, caption);
   const feedAddress = page.url();
   await card.getByRole("button", { name: "Comment", exact: true }).click();
+  await expect(card.getByText("An existing comment").first()).toBeVisible();
+  await expect(card.getByText("1 comment", { exact: true })).toHaveCount(0);
+  await expect(card.getByText("2 comments", { exact: true })).toBeVisible();
   const box = card.getByLabel("Your comment", { exact: true });
   await expect(box).toBeFocused();
 
-  // Posting shows the comment beneath the post, counts it, and returns focus to Comment.
-  await box.fill("Lovely feed comment");
-  await card.getByRole("button", { name: "Post comment" }).click();
-  await expect(card.getByText("Lovely feed comment")).toBeVisible();
-  await expect(card.getByText("1 comment", { exact: true })).toBeVisible();
-  await expect(card.getByRole("button", { name: "Comment", exact: true })).toBeFocused();
+  // The reply stays with its comment: it sits behind the comment's disclosure, and opens from there.
+  await card.getByText("View 1 reply").click();
+  await expect(card.getByText("An existing reply")).toBeVisible();
+
+  // Posting from the composer. On a desktop, Enter sends; on a phone it is a new line, so the Send button is used.
+  const draft = "A new comment from the Feed";
+  await box.fill(draft);
+  if (testInfo.project.name === "desktop") {
+    await box.press("Enter");
+  } else {
+    await card.getByRole("button", { name: "Send" }).click();
+  }
+  await expect(card.getByText(draft)).toBeVisible();
+  // The count moves up by exactly one, and the conversation and composer stay open.
+  await expect(card.getByText("3 comments", { exact: true })).toBeVisible();
+  await expect(box).toHaveValue("");
+  await expect(box).toBeFocused();
+  await expect(card.getByRole("status")).toHaveText("Your comment is posted.");
   expect(page.url()).toBe(feedAddress);
   await expect(card.getByRole("link", { name: "View all comments" })).toHaveAttribute(
     "href",
     `${new URL(updateUrl).pathname}#comments`,
   );
 
-  // The comment is saved: the Update page shows it too.
+  // A post that the server refuses keeps the draft, shows why, and changes nothing.
+  const seedlingId = (await card.locator('a[href^="/seedlings/"]').first().getAttribute("href"))!
+    .split("/")
+    .pop()!;
+  const failing = "A draft that must survive a refused post";
+  await withSuperuser((db) =>
+    db.query("update public.seedlings set visibility = 'private' where id = $1", [seedlingId]),
+  );
+  try {
+    await box.fill(failing);
+    await card.getByRole("button", { name: "Send" }).click();
+    await expect(card.getByRole("alert")).toHaveText(
+      "Your comment could not be posted. Try again.",
+    );
+    await expect(box).toHaveValue(failing);
+    await expect(card.getByText("3 comments", { exact: true })).toBeVisible();
+  } finally {
+    await withSuperuser((db) =>
+      db.query("update public.seedlings set visibility = 'public' where id = $1", [seedlingId]),
+    );
+  }
+
+  // The comment is saved: the Update page shows it too, with the reply still under its comment.
   await page.goto(updateUrl);
-  await expect(page.getByText("Lovely feed comment").first()).toBeVisible();
+  await expect(page.getByText(draft).first()).toBeVisible();
+  await expect(page.getByLabel("Your comment", { exact: true })).toBeVisible();
 });
 
 test("publishing twice from a double tap creates one Update", async ({ page }) => {

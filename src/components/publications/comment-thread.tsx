@@ -8,10 +8,11 @@ import { CommentForm, ReplyForm } from "./comment-form";
 import { CommentOptions } from "./comment-options";
 
 /*
- * Comments on one Update, in the order they were posted. The composer is one "Add a comment" disclosure at the foot of the list. Each
- * comment has a compact Reply disclosure, and its replies sit under a "View N replies" disclosure that starts collapsed. A removed
- * comment keeps its place, so the replies beneath it still make sense. Only the author sees the three-dot menu; the database checks
- * ownership on every change. All disclosures work without JavaScript.
+ * Comments on one Update, in the order they were posted. The composer sits directly beneath the list, so nothing has to be opened to
+ * write. A Feed card can show only the most recent comments; its "View all comments" link opens the full discussion. Each comment has a
+ * compact Reply disclosure, and its replies sit under a "View N replies" disclosure that starts collapsed. A removed comment keeps its
+ * place, so the replies beneath it still make sense. Only the author sees the three-dot menu; the database checks ownership on every
+ * change. The disclosures work without JavaScript.
  */
 
 export async function CommentThread({
@@ -19,28 +20,35 @@ export async function CommentThread({
   comments,
   canPost,
   canReport,
+  limit,
+  composer = true,
+  sectionId = "comments",
 }: {
   readonly updateId: string;
   readonly comments: readonly CommentNode[];
   readonly canPost: boolean;
   /** Signed-in readers may report other growers' comments. Visitors see no report control. */
   readonly canReport: boolean;
+  /** Shows only the most recent this many comments. Omitted, every comment is shown. */
+  readonly limit?: number;
+  /** False when the caller provides its own composer, as the Feed card does. */
+  readonly composer?: boolean;
+  /** The section's id. Several discussions can share a page, so each must have its own. The Update page keeps "comments" for its links. */
+  readonly sectionId?: string;
 }) {
   const { t } = await getTranslation();
+  const shown = limit ? comments.slice(-limit) : comments;
+  const titleId = `${sectionId}-title`;
   return (
-    <section
-      id="comments"
-      aria-labelledby="comments-title"
-      className="flex flex-col gap-3 scroll-mt-20"
-    >
-      <h2 id="comments-title" className="sr-only">
+    <section id={sectionId} aria-labelledby={titleId} className="flex flex-col gap-3 scroll-mt-20">
+      <h2 id={titleId} className="sr-only">
         {t("publication.comments.title")}
       </h2>
       {comments.length === 0 ? (
         <p className="text-base text-text-muted">{t("publication.comments.none")}</p>
       ) : (
         <ul className="flex flex-col gap-4">
-          {comments.map((comment) => (
+          {shown.map((comment) => (
             <CommentItem
               key={comment.id}
               updateId={updateId}
@@ -52,19 +60,15 @@ export async function CommentThread({
           ))}
         </ul>
       )}
-      {canPost ? (
-        <details>
-          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand">
-            {t("publication.comments.add")}
-          </summary>
-          <div className="pt-3">
-            <CommentForm
-              updateId={updateId}
-              label={t("publication.comments.yourComment")}
-              submitLabel={t("publication.comments.post")}
-            />
-          </div>
-        </details>
+      {canPost && composer ? (
+        <div className="pt-1">
+          <CommentForm
+            updateId={updateId}
+            label={t("publication.comments.yourComment")}
+            submitLabel={t("publication.comments.send")}
+            submitOnEnter
+          />
+        </div>
       ) : null}
     </section>
   );

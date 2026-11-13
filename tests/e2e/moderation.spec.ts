@@ -130,11 +130,10 @@ test("a grower reports another grower's comment on an Update", async ({
   const bobP = await bob.newPage();
   await signUp(bobP, "bob", `Bob ${tag}`, "BE");
   await bobP.goto(update);
-  await bobP.locator("summary", { hasText: EN.publication.comments.add }).click();
   await bobP
     .getByLabel(EN.publication.comments.yourComment, { exact: true })
     .fill(`A comment to report ${tag}`);
-  await bobP.getByRole("button", { name: EN.publication.comments.post, exact: true }).click();
+  await bobP.getByRole("button", { name: EN.publication.comments.send, exact: true }).click();
   await expect(bobP.locator("p", { hasText: `A comment to report ${tag}` })).toBeVisible();
 
   // Alice reports Bob's comment. The comment stays visible; only the report is recorded.

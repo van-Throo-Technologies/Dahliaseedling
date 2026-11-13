@@ -26,6 +26,9 @@ export const PUBLISH_LIMITS = {
 
 export const FEED_PAGE_SIZE = 12;
 
+/** How many of the most recent comments a Feed card shows before its "View all comments" link. */
+export const FEED_COMMENT_LIMIT = 5;
+
 /** How long a signed URL for a public image lasts. Suspension and deletion take effect when it expires. */
 export const PUBLIC_URL_SECONDS = 3600;
 

@@ -113,11 +113,10 @@ test("a signed-in grower switches language across pages, and the stored content 
   const observation = await captureOnePhoto(page, await makePhoto());
   const updateUrl = await shareOnePhoto(page, observation, CAPTION);
   await page.goto(updateUrl);
-  await page.locator("summary", { hasText: MESSAGES.en.publication.comments.add }).click();
   await page
     .getByLabel(MESSAGES.en.publication.comments.yourComment, { exact: true })
     .fill(COMMENT);
-  await page.getByRole("button", { name: MESSAGES.en.publication.comments.post }).click();
+  await page.getByRole("button", { name: MESSAGES.en.publication.comments.send }).click();
   await expect(page.getByText(COMMENT).first()).toBeVisible();
 
   // English baseline on the Seedling.
@@ -137,7 +136,7 @@ test("a signed-in grower switches language across pages, and the stored content 
   await expect(page.getByText(CAPTION).first()).toBeVisible();
   await expect(page.getByText(COMMENT).first()).toBeVisible();
   await expect(
-    page.locator("summary", { hasText: MESSAGES.nl.publication.comments.add }),
+    page.getByLabel(MESSAGES.nl.publication.comments.yourComment, { exact: true }),
   ).toBeVisible();
 
   // Dutch to French on the Update, then the Seedling again.
@@ -145,7 +144,7 @@ test("a signed-in grower switches language across pages, and the stored content 
   await expect(page.getByText(CAPTION).first()).toBeVisible();
   await expect(page.getByText(COMMENT).first()).toBeVisible();
   await expect(
-    page.locator("summary", { hasText: MESSAGES.fr.publication.comments.add }),
+    page.getByLabel(MESSAGES.fr.publication.comments.yourComment, { exact: true }),
   ).toBeVisible();
 
   await page.goto(seedlingUrl);

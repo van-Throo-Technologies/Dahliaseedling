@@ -1,28 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { FormMessage } from "@/design-system/components/form-message";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useLocale, useT } from "@/i18n/client";
-import { formatCount, formatDate } from "@/i18n/format";
+import { formatCount } from "@/i18n/format";
 import { CommentForm } from "./comment-form";
 import { LikeForm } from "./social-buttons";
 
 /*
- * The count line and action row of a Feed card. Comment opens a composer directly beneath the row, with its text box focused. A posted
- * comment appears beneath the row and the count goes up by one, with no navigation and no page refresh. The full discussion stays one
- * link away on the Update page. A visitor gets a sign-in link in place of the composer.
+ * The count line and action row of a Feed card. Comment opens the discussion directly beneath the row, with the composer below it and
+ * its text box focused. The conversation stays open after a post, and the new comment appears in it. The count is the server's count,
+ * which the Feed refreshes after a post, so it moves up by exactly one. Success is announced to screen readers only. A visitor gets a
+ * sign-in link in place of the conversation.
  *
- * The composer is the same CommentForm the Update page uses, so the same action, validation and permission checks apply.
+ * The discussion and the composer are the same components the Update page uses, so the same action, validation and permission checks
+ * apply. The discussion is rendered on the server and passed in, so nothing is fetched on click.
  */
 
 const actionClass =
   "inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand transition-colors hover:border-text-brand";
-
-interface PostedComment {
-  readonly body: string;
-  readonly postedAt: string;
-}
 
 export function FeedActions({
   updateId,
@@ -32,6 +28,7 @@ export function FeedActions({
   likeText,
   commentCount,
   signedIn,
+  discussion,
 }: {
   readonly updateId: string;
   readonly liked: boolean;
@@ -41,38 +38,28 @@ export function FeedActions({
   readonly likeText: string;
   readonly commentCount: number;
   readonly signedIn: boolean;
+  /** The most recent comments on this Update, rendered on the server. */
+  readonly discussion: ReactNode;
 }) {
   const t = useT();
   const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const [posted, setPosted] = useState<readonly PostedComment[]>([]);
-  const [justPosted, setJustPosted] = useState(false);
-  // The count when the card first appeared, before anything was posted here. Posting refreshes the Feed, so the server count can
-  // already include the new comment by the time the post is recorded; the larger of the two numbers is then the right one.
-  const [baseCount] = useState(commentCount);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
-  const total = Math.max(commentCount, baseCount + posted.length);
   const commentText =
-    total === 1
+    commentCount === 1
       ? t("publication.update.comments.one")
-      : t("publication.update.comments.other", { count: formatCount(total, locale) });
+      : t("publication.update.comments.other", { count: formatCount(commentCount, locale) });
 
-  // Focus moves into the composer when it opens, so the text can be typed at once.
+  // Focus moves into the composer when the discussion opens, so the text can be typed at once. The composer's own box is used:
+  // the discussion's reply boxes come first in the page, and they sit inside closed disclosures that cannot take focus.
   useEffect(() => {
-    if (open) panelRef.current?.querySelector("textarea")?.focus();
+    if (open) composerRef.current?.querySelector("textarea")?.focus();
   }, [open]);
 
   const close = useCallback(() => {
-    setOpen(false);
-    toggleRef.current?.focus();
-  }, []);
-
-  const handlePosted = useCallback(({ body }: { readonly body: string }) => {
-    setPosted((list) => [...list, { body, postedAt: new Date().toISOString() }]);
-    setJustPosted(true);
     setOpen(false);
     toggleRef.current?.focus();
   }, []);
@@ -92,10 +79,7 @@ export function FeedActions({
             type="button"
             aria-expanded={open}
             aria-controls={panelId}
-            onClick={() => {
-              setJustPosted(false);
-              setOpen((isOpen) => !isOpen);
-            }}
+            onClick={() => setOpen((isOpen) => !isOpen)}
             className={actionClass}
           >
             {t("publication.update.comment")}
@@ -112,52 +96,27 @@ export function FeedActions({
 
       <div
         id={panelId}
-        ref={panelRef}
         hidden={!open}
         onKeyDown={(event) => {
           if (event.key === "Escape") close();
         }}
       >
         {open ? (
-          <div className="flex flex-col gap-3">
-            <CommentForm
-              updateId={updateId}
-              label={t("publication.comments.yourComment")}
-              submitLabel={t("publication.comments.post")}
-              onSaved={handlePosted}
-            />
-            <button type="button" onClick={close} className={`${actionClass} self-start`}>
-              {t("publication.comments.cancel")}
-            </button>
+          <div className="flex flex-col gap-4">
+            {discussion}
+            <div ref={composerRef}>
+              <CommentForm
+                updateId={updateId}
+                label={t("publication.comments.yourComment")}
+                submitLabel={t("publication.comments.send")}
+                submitOnEnter
+              />
+            </div>
           </div>
         ) : null}
       </div>
 
-      {justPosted ? (
-        <FormMessage tone="success">{t("publication.comments.posted")}</FormMessage>
-      ) : null}
-      {posted.length > 0 ? (
-        <ul className="flex flex-col gap-4">
-          {posted.map((comment, index) => (
-            <li key={index}>
-              <article
-                aria-label={t("publication.comments.byAuthor", {
-                  name: t("publication.comments.you"),
-                })}
-                className="flex flex-col gap-1"
-              >
-                <p className="text-sm text-text-muted">
-                  <span className="font-medium text-text">{t("publication.comments.you")}</span>
-                  {" · "}
-                  <time dateTime={comment.postedAt}>{formatDate(comment.postedAt, locale)}</time>
-                </p>
-                <p className="whitespace-pre-line text-base text-text">{comment.body}</p>
-              </article>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {total > 0 ? (
+      {commentCount > 0 ? (
         <Link
           href={`/updates/${updateId}#comments`}
           className="inline-flex min-h-11 items-center text-base font-medium text-text-brand"

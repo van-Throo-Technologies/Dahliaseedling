@@ -4,8 +4,15 @@ import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { formatDate, formatCount } from "@/i18n/format";
 import { getTranslation } from "@/i18n/server";
 import { avatarHref } from "@/modules/identity/presentation";
-import type { PublicImage, UpdateSummary } from "@/modules/publications/repository";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { FEED_COMMENT_LIMIT } from "@/modules/publications/limits";
+import {
+  listComments,
+  type PublicImage,
+  type UpdateSummary,
+} from "@/modules/publications/repository";
 import { PublicPhoto } from "./public-photo";
+import { CommentThread } from "./comment-thread";
 import { FeedActions } from "./feed-actions";
 import { LikeForm } from "./social-buttons";
 import { displayedName } from "@/modules/identity/former-grower";
@@ -44,6 +51,28 @@ function FullSizePhoto({
     >
       <PublicPhoto image={image} alt={alt} square={square} flush={flush} />
     </a>
+  );
+}
+
+/** The most recent comments on a Feed card. Rendered on the server with the card, so they show as soon as Comment is pressed. */
+async function FeedDiscussion({
+  updateId,
+  signedIn,
+}: {
+  readonly updateId: string;
+  readonly signedIn: boolean;
+}) {
+  const comments = await listComments(await createSupabaseServerClient(), updateId);
+  return (
+    <CommentThread
+      updateId={updateId}
+      comments={comments}
+      canPost={signedIn}
+      canReport={signedIn}
+      limit={FEED_COMMENT_LIMIT}
+      composer={false}
+      sectionId={`feed-comments-${updateId}`}
+    />
   );
 }
 
@@ -157,6 +186,9 @@ export async function UpdateCard({
           likeText={likeText}
           commentCount={comments}
           signedIn={inlineComments.signedIn}
+          discussion={
+            <FeedDiscussion updateId={update.updateId} signedIn={inlineComments.signedIn} />
+          }
         />
       ) : (
         <div className="flex flex-col gap-3 p-4">
