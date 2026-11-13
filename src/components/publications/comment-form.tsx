@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
 import { addCommentAction, editCommentAction } from "@/modules/publications/actions";
 import { FormMessage } from "@/design-system/components/form-message";
 import { SubmitButton } from "@/design-system/components/submit-button";
@@ -20,23 +20,36 @@ export function CommentForm({
   readonly parentId?: string;
   readonly label: string;
   readonly submitLabel: string;
-  /** Called only after a successful post, never after an error. */
-  readonly onSaved?: () => void;
+  /** Called only after a successful post, never after an error, with the text that was posted. */
+  readonly onSaved?: (posted: { readonly body: string }) => void;
 }) {
   const t = useT();
   const [state, action] = useActionState(addCommentAction, IDLE_FORM_STATE);
   const formRef = useRef<HTMLFormElement>(null);
-  const bodyId = `comment-body-${parentId ?? "root"}`;
+  // React clears an uncontrolled form when its action starts, whatever the result. The text is kept here so an error can put it back.
+  const typedRef = useRef("");
+  const bodyId = useId();
 
-  // A posted comment clears the box. An error keeps what was typed, so nothing is lost.
   useEffect(() => {
+    if (state.status === "error") {
+      const textarea = formRef.current?.elements.namedItem("body");
+      if (textarea instanceof HTMLTextAreaElement) textarea.value = typedRef.current;
+      return;
+    }
     if (state.status !== "saved") return;
     formRef.current?.reset();
-    onSaved?.();
+    onSaved?.({ body: typedRef.current.trim() });
   }, [state, onSaved]);
 
   return (
-    <form ref={formRef} action={action} className="flex flex-col gap-3">
+    <form
+      ref={formRef}
+      action={action}
+      onSubmit={(event) => {
+        typedRef.current = String(new FormData(event.currentTarget).get("body") ?? "");
+      }}
+      className="flex flex-col gap-3"
+    >
       <input type="hidden" name="updateId" value={updateId} />
       {parentId ? <input type="hidden" name="parentId" value={parentId} /> : null}
       <div className="flex flex-col gap-2">

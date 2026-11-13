@@ -6,6 +6,7 @@ import { getTranslation } from "@/i18n/server";
 import { avatarHref } from "@/modules/identity/presentation";
 import type { PublicImage, UpdateSummary } from "@/modules/publications/repository";
 import { PublicPhoto } from "./public-photo";
+import { FeedActions } from "./feed-actions";
 import { LikeForm } from "./social-buttons";
 import { displayedName } from "@/modules/identity/former-grower";
 
@@ -50,11 +51,14 @@ export async function UpdateCard({
   update,
   showSeedling = true,
   menu,
+  inlineComments,
 }: {
   readonly update: UpdateSummary;
   readonly showSeedling?: boolean;
   /** The author's own controls, shown beside the header. Other viewers get no menu. */
   readonly menu?: ReactNode;
+  /** The Feed opens the composer on the card. Other places keep the link to the Update page. */
+  readonly inlineComments?: { readonly signedIn: boolean };
 }) {
   const { t, locale } = await getTranslation();
   const [lead, ...others] = update.images;
@@ -144,27 +148,39 @@ export async function UpdateCard({
         </ul>
       ) : null}
 
-      <div className="flex flex-col gap-3 p-4">
-        <p className="flex flex-wrap gap-x-3 text-sm text-text-muted">
-          {photos > 1 ? <span>{photoText}</span> : null}
-          <span>{likeText}</span>
-          <span>{commentText}</span>
-        </p>
-        <footer className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
-          <LikeForm
-            updateId={update.updateId}
-            liked={update.likedByMe}
-            count={update.likeCount}
-            showCount={false}
-          />
-          <Link
-            href={`/updates/${update.updateId}#comments`}
-            className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand transition-colors hover:border-text-brand"
-          >
-            {t("publication.update.comment")}
-          </Link>
-        </footer>
-      </div>
+      {inlineComments ? (
+        <FeedActions
+          updateId={update.updateId}
+          liked={update.likedByMe}
+          likeCount={likes}
+          photoText={photos > 1 ? photoText : null}
+          likeText={likeText}
+          commentCount={comments}
+          signedIn={inlineComments.signedIn}
+        />
+      ) : (
+        <div className="flex flex-col gap-3 p-4">
+          <p className="flex flex-wrap gap-x-3 text-sm text-text-muted">
+            {photos > 1 ? <span>{photoText}</span> : null}
+            <span>{likeText}</span>
+            <span>{commentText}</span>
+          </p>
+          <footer className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+            <LikeForm
+              updateId={update.updateId}
+              liked={update.likedByMe}
+              count={update.likeCount}
+              showCount={false}
+            />
+            <Link
+              href={`/updates/${update.updateId}#comments`}
+              className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand transition-colors hover:border-text-brand"
+            >
+              {t("publication.update.comment")}
+            </Link>
+          </footer>
+        </div>
+      )}
     </article>
   );
 }

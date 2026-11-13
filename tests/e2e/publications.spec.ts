@@ -293,6 +293,46 @@ test("comments, replies, likes, follows and Save work for a grower; a visitor is
   await expectNoHorizontalOverflow(page);
 });
 
+test("on the Feed, Comment opens a focused composer under the post; the comment appears there without leaving Home", async ({
+  page,
+  browser,
+}, testInfo) => {
+  await signUpAndSetUpProfile(page, "feedcomment", "Feed Commenter");
+  const observation = await captureOnePhoto(page, await makePhoto());
+  const caption = `Feed comment ${crypto.randomUUID().slice(0, 8)}`;
+  const updateUrl = await shareOnePhoto(page, observation, caption);
+
+  // A visitor gets a sign-in link on the card, and no composer.
+  const { context, page: visitor } = await visitorContext(browser, testInfo);
+  const visitorCard = await findInFeed(visitor, caption);
+  await expect(visitorCard.getByRole("link", { name: "Sign in to comment" })).toBeVisible();
+  await expect(visitorCard.getByRole("button", { name: "Comment", exact: true })).toHaveCount(0);
+  await context.close();
+
+  // The grower opens the composer from the card. It is focused, and the page does not change address.
+  const card = await findInFeed(page, caption);
+  const feedAddress = page.url();
+  await card.getByRole("button", { name: "Comment", exact: true }).click();
+  const box = card.getByLabel("Your comment", { exact: true });
+  await expect(box).toBeFocused();
+
+  // Posting shows the comment beneath the post, counts it, and returns focus to Comment.
+  await box.fill("Lovely feed comment");
+  await card.getByRole("button", { name: "Post comment" }).click();
+  await expect(card.getByText("Lovely feed comment")).toBeVisible();
+  await expect(card.getByText("1 comment", { exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Comment", exact: true })).toBeFocused();
+  expect(page.url()).toBe(feedAddress);
+  await expect(card.getByRole("link", { name: "View all comments" })).toHaveAttribute(
+    "href",
+    `${new URL(updateUrl).pathname}#comments`,
+  );
+
+  // The comment is saved: the Update page shows it too.
+  await page.goto(updateUrl);
+  await expect(page.getByText("Lovely feed comment").first()).toBeVisible();
+});
+
 test("publishing twice from a double tap creates one Update", async ({ page }) => {
   await signUpAndSetUpProfile(page, "double", "Double Tap Grower");
   const observation = await captureOnePhoto(page, await makePhoto());

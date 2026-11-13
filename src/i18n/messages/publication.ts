@@ -96,6 +96,10 @@ export const en = {
     options: "Comment options",
     editComment: "Edit comment",
     deleteComment: "Delete comment",
+    you: "You",
+    cancel: "Cancel",
+    viewAll: "View all comments",
+    signInToComment: "Sign in to comment",
   },
   share: {
     title: "Share this observation",
@@ -249,6 +253,10 @@ export const nl: typeof en = {
     options: "Opties voor reactie",
     editComment: "Reactie bewerken",
     deleteComment: "Reactie verwijderen",
+    you: "Jij",
+    cancel: "Annuleren",
+    viewAll: "Alle reacties bekijken",
+    signInToComment: "Log in om te reageren",
   },
   share: {
     title: "Deze observatie delen",
@@ -403,6 +411,10 @@ export const fr: typeof en = {
     options: "Options du commentaire",
     editComment: "Modifier le commentaire",
     deleteComment: "Supprimer le commentaire",
+    you: "Vous",
+    cancel: "Annuler",
+    viewAll: "Voir tous les commentaires",
+    signInToComment: "Connectez-vous pour commenter",
   },
   share: {
     title: "Partager cette observation",
