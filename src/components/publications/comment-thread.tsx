@@ -7,6 +7,7 @@ import { CommentBranch } from "./comment-branch";
 import { CommentForm, ReplyForm } from "./comment-form";
 import { CommentOptions } from "./comment-options";
 import { InitialsAvatar } from "./initials-avatar";
+import { ReplyButton } from "./conversation-reply";
 
 /*
  * Comments on one Update, in the order they were posted. The page variant is the Update page: the composer sits directly beneath the
@@ -75,6 +76,8 @@ export async function CommentThread({
             updateId={updateId}
             label={t("publication.comments.yourComment")}
             submitLabel={t("publication.comments.send")}
+            pill
+            placeholder={t("publication.comments.placeholder")}
             submitOnEnter
           />
         </div>
@@ -161,6 +164,7 @@ async function CommentItem({
         summary={summary}
         replies={replies}
         compact={conversation}
+        parentId={conversation ? node.id : undefined}
       >
         <article
           aria-label={t("publication.comments.byAuthor", { name })}
@@ -194,30 +198,34 @@ async function CommentItem({
             <div
               className={
                 conversation
-                  ? "mt-1 flex flex-wrap items-center gap-x-4 text-[13px]"
+                  ? "flex flex-wrap items-center gap-x-4 text-[13px]"
                   : "flex flex-wrap items-start gap-x-4"
               }
             >
               {!node.isRemoved && canPost ? (
-                <details className="open:basis-full">
-                  <summary
-                    className={
-                      conversation
-                        ? "inline-flex min-h-9 cursor-pointer items-center font-semibold text-text-muted hover:text-text-brand"
-                        : "inline-flex min-h-11 min-w-11 cursor-pointer items-center text-base font-medium text-text-brand"
-                    }
-                  >
-                    {t("publication.comments.reply")}
-                  </summary>
-                  <div className="pt-2">
-                    <ReplyForm
-                      updateId={updateId}
-                      parentId={node.id}
-                      label={t("publication.comments.replyTo", { name })}
-                      submitLabel={t("publication.comments.postReply")}
-                    />
-                  </div>
-                </details>
+                conversation ? (
+                  <ReplyButton parentId={node.id} name={name} />
+                ) : (
+                  <details className="open:basis-full">
+                    <summary
+                      className={
+                        conversation
+                          ? "inline-flex min-h-9 cursor-pointer items-center font-semibold text-text-muted hover:text-text-brand"
+                          : "inline-flex min-h-11 min-w-11 cursor-pointer items-center text-base font-medium text-text-brand"
+                      }
+                    >
+                      {t("publication.comments.reply")}
+                    </summary>
+                    <div className="pt-2">
+                      <ReplyForm
+                        updateId={updateId}
+                        parentId={node.id}
+                        label={t("publication.comments.replyTo", { name })}
+                        submitLabel={t("publication.comments.postReply")}
+                      />
+                    </div>
+                  </details>
+                )
               ) : null}
 
               {!node.isRemoved && !node.isMine && canReport ? (

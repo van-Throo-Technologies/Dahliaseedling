@@ -191,6 +191,9 @@ export function ReplyForm({
       parentId={parentId}
       label={label}
       submitLabel={submitLabel}
+      pill
+      placeholder={label}
+      submitOnEnter
       onSaved={expandReplies ?? undefined}
     />
   );

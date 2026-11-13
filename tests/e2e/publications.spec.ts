@@ -387,6 +387,47 @@ test("on the Feed, Comment opens the conversation in a dialog; a posted comment 
   await expect(page.getByLabel("Your comment", { exact: true })).toBeVisible();
 });
 
+test("on the Feed, Reply uses the conversation's one composer: it switches to reply mode, Cancel returns it, and the reply sits under its comment", async ({
+  page,
+}) => {
+  await signUpAndSetUpProfile(page, "replymode", "Reply Mode Grower");
+  const observation = await captureOnePhoto(page, await makePhoto());
+  const caption = `Reply mode ${crypto.randomUUID().slice(0, 8)}`;
+  const updateUrl = await shareOnePhoto(page, observation, caption);
+
+  // A parent comment, written on the Update page.
+  await page.goto(updateUrl);
+  await page.getByLabel("Your comment", { exact: true }).fill("A parent comment");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("A parent comment").first()).toBeVisible();
+
+  // The conversation opens with the comment. Reply switches the one composer into reply mode, with no second text box.
+  const card = await findInFeed(page, caption);
+  await card.getByRole("button", { name: "Comment", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("A parent comment").first()).toBeVisible();
+  await dialog.getByRole("button", { name: "Reply", exact: true }).click();
+  await expect(dialog.getByText("Replying to Reply Mode Grower")).toBeVisible();
+  await expect(dialog.locator("textarea[name='body']")).toHaveCount(1);
+  await expect(dialog.getByLabel("Reply to Reply Mode Grower", { exact: true })).toBeFocused();
+
+  // Cancel returns the same composer to ordinary commenting.
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog.getByText("Replying to Reply Mode Grower")).toHaveCount(0);
+  await expect(dialog.getByLabel("Your comment", { exact: true })).toBeFocused();
+
+  // A reply, sent with the compact Send. It appears under its parent, and the composer returns to ordinary commenting.
+  await dialog.getByRole("button", { name: "Reply", exact: true }).click();
+  await dialog
+    .getByLabel("Reply to Reply Mode Grower", { exact: true })
+    .fill("A reply in the conversation");
+  await dialog.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(dialog.getByText("A reply in the conversation")).toBeVisible();
+  await expect(dialog.getByText("Replying to Reply Mode Grower")).toHaveCount(0);
+  await expect(dialog.locator("textarea[name='body']")).toHaveCount(1);
+  await expect(card.getByText("2 comments", { exact: true })).toBeVisible();
+});
+
 test("publishing twice from a double tap creates one Update", async ({ page }) => {
   await signUpAndSetUpProfile(page, "double", "Double Tap Grower");
   const observation = await captureOnePhoto(page, await makePhoto());

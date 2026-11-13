@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { useReplyControl } from "./conversation-reply";
 
 /*
  * One comment and its replies. The replies disclosure starts collapsed, and its open state belongs to this comment alone. A reply form
@@ -20,6 +21,7 @@ export function CommentBranch({
   replies,
   children,
   compact = false,
+  parentId,
 }: {
   readonly replyCount: number;
   readonly summary: string;
@@ -27,9 +29,13 @@ export function CommentBranch({
   readonly children: ReactNode;
   /** The conversation dialog's smaller disclosure. */
   readonly compact?: boolean;
+  /** The comment this branch belongs to, so a saved reply can open it. Omitted on the Update page. */
+  readonly parentId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const expand = useCallback(() => setOpen(true), []);
+  const control = useReplyControl();
+  const expandedByReply = parentId !== undefined && control?.expandedParentId === parentId;
 
   return (
     <ExpandRepliesContext.Provider value={expand}>
@@ -37,8 +43,12 @@ export function CommentBranch({
       {replyCount > 0 ? (
         <details
           className="mt-1"
-          open={open}
-          onToggle={(event) => setOpen(event.currentTarget.open)}
+          open={open || expandedByReply}
+          onToggle={(event) => {
+            const next = event.currentTarget.open;
+            setOpen(next);
+            if (!next && parentId !== undefined) control?.releaseExpanded(parentId);
+          }}
         >
           <summary
             className={
