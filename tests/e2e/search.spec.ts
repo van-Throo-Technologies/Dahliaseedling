@@ -129,11 +129,11 @@ test("a visitor finds public seedlings and cultivars without an account, and a p
   // The query is echoed in the heading, so the check is for a result link, not for the text.
   await expect(visitorPage.getByRole("link", { name: new RegExp(PRIVATE_NAME) })).toHaveCount(0);
 
-  // Clearing the search returns the Feed.
+  // Clearing the search returns to the default Explore view.
   await visitorPage.getByRole("link", { name: MESSAGES.en.search.clear }).click();
-  await expect(visitorPage).toHaveURL(/\/$/);
+  await expect(visitorPage).toHaveURL(/\/explore$/);
   await expect(visitorPage.getByRole("heading", { level: 1 })).toHaveText(
-    MESSAGES.en.publication.feed.title,
+    MESSAGES.en.publication.feed.explore,
   );
 
   await visitor.close();

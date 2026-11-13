@@ -271,10 +271,11 @@ test("the crafted administrator request, sent to its own page, is processed (con
   ) as {
     node: Record<string, { exportedName: string; filename: string }>;
   };
+  // The bundler decides how the source path is written (webpack omits the leading "src/"), so match the module's path suffix.
   const actionId = Object.entries(manifest.node).find(
     ([, value]) =>
       value.exportedName === "decideInvitationRequestAction" &&
-      value.filename === "src/modules/invitations/actions.ts",
+      value.filename.endsWith("modules/invitations/actions.ts"),
   )![0];
   const boundary = "----DahliaSeedlingControl";
   const field = (name: string, value: string) =>

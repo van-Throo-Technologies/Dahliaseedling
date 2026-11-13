@@ -84,6 +84,8 @@ test("a search with more than one page of seedlings can be continued, and the qu
   await next.click();
   await expect(visitorPage).toHaveURL(/seedlings=/);
   expect(new URL(visitorPage.url()).searchParams.get("q")).toBe(PREFIX);
+  // The URL changes before the results render, so wait for the remaining cards before reading them.
+  await expect(visitorPage.locator('a[href^="/seedlings/"]')).toHaveCount(2);
   const secondPage = await cardAddresses(visitorPage);
   expect(secondPage.length).toBe(2);
   expect(secondPage.some((address) => firstPage.includes(address))).toBe(false);
@@ -117,6 +119,8 @@ test("a search with more than one page of seedlings can be continued, and the qu
   // Back to the first results returns the first page.
   await visitorPage.getByRole("link", { name: MESSAGES.nl.search.first }).click();
   await expect(visitorPage).not.toHaveURL(/seedlings=/);
+  // The URL changes before the results render, so wait for the first page's cards before reading them.
+  await expect(visitorPage.locator('a[href^="/seedlings/"]')).toHaveCount(firstPage.length);
   expect(await cardAddresses(visitorPage)).toEqual(firstPage);
 
   // A malformed cursor is refused safely: the first page is shown, and the page says why.
@@ -124,11 +128,12 @@ test("a search with more than one page of seedlings can be continued, and the qu
   await expect(visitorPage.getByText(MESSAGES.nl.search.cursorInvalid)).toBeVisible();
   expect(await cardAddresses(visitorPage)).toEqual(firstPage);
 
-  // Clearing the search returns the Feed.
+  // Clearing the search returns to the default Explore view.
   await visitorPage.goto(`/?q=${encodeURIComponent(PREFIX)}&seedlings=`);
   await visitorPage.getByRole("link", { name: MESSAGES.nl.search.clear }).click();
+  await expect(visitorPage).toHaveURL(/\/explore$/);
   await expect(visitorPage.getByRole("heading", { level: 1 })).toHaveText(
-    MESSAGES.nl.publication.feed.title,
+    MESSAGES.nl.publication.feed.explore,
   );
 
   await visitor.close();

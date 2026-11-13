@@ -159,7 +159,7 @@ test("a Seedling's photo, shared publicly, lets the Seedling offer seedheads tha
 
   // 8. Clear removes the seeds filter, and the control reflects that.
   await visitorPage.getByRole("link", { name: EN.search.clear }).click();
-  await expect(visitorPage).toHaveURL(/\/$/);
+  await expect(visitorPage).toHaveURL(/\/explore$/);
   await expect(visitorPage.getByLabel(EN.search.seedsLabel)).not.toBeChecked();
 
   // 9. Locale switch keeps the canonical seeds filter (Dutch check on the same results).

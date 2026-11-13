@@ -110,7 +110,10 @@ export async function SearchForm({
           {t("search.help")}
         </p>
         {active ? (
-          <Link href="/" className="inline-flex min-h-11 items-center text-base text-text-brand">
+          <Link
+            href="/explore"
+            className="inline-flex min-h-11 items-center text-base text-text-brand"
+          >
             {t("search.clear")}
           </Link>
         ) : null}

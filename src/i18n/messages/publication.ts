@@ -6,8 +6,6 @@
 export const en = {
   feed: {
     railRecent: "Recently shared",
-    railVisitorText: "Create an account to share the seedlings you grow and follow other growers.",
-    railSignIn: "Sign in to share",
     railLabel: "Discover",
     railTitle: "Discover",
     railText: "Search seedlings, cultivars and growers, and see what is available to share.",
@@ -161,9 +159,6 @@ export const en = {
 export const nl: typeof en = {
   feed: {
     railRecent: "Recent gedeeld",
-    railVisitorText:
-      "Maak een account om de zaailingen die je kweekt te delen en andere kwekers te volgen.",
-    railSignIn: "Inloggen om te delen",
     railLabel: "Ontdekken",
     railTitle: "Ontdekken",
     railText: "Zoek naar zaailingen, cultivars en kwekers, en zie wat er te delen is.",
@@ -194,7 +189,7 @@ export const nl: typeof en = {
     addPhotos: "Foto's toevoegen",
     signInInvite: "Log in om te delen wat je kweekt.",
     signInAction: "Inloggen",
-    explore: "Verkennen",
+    explore: "Ontdekken",
     addPhotoSignIn: "Log in om een foto toe te voegen.",
     addPhotoSetup: "Stel je profiel in om een foto toe te voegen.",
   },
@@ -210,7 +205,7 @@ export const nl: typeof en = {
     comments: { one: "1 reactie", other: "{count} reacties" },
     seedlingLabel: "Zaailing",
     openFullSize: "Foto op volledige grootte openen (opent in een nieuw tabblad)",
-    likes: { one: "1 keer geliked", other: "{count} keer geliked" },
+    likes: { one: "1 like", other: "{count} likes" },
     photos: { one: "1 foto", other: "{count} foto's" },
     comment: "Reageren",
     published:
@@ -317,14 +312,11 @@ export const nl: typeof en = {
 export const fr: typeof en = {
   feed: {
     railRecent: "Partagés récemment",
-    railVisitorText:
-      "Créez un compte pour partager les semis que vous cultivez et suivre d'autres cultivateurs.",
-    railSignIn: "Se connecter pour partager",
     railLabel: "Découvrir",
     railTitle: "Découvrir",
     railText:
       "Recherchez des semis, des cultivars et des cultivateurs, et voyez ce qui peut être partagé.",
-    railExplore: "Ouvrir Explorer",
+    railExplore: "Aller à Découvrir",
     title: "Fil d'actualité",
     everyone: "Pour vous",
     following: "Abonnements",
@@ -351,7 +343,7 @@ export const fr: typeof en = {
     addPhotos: "Ajouter des photos",
     signInInvite: "Connectez-vous pour partager ce que vous cultivez.",
     signInAction: "Se connecter",
-    explore: "Explorer",
+    explore: "Découvrir",
     addPhotoSignIn: "Connectez-vous pour ajouter une photo.",
     addPhotoSetup: "Configurez votre profil pour ajouter une photo.",
   },

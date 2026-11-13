@@ -29,15 +29,19 @@ test("visitor can browse, is prompted to sign in only when participating, and ca
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Feed");
   await expectNoHorizontalOverflow(page);
 
-  // Navigation is exactly the locked set, in order, with no Explore destination.
+  // Navigation is the approved set, in order: Home, Explore, Notifications, Profile.
   const primary = page.getByRole("navigation", { name: "Primary" });
-  await expect(primary.getByRole("link")).toHaveText(["Home", "Notifications", "Profile"]);
-  await expect(page.getByText("Explore", { exact: false })).toHaveCount(0);
+  await expect(primary.getByRole("link")).toHaveText([
+    "Home",
+    "Explore",
+    "Notifications",
+    "Profile",
+  ]);
   await expect(page.getByRole("link", { name: "Inbox" })).toBeVisible();
 
-  // A participating action with no session leads to sign-in, preserving the destination.
-  await page.goto("/");
-  await page.getByRole("link", { name: "Sign in to add a photo." }).click();
+  // A participating action with no session leads to sign-in, preserving the destination. Capture is the action itself;
+  // the Feed's sign-in control carries the visitor to Feed, not to Capture.
+  await page.goto("/capture");
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fcapture$/);
 
   // Create an account and set up the minimum profile.

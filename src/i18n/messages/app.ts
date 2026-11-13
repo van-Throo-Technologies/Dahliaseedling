@@ -58,7 +58,7 @@ export const fr: typeof en = {
   description:
     "Une communauté et une plateforme de continuité pour des dahlias génétiquement uniques, cultivés à partir de semis.",
   nav: {
-    explore: "Explorer",
+    explore: "Découvrir",
     label: "Navigation principale",
     home: "Accueil",
     capture: "Capturer",

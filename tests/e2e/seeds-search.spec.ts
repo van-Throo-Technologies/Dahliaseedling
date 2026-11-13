@@ -68,8 +68,9 @@ test("a live seed offer is found through the one Search, shows its honest source
     main.getByText(EN.seeds.sourceName.unidentified, { exact: true }).first(),
   ).toBeVisible();
   await expect(main.getByRole("img", { name: EN.seeds.sourcePhoto }).first()).toBeVisible();
-  // No Explore or marketplace destination appears anywhere on the page.
-  await expect(visitorPage.getByRole("link", { name: /explore|marketplace/i })).toHaveCount(0);
+  // Search lives on Explore, which is an approved destination. No marketplace destination appears anywhere on the page.
+  await expect(visitorPage).toHaveURL(/\/explore\?/);
+  await expect(visitorPage.getByRole("link", { name: /marketplace/i })).toHaveCount(0);
 
   // The grower closes the offer: it leaves the results.
   await page.goto(profilePath);
@@ -114,9 +115,9 @@ test("unknown or mixed and unidentified dahlia stay distinct in Dutch, and the D
   ).toBeVisible();
   expect(NL.seeds.sourceName.unidentified).not.toBe(NL.seeds.sourceName.unknownMixed);
 
-  // Clear removes the seeds filter, and the address returns to the Feed.
+  // Clear removes the seeds filter, and the address returns to the unfiltered search on Explore.
   await visitorPage.getByRole("link", { name: NL.search.clear }).click();
-  await expect(visitorPage).toHaveURL(/\/$/);
+  await expect(visitorPage).toHaveURL(/\/explore$/);
   await expect(visitorPage.getByLabel(NL.search.seedsLabel)).not.toBeChecked();
 
   await visitor.close();

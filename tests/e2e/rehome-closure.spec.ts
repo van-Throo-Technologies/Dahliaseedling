@@ -111,7 +111,7 @@ test("a Seedling moves from availability through a pending selection to a comple
   // Clearing the filter returns the visitor to the unfiltered address.
   await visitorPage.goto(`/?available=1&q=${tag}`);
   await visitorPage.getByRole("link", { name: EN.search.clear }).click();
-  await expect(visitorPage).toHaveURL(/\/$/);
+  await expect(visitorPage).toHaveURL(/\/explore$/);
   await expect(visitorPage.getByLabel(EN.search.availableLabel)).not.toBeChecked();
 
   await holder.close();
