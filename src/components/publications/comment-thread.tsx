@@ -55,7 +55,7 @@ export async function CommentThread({
       {comments.length === 0 ? (
         <p className="text-base text-text-muted">{t("publication.comments.none")}</p>
       ) : (
-        <ul className={conversation ? "flex flex-col gap-5" : "flex flex-col gap-4"}>
+        <ul className={"flex flex-col gap-4"}>
           {shown.map((comment) => (
             <CommentItem
               key={comment.id}
@@ -131,7 +131,7 @@ async function CommentItem({
       ? t("publication.comments.viewReplies.one")
       : t("publication.comments.viewReplies.other", { count: formatCount(replyCount, locale) });
   const replies = (
-    <ul className={conversation ? "mt-3 flex flex-col gap-4" : "mt-2 flex flex-col gap-4"}>
+    <ul className={conversation ? "mt-2 flex flex-col gap-3" : "mt-2 flex flex-col gap-4"}>
       {node.replies.map((reply) => (
         <CommentItem
           key={reply.id}
@@ -154,7 +154,7 @@ async function CommentItem({
     />
   ) : null;
   const bodyClass = conversation
-    ? "mt-1 inline-block max-w-full rounded-[12px] bg-background px-3 py-2 whitespace-pre-line text-base text-text"
+    ? "mt-0.5 whitespace-pre-line text-base text-text"
     : "whitespace-pre-line text-base text-text";
 
   return (

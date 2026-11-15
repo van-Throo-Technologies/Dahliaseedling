@@ -50,9 +50,9 @@ export function CommentOptions({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">{byline}</div>
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-0.5">
+        <div className="min-w-0">{byline}</div>
         <div ref={rootRef} className="relative shrink-0" onKeyDown={closeOnEscape}>
           <button
             ref={triggerRef}
@@ -61,7 +61,7 @@ export function CommentOptions({
             aria-expanded={open}
             aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-text-muted"
+            className="-my-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-text-muted"
           >
             <MoreIcon className="h-6 w-6" />
           </button>
