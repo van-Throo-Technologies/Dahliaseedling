@@ -8,7 +8,7 @@ export const en = {
     title: "Every seedling has a story.",
     intro:
       "Discover seedlings and dahlias grown by growers, document the seedlings you raise, and share their progress with people who care about them.",
-    alt: "A first-bloom dahlia seedling, pale pink with yellow petal edges, in a garden.",
+    alt: "A pink and cream dahlia in full bloom, with a green developing bud beside it and dark leaves behind.",
   },
   feed: {
     railRecent: "Recently shared",
@@ -177,7 +177,7 @@ export const nl: typeof en = {
     title: "Elke zaailing heeft een verhaal.",
     intro:
       "Ontdek zaailingen en dahlia’s van kwekers, documenteer de zaailingen die je opkweekt en deel hun voortgang met mensen die erom geven.",
-    alt: "Een dahlia-zaailing in de eerste bloei, lichtroze met gele bloemblaadjes, in de tuin.",
+    alt: "Een roze-crème dahlia in volle bloei, met een groeiende groene knop ernaast en donkere bladeren op de achtergrond.",
   },
   feed: {
     railRecent: "Recent gedeeld",
@@ -346,7 +346,7 @@ export const fr: typeof en = {
     title: "Chaque semis a une histoire.",
     intro:
       "Découvrez les semis et les dahlias cultivés par des producteurs, documentez les semis que vous élevez et partagez leur évolution avec ceux qui y tiennent.",
-    alt: "Un semis de dahlia en première floraison, rose pâle aux bords de pétales jaunes, dans un jardin.",
+    alt: "Un dahlia rose et crème en pleine floraison, avec un bouton vert en développement à côté et des feuilles sombres en arrière-plan.",
   },
   feed: {
     railRecent: "Partagés récemment",

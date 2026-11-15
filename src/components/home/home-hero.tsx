@@ -46,14 +46,14 @@ export async function HomeHero({ signedIn }: { readonly signedIn: boolean }) {
           className="object-cover object-[80%_50%]"
         />
       </div>
-      <div className="flex flex-col gap-3 p-5 sm:p-6">
+      <div className="flex flex-col gap-2 p-4 sm:gap-3 sm:p-6">
         <h2
           id="home-hero-title"
-          className="font-display text-3xl font-semibold text-balance text-text-brand sm:text-4xl"
+          className="font-display text-2xl font-semibold text-balance text-text-brand sm:text-4xl"
         >
           {t("publication.hero.title")}
         </h2>
-        <p className="max-w-prose text-base text-text">{t("publication.hero.intro")}</p>
+        <p className="max-w-prose text-sm text-text sm:text-base">{t("publication.hero.intro")}</p>
         {explore}
       </div>
     </section>
