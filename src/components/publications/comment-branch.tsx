@@ -5,7 +5,8 @@ import { useReplyControl } from "./conversation-reply";
 
 /*
  * One comment and its replies. The replies disclosure starts collapsed, and its open state belongs to this comment alone. A reply form
- * inside the comment opens the disclosure when a reply is saved, so the new reply is visible. A failed reply changes nothing.
+ * inside the comment opens the disclosure when a reply is saved, so the new reply is visible. While it is open the disclosure reads
+ * "Hide N replies". A failed reply changes nothing.
  */
 
 const ExpandRepliesContext = createContext<(() => void) | null>(null);
@@ -18,6 +19,7 @@ export function useExpandReplies() {
 export function CommentBranch({
   replyCount,
   summary,
+  hideSummary,
   replies,
   children,
   compact = false,
@@ -25,6 +27,8 @@ export function CommentBranch({
 }: {
   readonly replyCount: number;
   readonly summary: string;
+  /** The label while the replies are open. Omitted on the Update page, which keeps its label. */
+  readonly hideSummary?: string;
   readonly replies: ReactNode;
   readonly children: ReactNode;
   /** The conversation dialog's smaller disclosure. */
@@ -36,6 +40,7 @@ export function CommentBranch({
   const expand = useCallback(() => setOpen(true), []);
   const control = useReplyControl();
   const expandedByReply = parentId !== undefined && control?.expandedParentId === parentId;
+  const isOpen = open || expandedByReply;
 
   return (
     <ExpandRepliesContext.Provider value={expand}>
@@ -43,7 +48,7 @@ export function CommentBranch({
       {replyCount > 0 ? (
         <details
           className="mt-1"
-          open={open || expandedByReply}
+          open={isOpen}
           onToggle={(event) => {
             const next = event.currentTarget.open;
             setOpen(next);
@@ -57,7 +62,7 @@ export function CommentBranch({
                 : "inline-flex min-h-11 cursor-pointer items-center text-base text-text-muted"
             }
           >
-            {summary}
+            {isOpen && hideSummary ? hideSummary : summary}
           </summary>
           {replies}
         </details>

@@ -130,8 +130,15 @@ async function CommentItem({
     replyCount === 1
       ? t("publication.comments.viewReplies.one")
       : t("publication.comments.viewReplies.other", { count: formatCount(replyCount, locale) });
+  const hideSummary =
+    replyCount === 1
+      ? t("publication.comments.hideReplies.one")
+      : t("publication.comments.hideReplies.other", { count: formatCount(replyCount, locale) });
   const replies = (
-    <ul className={conversation ? "mt-2 flex flex-col gap-3" : "mt-2 flex flex-col gap-4"}>
+    <ul
+      id={`replies-${node.id}`}
+      className={conversation ? "mt-2 flex flex-col gap-3" : "mt-2 flex flex-col gap-4"}
+    >
       {node.replies.map((reply) => (
         <CommentItem
           key={reply.id}
@@ -162,6 +169,7 @@ async function CommentItem({
       <CommentBranch
         replyCount={replyCount}
         summary={summary}
+        hideSummary={conversation ? hideSummary : undefined}
         replies={replies}
         compact={conversation}
         parentId={conversation ? node.id : undefined}
@@ -186,6 +194,23 @@ async function CommentItem({
                 body={node.body ?? ""}
                 byline={byline}
                 bodyClassName={bodyClass}
+              />
+            ) : conversation && canReport ? (
+              <CommentOptions
+                updateId={updateId}
+                commentId={node.id}
+                body={node.body ?? ""}
+                byline={byline}
+                bodyClassName={bodyClass}
+                canEdit={false}
+                report={
+                  <ReportControl
+                    targetType="comment"
+                    targetId={node.id}
+                    returnTo={`/updates/${updateId}`}
+                    id={`report-comment-${node.id}`}
+                  />
+                }
               />
             ) : (
               <>
@@ -228,7 +253,7 @@ async function CommentItem({
                 )
               ) : null}
 
-              {!node.isRemoved && !node.isMine && canReport ? (
+              {!node.isRemoved && !node.isMine && canReport && !conversation ? (
                 <ReportControl
                   targetType="comment"
                   targetId={node.id}

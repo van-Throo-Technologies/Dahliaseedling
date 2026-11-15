@@ -96,12 +96,27 @@ export function FeedActions({
     setExpandedParentId((current) => (current === parentId ? null : current));
   }, []);
 
+  // Once the reply has arrived with the refreshed discussion, bring its thread into view.
+  const scrollToReplies = useCallback((parentId: string) => {
+    let attempts = 0;
+    const step = () => {
+      const list = document.getElementById(`replies-${parentId}`);
+      if (list) {
+        (list.lastElementChild ?? list).scrollIntoView({ block: "nearest", behavior: "smooth" });
+        return;
+      }
+      if (++attempts < 60) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, []);
+
   // A saved comment or reply: a reply opens its parent and leaves reply mode; a comment scrolls to the newest message.
   const handleSaved = useCallback(() => {
     const parent = replyRef.current;
     if (parent) {
       setExpandedParentId(parent.id);
       setReplyTo(null);
+      scrollToReplies(parent.id);
       return;
     }
     requestAnimationFrame(() => {
