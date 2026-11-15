@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ProfileAvatar } from "@/components/identity/profile-avatar";
 import { CaptureFlow } from "@/components/capture/capture-flow";
 import { UpdateCard } from "@/components/publications/update-card";
+import { HomeHero } from "@/components/home/home-hero";
 import { PublicPhoto } from "@/components/publications/public-photo";
 import { FormMessage } from "@/design-system/components/form-message";
 import { ButtonLink } from "@/design-system/components/button-link";
@@ -148,6 +149,8 @@ export default async function HomePage({
     <div className="min-[1400px]:grid min-[1400px]:grid-cols-[minmax(0,40rem)_minmax(0,20rem)] min-[1400px]:justify-center min-[1400px]:gap-10">
       <div className="flex min-w-0 flex-col gap-4">
         <h1 className="sr-only">{t("publication.feed.title")}</h1>
+
+        <HomeHero signedIn={viewer !== null} />
 
         {ownProfile && !ownProfile.isSuspended ? (
           <section

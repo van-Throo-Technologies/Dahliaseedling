@@ -4,6 +4,12 @@
  */
 
 export const en = {
+  hero: {
+    title: "Every seedling has a story.",
+    intro:
+      "Discover seedlings and dahlias grown by growers, document the seedlings you raise, and share their progress with people who care about them.",
+    alt: "A first-bloom dahlia seedling, pale pink with yellow petal edges, in a garden.",
+  },
   feed: {
     railRecent: "Recently shared",
     railLabel: "Discover",
@@ -167,6 +173,12 @@ export const en = {
 };
 
 export const nl: typeof en = {
+  hero: {
+    title: "Elke zaailing heeft een verhaal.",
+    intro:
+      "Ontdek zaailingen en dahlia’s van kwekers, documenteer de zaailingen die je opkweekt en deel hun voortgang met mensen die erom geven.",
+    alt: "Een dahlia-zaailing in de eerste bloei, lichtroze met gele bloemblaadjes, in de tuin.",
+  },
   feed: {
     railRecent: "Recent gedeeld",
     railLabel: "Ontdekken",
@@ -330,6 +342,12 @@ export const nl: typeof en = {
 };
 
 export const fr: typeof en = {
+  hero: {
+    title: "Chaque semis a une histoire.",
+    intro:
+      "Découvrez les semis et les dahlias cultivés par des producteurs, documentez les semis que vous élevez et partagez leur évolution avec ceux qui y tiennent.",
+    alt: "Un semis de dahlia en première floraison, rose pâle aux bords de pétales jaunes, dans un jardin.",
+  },
   feed: {
     railRecent: "Partagés récemment",
     railLabel: "Découvrir",
