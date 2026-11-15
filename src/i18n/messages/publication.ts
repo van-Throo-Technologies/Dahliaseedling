@@ -7,7 +7,7 @@ export const en = {
   hero: {
     title: "Every seedling has a story.",
     intro:
-      "Discover seedlings and dahlias grown by growers, document the seedlings you raise, and share their progress with people who care about them.",
+      "Discover unique dahlia seedlings, follow their journey and connect with the growers behind them.",
     alt: "A pink and cream dahlia in full bloom, with a green developing bud beside it and dark leaves behind.",
   },
   feed: {
@@ -176,7 +176,7 @@ export const nl: typeof en = {
   hero: {
     title: "Elke zaailing heeft een verhaal.",
     intro:
-      "Ontdek zaailingen en dahlia’s van kwekers, documenteer de zaailingen die je opkweekt en deel hun voortgang met mensen die erom geven.",
+      "Ontdek unieke dahliazaailingen, volg hun ontwikkeling en maak kennis met de kwekers erachter.",
     alt: "Een roze-crème dahlia in volle bloei, met een groeiende groene knop ernaast en donkere bladeren op de achtergrond.",
   },
   feed: {
@@ -343,9 +343,9 @@ export const nl: typeof en = {
 
 export const fr: typeof en = {
   hero: {
-    title: "Chaque semis a une histoire.",
+    title: "Chaque jeune dahlia a son histoire.",
     intro:
-      "Découvrez les semis et les dahlias cultivés par des producteurs, documentez les semis que vous élevez et partagez leur évolution avec ceux qui y tiennent.",
+      "Découvrez des dahlias uniques issus de semis, suivez leur évolution et faites connaissance avec les personnes qui les cultivent.",
     alt: "Un dahlia rose et crème en pleine floraison, avec un bouton vert en développement à côté et des feuilles sombres en arrière-plan.",
   },
   feed: {
