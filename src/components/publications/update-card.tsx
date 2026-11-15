@@ -125,7 +125,7 @@ export async function UpdateCard({
           unoptimized
           loading="lazy"
           sizes="(min-width: 900px) 40vw, 72px"
-          className="size-[72px] shrink-0 rounded-control bg-background object-cover min-[900px]:h-auto min-[900px]:max-h-[56vh] min-[900px]:w-full min-[900px]:object-contain"
+          className="size-[72px] shrink-0 rounded-control bg-background object-contain min-[900px]:h-auto min-[900px]:max-h-[56vh] min-[900px]:w-full min-[900px]:object-contain"
         />
       ) : null}
       <div className="flex min-w-0 flex-col gap-1 min-[900px]:gap-2 min-[900px]:p-5">
