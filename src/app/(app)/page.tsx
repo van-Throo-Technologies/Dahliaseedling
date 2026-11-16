@@ -146,139 +146,141 @@ export default async function HomePage({
     : null;
 
   return (
-    <div className="min-[1400px]:grid min-[1400px]:grid-cols-[minmax(0,40rem)_minmax(0,20rem)] min-[1400px]:justify-center min-[1400px]:gap-10">
+    <div className="min-[1400px]:grid min-[1400px]:grid-cols-[minmax(0,780px)_minmax(0,300px)] min-[1400px]:justify-center min-[1400px]:gap-7">
       <div className="flex min-w-0 flex-col gap-4">
         <h1 className="sr-only">{t("publication.feed.title")}</h1>
 
         <HomeHero />
 
-        {ownProfile && !ownProfile.isSuspended ? (
-          <section
-            aria-label={t("publication.feed.createLabel")}
-            className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
-          >
-            <ProfileAvatar
-              name={ownProfile.displayName}
-              url={ownProfile.avatarPath ? avatarHref(ownProfile.id) : null}
-            />
-            <Link
-              href="/?compose=1"
-              className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
+        <div className="flex min-w-0 flex-col gap-4 min-[1400px]:max-w-[40rem]">
+          {ownProfile && !ownProfile.isSuspended ? (
+            <section
+              aria-label={t("publication.feed.createLabel")}
+              className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
             >
-              {t("publication.feed.createPrompt")}
-            </Link>
-            <Link
-              href="/?compose=1#capture-photo"
-              aria-label={t("publication.feed.addPhotos")}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control text-text-brand no-underline"
-            >
-              <PhotoIcon className="h-6 w-6" />
-            </Link>
-          </section>
-        ) : viewer ? (
-          <section
-            aria-label={t("publication.feed.createLabel")}
-            className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
-          >
-            <Link
-              href="/profile/setup?next=%2F%3Fcompose%3D1"
-              className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
-            >
-              {t("publication.feed.createPrompt")}
-            </Link>
-          </section>
-        ) : (
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-surface border border-border bg-surface px-4 py-3">
-            <p className="text-sm text-text-muted">{t("publication.feed.signInInvite")}</p>
-            <ButtonLink href="/sign-in?next=%2F%3Fcompose%3D1">
-              {t("publication.feed.signInAction")}
-            </ButtonLink>
-          </section>
-        )}
-
-        {composing && captureChoices ? (
-          <section className="rounded-surface border border-border bg-surface p-4">
-            <CaptureFlow
-              seedlings={captureChoices}
-              initialSeedlingId={composeFor}
-              embedded
-              composer
-            />
-          </section>
-        ) : null}
-
-        <nav aria-label={t("publication.feed.viewLabel")}>
-          <ul className="flex flex-wrap items-center gap-2">
-            <li>
+              <ProfileAvatar
+                name={ownProfile.displayName}
+                url={ownProfile.avatarPath ? avatarHref(ownProfile.id) : null}
+              />
               <Link
-                href="/"
-                aria-current={followingView ? undefined : "page"}
-                className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
+                href="/?compose=1"
+                className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
               >
-                {t("publication.feed.everyone")}
+                {t("publication.feed.createPrompt")}
               </Link>
-            </li>
-            {viewer ? (
+              <Link
+                href="/?compose=1#capture-photo"
+                aria-label={t("publication.feed.addPhotos")}
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control text-text-brand no-underline"
+              >
+                <PhotoIcon className="h-6 w-6" />
+              </Link>
+            </section>
+          ) : viewer ? (
+            <section
+              aria-label={t("publication.feed.createLabel")}
+              className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
+            >
+              <Link
+                href="/profile/setup?next=%2F%3Fcompose%3D1"
+                className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
+              >
+                {t("publication.feed.createPrompt")}
+              </Link>
+            </section>
+          ) : (
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-surface border border-border bg-surface px-4 py-3">
+              <p className="text-sm text-text-muted">{t("publication.feed.signInInvite")}</p>
+              <ButtonLink href="/sign-in?next=%2F%3Fcompose%3D1">
+                {t("publication.feed.signInAction")}
+              </ButtonLink>
+            </section>
+          )}
+
+          {composing && captureChoices ? (
+            <section className="rounded-surface border border-border bg-surface p-4">
+              <CaptureFlow
+                seedlings={captureChoices}
+                initialSeedlingId={composeFor}
+                embedded
+                composer
+              />
+            </section>
+          ) : null}
+
+          <nav aria-label={t("publication.feed.viewLabel")}>
+            <ul className="flex flex-wrap items-center gap-2">
               <li>
                 <Link
-                  href="/?view=following"
-                  aria-current={followingView ? "page" : undefined}
+                  href="/"
+                  aria-current={followingView ? undefined : "page"}
                   className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
                 >
-                  {t("publication.feed.following")}
+                  {t("publication.feed.everyone")}
                 </Link>
               </li>
-            ) : null}
-            <li className="ml-auto">
-              <Link
-                href="/explore"
-                className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
-              >
-                {t("publication.feed.explore")}
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        {page.items.length === 0 ? (
-          <section
-            aria-labelledby="empty-title"
-            className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4"
-          >
-            <h2 id="empty-title" className="text-lg font-medium text-text">
-              {emptyState.title}
-            </h2>
-            <p className="text-base text-text-muted">{emptyState.text}</p>
-            {emptyState.action ? (
-              <ButtonLink href={emptyState.action.href}>{emptyState.action.label}</ButtonLink>
-            ) : null}
-          </section>
-        ) : (
-          <ul className="flex flex-col gap-6">
-            {page.items.map((update) => (
-              <li key={update.updateId}>
-                <UpdateCard
-                  update={update}
-                  inlineComments={{
-                    signedIn: viewer !== null,
-                    viewerName: ownProfile?.displayName ?? "",
-                  }}
-                />
+              {viewer ? (
+                <li>
+                  <Link
+                    href="/?view=following"
+                    aria-current={followingView ? "page" : undefined}
+                    className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base text-text-brand aria-[current=page]:border-text-brand aria-[current=page]:font-medium"
+                  >
+                    {t("publication.feed.following")}
+                  </Link>
+                </li>
+              ) : null}
+              <li className="ml-auto">
+                <Link
+                  href="/explore"
+                  className="inline-flex min-h-11 items-center px-2 text-base text-text-brand"
+                >
+                  {t("publication.feed.explore")}
+                </Link>
               </li>
-            ))}
-          </ul>
-        )}
-
-        {olderHref ? (
-          <nav aria-label={t("publication.feed.olderLabel")}>
-            <Link
-              href={olderHref}
-              className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
-            >
-              {t("publication.feed.showOlder")}
-            </Link>
+            </ul>
           </nav>
-        ) : null}
+
+          {page.items.length === 0 ? (
+            <section
+              aria-labelledby="empty-title"
+              className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4"
+            >
+              <h2 id="empty-title" className="text-lg font-medium text-text">
+                {emptyState.title}
+              </h2>
+              <p className="text-base text-text-muted">{emptyState.text}</p>
+              {emptyState.action ? (
+                <ButtonLink href={emptyState.action.href}>{emptyState.action.label}</ButtonLink>
+              ) : null}
+            </section>
+          ) : (
+            <ul className="flex flex-col gap-6">
+              {page.items.map((update) => (
+                <li key={update.updateId}>
+                  <UpdateCard
+                    update={update}
+                    inlineComments={{
+                      signedIn: viewer !== null,
+                      viewerName: ownProfile?.displayName ?? "",
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {olderHref ? (
+            <nav aria-label={t("publication.feed.olderLabel")}>
+              <Link
+                href={olderHref}
+                className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
+              >
+                {t("publication.feed.showOlder")}
+              </Link>
+            </nav>
+          ) : null}
+        </div>
       </div>
 
       {/* Discovery, on wide screens only. It links to existing pages; it carries no data of its own. */}

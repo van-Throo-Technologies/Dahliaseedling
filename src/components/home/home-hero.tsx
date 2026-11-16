@@ -12,24 +12,24 @@ export async function HomeHero() {
   return (
     <section
       aria-labelledby="home-hero-title"
-      className="relative isolate flex min-h-[300px] items-center overflow-hidden rounded-surface bg-hero-green min-[1400px]:min-h-[440px]"
+      className="relative isolate flex min-h-[300px] items-center overflow-hidden rounded-surface bg-hero-green min-[1400px]:aspect-[1800/640] min-[1400px]:min-h-0"
     >
       <Image
         src="/images/home/hero-real-seedling-1800x640.webp"
         alt={t("publication.hero.alt")}
         fill
         priority
-        sizes="(min-width: 1400px) 40rem, 100vw"
+        sizes="(min-width: 1400px) 780px, 100vw"
         className="-z-10 object-cover object-[80%_50%]"
       />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-gradient-to-r from-hero-green/95 via-hero-green/60 to-transparent"
       />
-      <div className="flex max-w-[68%] flex-col gap-3 p-5 sm:max-w-[60%] sm:gap-4 sm:p-8 min-[1400px]:p-10">
+      <div className="flex max-w-[68%] flex-col gap-3 p-5 sm:max-w-[60%] sm:gap-4 sm:p-8 min-[1400px]:p-8">
         <h2
           id="home-hero-title"
-          className="font-display text-3xl font-semibold leading-tight text-balance text-background sm:text-4xl min-[1400px]:text-5xl"
+          className="font-display text-3xl font-semibold leading-tight text-balance text-background sm:text-4xl"
         >
           {t("publication.hero.title")}
         </h2>
