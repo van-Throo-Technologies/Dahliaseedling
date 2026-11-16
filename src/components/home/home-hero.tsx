@@ -3,36 +3,16 @@ import Link from "next/link";
 import { getTranslation } from "@/i18n/server";
 
 /*
- * The Home header. A visitor sees one photographic hero: the founder's real dahlia seedling on the right, with the headline, the
- * introduction and the actions set over the darker left side of the same photograph. A signed-in member sees one compact line instead,
- * so the Feed is not pushed down on every visit.
+ * The Home header, for visitors and members alike: one photographic hero with the founder's real dahlia seedling on the right. The
+ * headline, the introduction and the actions sit over the deep botanical green on the left, so the text stays readable while the flower
+ * and bud keep their colours. It stays inside the Feed column, so the discovery sidebar keeps its place.
  */
-export async function HomeHero({ signedIn }: { readonly signedIn: boolean }) {
+export async function HomeHero() {
   const { t } = await getTranslation();
-
-  if (signedIn) {
-    return (
-      <section
-        aria-label={t("publication.hero.title")}
-        className="flex flex-wrap items-center justify-between gap-3 rounded-surface border border-border bg-surface px-4 py-3"
-      >
-        <p className="font-display text-lg font-semibold text-text-brand">
-          {t("publication.hero.title")}
-        </p>
-        <Link
-          href="/explore"
-          className="inline-flex min-h-11 w-fit items-center rounded-control bg-primary px-5 text-base font-medium text-on-primary transition-colors hover:brightness-95"
-        >
-          {t("publication.feed.explore")}
-        </Link>
-      </section>
-    );
-  }
-
   return (
     <section
       aria-labelledby="home-hero-title"
-      className="relative isolate flex min-h-[300px] items-center overflow-hidden rounded-surface bg-text-brand sm:min-h-[360px]"
+      className="relative isolate flex min-h-[300px] items-center overflow-hidden rounded-surface bg-hero-green min-[1400px]:min-h-[440px]"
     >
       <Image
         src="/images/home/hero-real-seedling-1800x640.webp"
@@ -44,12 +24,12 @@ export async function HomeHero({ signedIn }: { readonly signedIn: boolean }) {
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-text-brand/90 via-text-brand/55 to-transparent"
+        className="absolute inset-0 -z-10 bg-gradient-to-r from-hero-green/95 via-hero-green/60 to-transparent"
       />
-      <div className="flex max-w-[68%] flex-col gap-3 p-5 sm:max-w-[60%] sm:gap-4 sm:p-8">
+      <div className="flex max-w-[68%] flex-col gap-3 p-5 sm:max-w-[60%] sm:gap-4 sm:p-8 min-[1400px]:p-10">
         <h2
           id="home-hero-title"
-          className="font-display text-3xl font-semibold leading-tight text-balance text-background sm:text-4xl"
+          className="font-display text-3xl font-semibold leading-tight text-balance text-background sm:text-4xl min-[1400px]:text-5xl"
         >
           {t("publication.hero.title")}
         </h2>

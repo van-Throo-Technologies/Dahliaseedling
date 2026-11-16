@@ -8,6 +8,7 @@
 @theme {
   /* Surfaces */
   --color-background: var(--ds-porcelain);
+  --color-hero-green: var(--ds-botanical-green);
   --color-surface: var(--ds-white);
   --color-border: var(--ds-sand);
 

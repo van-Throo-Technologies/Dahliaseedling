@@ -1,6 +1,9 @@
 /* Navigation, the header, the language selector and the skip link: the frame around every page. */
 
 export const en = {
+  brand: {
+    tagline: "Grow · Document · Share · Continue",
+  },
   description:
     "A community and continuation platform for genetically unique dahlias grown from seed.",
   nav: {
@@ -28,6 +31,9 @@ export const en = {
 };
 
 export const nl: typeof en = {
+  brand: {
+    tagline: "Grow · Document · Share · Continue",
+  },
   description:
     "Een gemeenschap en platform voor genetisch unieke dahlia\u0027s die uit zaad zijn gekweekt.",
   nav: {
@@ -55,6 +61,9 @@ export const nl: typeof en = {
 };
 
 export const fr: typeof en = {
+  brand: {
+    tagline: "Grow · Document · Share · Continue",
+  },
   description:
     "Une communauté et une plateforme de continuité pour des dahlias génétiquement uniques, cultivés à partir de semis.",
   nav: {

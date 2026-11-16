@@ -150,7 +150,7 @@ export default async function HomePage({
       <div className="flex min-w-0 flex-col gap-4">
         <h1 className="sr-only">{t("publication.feed.title")}</h1>
 
-        <HomeHero signedIn={viewer !== null} />
+        <HomeHero />
 
         {ownProfile && !ownProfile.isSuspended ? (
           <section

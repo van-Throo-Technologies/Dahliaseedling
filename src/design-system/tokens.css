@@ -21,4 +21,6 @@
   --ds-white: #ffffff;
   /* Chosen for AA contrast: 6.8:1 on porcelain, 7.3:1 with white text. */
   --ds-destructive: #a4262c;
+  /* Deep botanical green behind the Home hero headline. */
+  --ds-botanical-green: #1f3a2a;
 }
