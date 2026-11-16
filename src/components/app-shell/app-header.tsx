@@ -3,6 +3,7 @@ import Link from "next/link";
 import { InboxIcon } from "@/design-system/icons";
 import { getTranslation } from "@/i18n/server";
 import { APP_NAME } from "@/lib/brand";
+import { HeaderMenu } from "./header-menu";
 import { LanguageSelector } from "./language-selector";
 
 interface AppHeaderProps {
@@ -17,7 +18,7 @@ export async function AppHeader({ signedIn }: AppHeaderProps) {
   const { t } = await getTranslation();
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex min-h-14 max-w-2xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-1 lg:max-w-none lg:px-6">
+      <div className="mx-auto flex min-h-16 max-w-2xl flex-nowrap items-center justify-between gap-x-2 px-4 py-1 sm:min-h-14 sm:flex-wrap sm:gap-x-4 sm:gap-y-1 lg:max-w-none lg:px-6">
         <div className="flex items-center gap-6">
           <Link
             href="/"
@@ -42,7 +43,9 @@ export async function AppHeader({ signedIn }: AppHeaderProps) {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <LanguageSelector />
+          <div className="hidden sm:block">
+            <LanguageSelector />
+          </div>
           {signedIn ? null : (
             <Link
               href="/sign-in"
@@ -54,10 +57,11 @@ export async function AppHeader({ signedIn }: AppHeaderProps) {
           <Link
             href="/inbox"
             aria-label={t("app.nav.inbox")}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-text-brand no-underline"
+            className={`min-h-11 min-w-11 items-center justify-center rounded-control text-text-brand no-underline ${signedIn ? "inline-flex" : "hidden sm:inline-flex"}`}
           >
             <InboxIcon className="h-6 w-6" />
           </Link>
+          <HeaderMenu showInbox={!signedIn} />
         </div>
       </div>
     </header>

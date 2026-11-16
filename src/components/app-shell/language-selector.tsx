@@ -10,7 +10,7 @@ import { useLocale, useT } from "@/i18n/client";
  * including its search or filter, because the query string is part of where the visitor is. The address never
  * carries a language. Without JavaScript the apply button submits the choice.
  */
-export function LanguageSelector() {
+export function LanguageSelector({ id = "language-select" }: { readonly id?: string }) {
   const t = useT();
   const locale = useLocale();
   const pathname = usePathname();
@@ -20,11 +20,11 @@ export function LanguageSelector() {
   return (
     <form action={setLocaleAction} className="flex items-center">
       <input type="hidden" name="returnTo" value={returnTo} />
-      <label htmlFor="language-select" className="sr-only">
+      <label htmlFor={id} className="sr-only">
         {t("app.language.label")}
       </label>
       <select
-        id="language-select"
+        id={id}
         name="locale"
         defaultValue={locale}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}

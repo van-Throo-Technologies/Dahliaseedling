@@ -17,6 +17,7 @@ export const en = {
   },
   header: {
     signIn: "Sign in",
+    menu: "More options",
   },
   skip: "Skip to content",
   language: {
@@ -47,6 +48,7 @@ export const nl: typeof en = {
   },
   header: {
     signIn: "Inloggen",
+    menu: "Meer opties",
   },
   skip: "Naar de inhoud",
   language: {
@@ -77,6 +79,7 @@ export const fr: typeof en = {
   },
   header: {
     signIn: "Se connecter",
+    menu: "Plus d'options",
   },
   skip: "Aller au contenu",
   language: {
