@@ -32,7 +32,7 @@ export async function AppHeader({ signedIn }: AppHeaderProps) {
               height={150}
               unoptimized
               priority
-              className="h-9 w-auto sm:h-10 min-[1200px]:h-[54px]"
+              className="h-9 w-auto sm:h-10 lg:h-[54px]"
             />
           </Link>
           <p
