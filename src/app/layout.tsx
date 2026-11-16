@@ -16,7 +16,14 @@ export async function generateMetadata(): Promise<Metadata> {
     title: APP_NAME,
     description: t("app.description"),
     manifest: "/manifest.webmanifest",
-    icons: { apple: "/icons/apple-touch-icon.png" },
+    icons: {
+      icon: [
+        { url: "/icons/favicon.svg", type: "image/svg+xml" },
+        { url: "/icons/favicon-32.png", type: "image/png", sizes: "32x32" },
+        { url: "/icons/favicon-16.png", type: "image/png", sizes: "16x16" },
+      ],
+      apple: "/icons/apple-touch-icon.png",
+    },
     appleWebApp: { capable: true, title: "Dahlia", statusBarStyle: "default" },
   };
 }

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { InboxIcon } from "@/design-system/icons";
 import { getTranslation } from "@/i18n/server";
@@ -20,9 +21,18 @@ export async function AppHeader({ signedIn }: AppHeaderProps) {
         <div className="flex items-center gap-6">
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center font-display text-xl text-text-brand no-underline"
+            aria-label={APP_NAME}
+            className="inline-flex min-h-11 items-center no-underline"
           >
-            {APP_NAME}
+            <Image
+              src="/brand/dahliaseedling-logo-compact.svg"
+              alt=""
+              width={754}
+              height={150}
+              unoptimized
+              priority
+              className="h-9 w-auto sm:h-10"
+            />
           </Link>
           <p
             aria-hidden="true"
