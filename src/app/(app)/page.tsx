@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ProfileAvatar } from "@/components/identity/profile-avatar";
-import { CaptureFlow } from "@/components/capture/capture-flow";
 import { UpdateCard } from "@/components/publications/update-card";
 import { HomeHero } from "@/components/home/home-hero";
 import { PublicPhoto } from "@/components/publications/public-photo";
@@ -10,8 +9,6 @@ import { FormMessage } from "@/design-system/components/form-message";
 import { ButtonLink } from "@/design-system/components/button-link";
 import { PhotoIcon } from "@/design-system/icons";
 import { isUuid } from "@/modules/capture/validation";
-import { heldSeedlingChoices } from "@/modules/capture/choices";
-import { labelWords } from "@/modules/seedlings/labels";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/i18n/server";
 import { avatarHref } from "@/modules/identity/presentation";
@@ -43,8 +40,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /*
- * Home is the Feed, with the grower's creation row above it. The row opens the composer for a signed-in grower, and a visitor is
- * asked to sign in. Search and its filters live on Explore. Visitors can read the Feed without an account.
+ * Home is the community Feed, with a creation invitation above it. The invitation leads to Capture, a separate workflow, so no capture
+ * form is ever rendered here. A link from before, ?compose=…, goes to Capture as well. Search and its filters live on Explore.
+ * Visitors can read the Feed without an account.
  */
 export default async function HomePage({
   searchParams,
@@ -71,6 +69,13 @@ export default async function HomePage({
     }
   }
   if (Array.from(exploreQuery).length > 0) redirect(`/explore?${exploreQuery.toString()}`);
+
+  // A ?compose=… link predates Capture being its own workflow. It goes to Capture, starting on the seedling it names when that is a
+  // seedling address. Capture itself asks a visitor to sign in first.
+  if (query.compose !== undefined) {
+    const seedling = firstValue(query.compose);
+    redirect(seedling && isUuid(seedling) ? `/capture?seedling=${seedling}` : "/capture");
+  }
 
   const { t } = await getTranslation();
   const viewer = await getCurrentUser();
@@ -99,7 +104,7 @@ export default async function HomePage({
       ? {
           title: t("publication.feed.emptyGrowerTitle"),
           text: t("publication.feed.emptyGrowerText"),
-          action: { href: "/?compose=1", label: t("publication.feed.createPrompt") },
+          action: { href: "/capture", label: t("publication.feed.createPrompt") },
         }
       : viewer
         ? {
@@ -120,15 +125,6 @@ export default async function HomePage({
           };
 
   const supabase = await createSupabaseServerClient();
-  // The composer opens when the creation row asks for it. A seedling page opens it with that seedling chosen; only a seedling the
-  // grower holds is accepted.
-  const composeRequested = firstValue(query.compose);
-  const composing = composeRequested !== undefined;
-  const composeFor = composeRequested && isUuid(composeRequested) ? composeRequested : null;
-  const captureChoices =
-    ownProfile && !ownProfile.isSuspended
-      ? await heldSeedlingChoices(supabase, labelWords(t))
-      : null;
   const page = await listFeedPage(supabase, {
     limit: FEED_PAGE_SIZE,
     before: cursor.value,
@@ -163,13 +159,13 @@ export default async function HomePage({
                 url={ownProfile.avatarPath ? avatarHref(ownProfile.id) : null}
               />
               <Link
-                href="/?compose=1"
+                href="/capture"
                 className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
               >
                 {t("publication.feed.createPrompt")}
               </Link>
               <Link
-                href="/?compose=1#capture-photo"
+                href="/capture#capture-photo"
                 aria-label={t("publication.feed.addPhotos")}
                 className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control text-text-brand no-underline"
               >
@@ -182,7 +178,7 @@ export default async function HomePage({
               className="flex items-center gap-3 rounded-surface border border-border bg-surface p-3"
             >
               <Link
-                href="/profile/setup?next=%2F%3Fcompose%3D1"
+                href="/profile/setup?next=%2Fcapture"
                 className="flex min-h-11 min-w-0 flex-1 items-center rounded-full border border-border px-4 text-base text-text-muted no-underline"
               >
                 {t("publication.feed.createPrompt")}
@@ -191,22 +187,9 @@ export default async function HomePage({
           ) : (
             <section className="flex flex-wrap items-center justify-between gap-3 rounded-surface border border-border bg-surface px-4 py-3">
               <p className="text-sm text-text-muted">{t("publication.feed.signInInvite")}</p>
-              <ButtonLink href="/sign-in?next=%2F%3Fcompose%3D1">
-                {t("publication.feed.signInAction")}
-              </ButtonLink>
+              <ButtonLink href="/sign-in?next=%2F">{t("publication.feed.signInAction")}</ButtonLink>
             </section>
           )}
-
-          {composing && captureChoices ? (
-            <section className="rounded-surface border border-border bg-surface p-4">
-              <CaptureFlow
-                seedlings={captureChoices}
-                initialSeedlingId={composeFor}
-                embedded
-                composer
-              />
-            </section>
-          ) : null}
 
           <nav aria-label={t("publication.feed.viewLabel")}>
             <ul className="flex flex-wrap items-center gap-2">

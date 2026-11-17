@@ -51,7 +51,7 @@ export function PrimaryNav() {
   return (
     <nav
       aria-label={t("app.nav.label")}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[max(env(safe-area-inset-bottom),0.5rem)] md:static md:border-t-0 md:border-b md:pb-0 lg:sticky lg:top-6 lg:inset-auto lg:w-56 lg:shrink-0 lg:self-start lg:border-0 lg:bg-transparent lg:pb-0"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[max(env(safe-area-inset-bottom),0.5rem)] md:static md:border-t-0 md:border-b md:pb-0 lg:sticky lg:top-16 lg:z-20 lg:inset-auto lg:w-56 lg:shrink-0 lg:self-start lg:border-0 lg:bg-transparent lg:pb-0"
     >
       <ul className="mx-auto grid max-w-2xl grid-cols-4 items-end px-2 md:flex md:justify-center md:gap-2 md:px-4 lg:max-w-none lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:px-0">
         {PRIMARY_NAV.map((item) => {

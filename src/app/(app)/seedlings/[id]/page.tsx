@@ -363,7 +363,7 @@ export default async function SeedlingPage({
       ) : null}
 
       {canEdit ? (
-        <ButtonLink href={`/?compose=${id}`}>{t("seedlings.page.addPhoto")}</ButtonLink>
+        <ButtonLink href={`/capture?seedling=${id}`}>{t("seedlings.page.addPhoto")}</ButtonLink>
       ) : null}
 
       {seedOffers.length > 0 || canEdit || query.seedNotice || query.seedError ? (

@@ -2,7 +2,8 @@ import sharp from "sharp";
 import { expect, test, type Page } from "@playwright/test";
 
 /*
- * Feed-first capture and adding a photo to a seedling the grower already holds. Accounts are real test accounts in the local database.
+ * Capture is its own workflow, reached from the Feed. Home holds no capture form, and an older ?compose=… address goes to Capture.
+ * Accounts are real test accounts in the local database.
  */
 
 const PASSWORD = "correct-horse-battery";
@@ -29,19 +30,40 @@ async function photo(): Promise<Buffer> {
     .toBuffer();
 }
 
-test("a grower adds a photo from the Feed without leaving it, and it is saved privately", async ({
+test("the creation invitation on the Feed opens Capture, and a photo is saved privately there", async ({
   page,
 }) => {
   await signUpAndSetUpProfile(page, "feed", "Feed Grower");
 
-  // The creation row on the Feed opens the composer in place.
   await page.getByRole("link", { name: "What are you growing?" }).click();
+  await expect(page).toHaveURL(/\/capture$/);
   await page
     .locator("#capture-photo")
     .setInputFiles({ name: "bloom.jpg", mimeType: "image/jpeg", buffer: await photo() });
   await page.getByRole("button", { name: "Save privately" }).click();
   await expect(page).toHaveURL(/\/observations\/[0-9a-f-]{36}/);
   await expect(page.getByText("Saved privately").first()).toBeVisible();
+});
+
+test("Home shows the Feed and no capture form, and a ?compose link goes to Capture", async ({
+  page,
+}) => {
+  await signUpAndSetUpProfile(page, "home", "Home Grower");
+
+  await page.goto("/");
+  await expect(page.locator("#capture-photo")).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /Share publicly now/ })).toHaveCount(0);
+
+  await page.goto("/?compose=1");
+  await expect(page).toHaveURL(/\/capture$/);
+  await expect(page.locator("#capture-photo")).toHaveCount(1);
+});
+
+test("a visitor who follows a ?compose link is sent to sign in, not to a Home composer", async ({
+  page,
+}) => {
+  await page.goto("/?compose=1");
+  await expect(page).toHaveURL(/\/sign-in/);
 });
 
 test("from a seedling, adding a photo starts with that seedling already chosen", async ({
@@ -61,92 +83,14 @@ test("from a seedling, adding a photo starts with that seedling already chosen",
   await expect(page).toHaveURL(/\/seedlings\/[0-9a-f-]{36}/);
   const seedlingPath = new URL(page.url()).pathname;
 
-  // The seedling page offers adding a photo, and it opens with that seedling chosen.
+  // The seedling page offers adding a photo, and it opens Capture with that seedling chosen.
   await page.getByRole("link", { name: "Add a photo" }).click();
-  await expect(page).toHaveURL(/\/\?compose=[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/capture\?seedling=[0-9a-f-]{36}$/);
   await expect(page.getByRole("radio", { name: "One of my seedlings" })).toBeChecked();
   expect(seedlingPath).toMatch(/\/seedlings\//);
 });
 
-test("a grower posts a photograph to the Feed in one composer submission, with a caption, and a visitor sees it", async ({
-  page,
-  browser,
-}) => {
-  await signUpAndSetUpProfile(page, "post", "Post Grower");
-  const caption = `Composer bloom ${crypto.randomUUID().slice(0, 8)}`;
-
-  // Photo → share now → caption → Post. The seedling is created with the photograph, as in Capture.
-  await page.getByRole("link", { name: "What are you growing?" }).click();
-  await page
-    .locator("#capture-photo")
-    .setInputFiles({ name: "bloom.jpg", mimeType: "image/jpeg", buffer: await photo() });
-  await page.getByRole("checkbox", { name: /Share publicly now/ }).check();
-  await page.locator("#composer-caption").fill(caption);
-  await page.getByRole("button", { name: "Post photo" }).click();
-  await expect(page).toHaveURL(/\/updates\/[0-9a-f-]{36}\?published=1/);
-
-  // A visitor, with no account, sees the post in the Feed, with its public picture.
-  const visitor = await browser.newContext();
-  const visitorPage = await visitor.newPage();
-  await visitorPage.goto("/");
-  await expect(visitorPage.getByText(caption)).toBeVisible();
-  await visitor.close();
-});
-
-test("from a seedling page, a second photograph is posted with that seedling already chosen", async ({
-  page,
-}) => {
-  await signUpAndSetUpProfile(page, "second", "Second Grower");
-  await page.goto("/capture");
-  await page
-    .locator("#capture-photo")
-    .setInputFiles({ name: "first.jpg", mimeType: "image/jpeg", buffer: await photo() });
-  await page.getByRole("button", { name: "Save privately" }).click();
-  await expect(page).toHaveURL(/\/observations\//);
-  await page
-    .getByRole("link", { name: /Seedling #/ })
-    .first()
-    .click();
-  await expect(page).toHaveURL(/\/seedlings\/[0-9a-f-]{36}/);
-
-  // Add a photo → photo → share now → Post. The seedling is already chosen and nothing is re-entered.
-  await page.getByRole("link", { name: "Add a photo" }).click();
-  await expect(page.getByRole("radio", { name: "One of my seedlings" })).toBeChecked();
-  await page
-    .locator("#capture-photo")
-    .setInputFiles({ name: "second.jpg", mimeType: "image/jpeg", buffer: await photo() });
-  await page.getByRole("checkbox", { name: /Share publicly now/ }).check();
-  await page.getByRole("button", { name: "Post photo" }).click();
-  await expect(page).toHaveURL(/\/updates\/[0-9a-f-]{36}\?published=1/);
-});
-
-test("from the Feed, a new photograph of an existing seedling is posted once the grower chooses that seedling", async ({
-  page,
-}) => {
-  await signUpAndSetUpProfile(page, "feedsecond", "Feed Second Grower");
-  await page.goto("/capture");
-  await page
-    .locator("#capture-photo")
-    .setInputFiles({ name: "first.jpg", mimeType: "image/jpeg", buffer: await photo() });
-  await page.getByRole("button", { name: "Save privately" }).click();
-  await expect(page).toHaveURL(/\/observations\//);
-
-  // Prompt → photo → choose the seedling → share now → Post. Nothing is preselected, so the grower chooses it.
-  await page.goto("/");
-  await page.getByRole("link", { name: "What are you growing?" }).click();
-  await expect(page.getByRole("radio", { name: "One of my seedlings" })).toBeChecked();
-  await page.locator('select:has(option[value=""])').selectOption({ index: 1 });
-  await page
-    .locator("#capture-photo")
-    .setInputFiles({ name: "second.jpg", mimeType: "image/jpeg", buffer: await photo() });
-  await page.getByRole("checkbox", { name: /Share publicly now/ }).check();
-  await page.getByRole("button", { name: "Post photo" }).click();
-  await expect(page).toHaveURL(/\/updates\/[0-9a-f-]{36}\?published=1/);
-});
-
-test("the Feed composer files a photo only under a seedling the grower chooses", async ({
-  page,
-}) => {
+test("Capture files a photo only under a seedling the grower chooses", async ({ page }) => {
   await signUpAndSetUpProfile(page, "choose", "Choice Grower");
   // Two seedlings, so the most recent one is not the only choice.
   for (const name of ["first.jpg", "second.jpg"]) {
@@ -158,8 +102,7 @@ test("the Feed composer files a photo only under a seedling the grower chooses",
     await expect(page).toHaveURL(/\/observations\//);
   }
 
-  await page.goto("/");
-  await page.getByRole("link", { name: "What are you growing?" }).click();
+  await page.goto("/capture");
   // The seedling list opens with nothing chosen, so the grower has to choose.
   const seedlingChoice = page.locator('select:has(option[value=""])');
   await expect(seedlingChoice).toHaveValue("");
