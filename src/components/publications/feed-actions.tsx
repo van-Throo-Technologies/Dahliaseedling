@@ -123,7 +123,7 @@ export function FeedActions({
       const scroller = scrollRef.current;
       scroller?.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
     });
-  }, []);
+  }, [scrollToReplies]);
 
   return (
     <>
