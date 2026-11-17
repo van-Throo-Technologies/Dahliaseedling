@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
 import sharp from "sharp";
 import { MESSAGES } from "../../src/i18n/messages";
@@ -164,7 +165,7 @@ test("a Seedling's photo, shared publicly, lets the Seedling offer seedheads tha
 
   // 9. Locale switch keeps the canonical seeds filter (Dutch check on the same results).
   await visitorPage.goto(`/?seeds=1&q=${encodeURIComponent(name)}`);
-  await visitorPage.locator("#language-select").selectOption("nl");
+  await chooseLanguage(visitorPage, "nl");
   await expect(visitorPage).toHaveURL(/seeds=1/);
   await expect(visitorPage.getByLabel(NL.search.seedsLabel)).toBeChecked();
 

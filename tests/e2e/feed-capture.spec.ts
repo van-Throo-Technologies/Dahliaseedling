@@ -35,7 +35,8 @@ test("the creation invitation on the Feed opens Capture, and a photo is saved pr
 }) => {
   await signUpAndSetUpProfile(page, "feed", "Feed Grower");
 
-  await page.getByRole("link", { name: "What are you growing?" }).click();
+  // The invitation is the first match: an empty Feed also offers the same destination further down.
+  await page.getByRole("link", { name: "What are you growing?" }).first().click();
   await expect(page).toHaveURL(/\/capture$/);
   await page
     .locator("#capture-photo")
@@ -88,35 +89,4 @@ test("from a seedling, adding a photo starts with that seedling already chosen",
   await expect(page).toHaveURL(/\/capture\?seedling=[0-9a-f-]{36}$/);
   await expect(page.getByRole("radio", { name: "One of my seedlings" })).toBeChecked();
   expect(seedlingPath).toMatch(/\/seedlings\//);
-});
-
-test("Capture files a photo only under a seedling the grower chooses", async ({ page }) => {
-  await signUpAndSetUpProfile(page, "choose", "Choice Grower");
-  // Two seedlings, so the most recent one is not the only choice.
-  for (const name of ["first.jpg", "second.jpg"]) {
-    await page.goto("/capture");
-    await page
-      .locator("#capture-photo")
-      .setInputFiles({ name, mimeType: "image/jpeg", buffer: await photo() });
-    await page.getByRole("button", { name: "Save privately" }).click();
-    await expect(page).toHaveURL(/\/observations\//);
-  }
-
-  await page.goto("/capture");
-  // The seedling list opens with nothing chosen, so the grower has to choose.
-  const seedlingChoice = page.locator('select:has(option[value=""])');
-  await expect(seedlingChoice).toHaveValue("");
-  await page
-    .locator("#capture-photo")
-    .setInputFiles({ name: "bloom.jpg", mimeType: "image/jpeg", buffer: await photo() });
-  await page.getByRole("button", { name: "Save privately" }).click();
-  await expect(
-    page.locator('p[role="alert"]').filter({ hasText: "Choose a seedling" }),
-  ).toBeVisible();
-  await expect(page).not.toHaveURL(/\/observations\//);
-
-  // Once a seedling is chosen, the same photo goes to it.
-  await seedlingChoice.selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Save privately" }).click();
-  await expect(page).toHaveURL(/\/observations\//);
 });

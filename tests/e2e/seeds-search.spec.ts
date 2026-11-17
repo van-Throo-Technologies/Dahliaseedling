@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { MESSAGES } from "../../src/i18n/messages";
@@ -102,7 +103,7 @@ test("unknown or mixed and unidentified dahlia stay distinct in Dutch, and the D
   const visitor = await browser.newContext();
   const visitorPage = await visitor.newPage();
   await visitorPage.goto(`/?seeds=1&q=${tag}`);
-  await visitorPage.locator("#language-select").selectOption("nl");
+  await chooseLanguage(visitorPage, "nl");
   await expect(visitorPage).toHaveURL(/seeds=1/);
   await expect(visitorPage.getByLabel(NL.search.seedsLabel)).toBeChecked();
   await expect(visitorPage.locator("main")).toContainText(NL.search.groups.seedOffers);

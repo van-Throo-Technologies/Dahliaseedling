@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Page } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 
@@ -159,7 +160,7 @@ test("the country filter uses the grower's canonical country, and switching lang
   // Switching to Dutch keeps the address, the query, and the user-authored name exactly as written.
   await search(visitorPage, WORKING_NAME, "NL");
   const address = visitorPage.url();
-  await visitorPage.getByLabel(MESSAGES.en.app.language.label).selectOption("nl");
+  await chooseLanguage(visitorPage, "nl");
   await expect(visitorPage.locator("html")).toHaveAttribute("lang", "nl");
   expect(visitorPage.url()).toBe(address);
   await expect(visitorPage.getByLabel(MESSAGES.nl.search.label)).toHaveValue(WORKING_NAME);
@@ -173,7 +174,7 @@ test("the country filter uses the grower's canonical country, and switching lang
   await expect(visitorPage.getByText(CULTIVAR, { exact: true }).first()).toBeVisible();
 
   // French keeps the same names and the same address.
-  await visitorPage.getByLabel(MESSAGES.nl.app.language.label).selectOption("fr");
+  await chooseLanguage(visitorPage, "fr");
   await expect(visitorPage.locator("html")).toHaveAttribute("lang", "fr");
   await expect(visitorPage.getByText(CULTIVAR, { exact: true }).first()).toBeVisible();
   await expect(visitorPage.getByLabel(MESSAGES.fr.search.label)).toBeVisible();

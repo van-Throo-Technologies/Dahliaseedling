@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { MESSAGES } from "../../src/i18n/messages";
@@ -62,7 +63,7 @@ async function shareOnePhoto(page: Page, observationUrl: string, caption: string
 }
 
 async function switchLanguage(page: Page, from: "en" | "nl" | "fr", to: "en" | "nl" | "fr") {
-  await page.getByLabel(MESSAGES[from].app.language.label).selectOption(to);
+  await chooseLanguage(page, to);
   await expect(page.locator("html")).toHaveAttribute("lang", to);
 }
 

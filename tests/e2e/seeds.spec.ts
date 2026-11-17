@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { MESSAGES } from "../../src/i18n/messages";
@@ -140,7 +141,7 @@ test("in Dutch, the unidentified dahlia and the unknown or mixed source stay dif
   await expect(page.getByText(EN.seeds.notice.published)).toBeVisible();
   const profilePath = new URL(page.url()).pathname;
 
-  await page.locator("#language-select").selectOption("nl");
+  await chooseLanguage(page, "nl");
   await expect(page).toHaveURL(new RegExp(`${profilePath}(\\?|$)`));
   const main = page.locator("main");
   // The unknown or mixed source reads as its own Dutch label.

@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Page } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 
@@ -23,7 +24,7 @@ test("a visitor's language choice stays on the same page, survives a reload, and
   await page.goto("/");
   const address = page.url();
 
-  await page.getByLabel(MESSAGES.en.app.language.label).selectOption("fr");
+  await chooseLanguage(page, "fr");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(feedTitle("fr"));
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
   expect(page.url()).toBe(address);
@@ -43,7 +44,7 @@ test("without a saved choice the browser language is used, and a saved choice ov
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(feedTitle("nl"));
   await expect(page.locator("html")).toHaveAttribute("lang", "nl");
 
-  await page.getByLabel(MESSAGES.nl.app.language.label).selectOption("en");
+  await chooseLanguage(page, "en");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(feedTitle("en"));
 
   await page.reload();

@@ -1,3 +1,4 @@
+import { openMastheadMenu } from "../support/masthead";
 import { expect, test, type Page } from "@playwright/test";
 import { withSuperuser } from "../support/local-supabase";
 
@@ -37,6 +38,7 @@ test("visitor can browse, is prompted to sign in only when participating, and ca
     "Notifications",
     "Profile",
   ]);
+  await openMastheadMenu(page);
   await expect(page.getByRole("link", { name: "Inbox" })).toBeVisible();
 
   // A participating action with no session leads to sign-in, preserving the destination. Capture is the action itself;

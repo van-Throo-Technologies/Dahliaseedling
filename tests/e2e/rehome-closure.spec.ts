@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 
@@ -133,7 +134,7 @@ test("switching language during a live continuation keeps the Seedling, its term
   await makeAvailable(holderPage, path, note);
 
   // Dutch: the entry, the holder's available state and the Search filter are in Dutch.
-  await holderPage.locator("#language-select").selectOption("nl");
+  await chooseLanguage(holderPage, "nl");
   await expect(holderPage).toHaveURL(new RegExp(`${path}(\\?|$)`));
   await expect(
     holderPage.getByRole("button", { name: NL.rehome.panel.withdrawAvailability }),
@@ -145,7 +146,7 @@ test("switching language during a live continuation keeps the Seedling, its term
   await expect(holderPage.getByLabel(NL.search.availableLabel)).toBeChecked();
 
   // French: the same Seedling, the same filter state, the same canonical value.
-  await holderPage.locator("#language-select").selectOption("fr");
+  await chooseLanguage(holderPage, "fr");
   await expect(holderPage).toHaveURL(/available=1/);
   await expect(holderPage.getByLabel(FR.search.availableLabel)).toBeChecked();
   await holderPage.goto(path);
@@ -161,7 +162,7 @@ test("switching language during a live continuation keeps the Seedling, its term
   await signUp(interestedPage, "lang-interested", `Interested ${tag}`, "BE");
   await interestedPage.goto(path);
   await interestedPage.getByRole("button", { name: EN.rehome.panel.expressInterest }).click();
-  await interestedPage.locator("#language-select").selectOption("nl");
+  await chooseLanguage(interestedPage, "nl");
   await expect(interestedPage.getByText(note, { exact: true }).first()).toBeVisible();
 
   await holder.close();

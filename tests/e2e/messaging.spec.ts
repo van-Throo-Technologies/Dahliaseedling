@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 
@@ -120,7 +121,7 @@ test("a grower messages another from a profile, the receiver reports and blocks,
 
   // 7. Dutch: the Inbox heading and the notice follow the active language.
   await aliceP.goto("/inbox");
-  await aliceP.locator("#language-select").selectOption("nl");
+  await chooseLanguage(aliceP, "nl");
   await expect(
     aliceP.getByRole("heading", { name: NL.messaging.inbox.title, exact: true }),
   ).toBeVisible();

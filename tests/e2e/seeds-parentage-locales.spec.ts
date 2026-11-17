@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 
@@ -36,7 +37,7 @@ async function runLocale(browser: Browser, locale: "nl" | "fr") {
   await page.goto("/seedlings/new");
   await page.getByRole("button", { name: "Create seedling" }).click();
   await expect(page).toHaveURL(/\/seedlings\/[0-9a-f-]{36}$/);
-  await page.locator("#language-select").selectOption(locale);
+  await chooseLanguage(page, locale);
 
   const seed = editor(page, dict.glossary.seedParent);
   const pollen = editor(page, dict.glossary.pollenParent);

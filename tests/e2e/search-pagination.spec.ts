@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Page } from "@playwright/test";
 import { MESSAGES } from "../../src/i18n/messages";
 import { withSuperuser } from "../support/local-supabase";
@@ -100,7 +101,7 @@ test("a search with more than one page of seedlings can be continued, and the qu
 
   // Switching language on a continued search keeps the query, the position, and the names exactly as written.
   const beforeSwitch = visitorPage.url();
-  await visitorPage.getByLabel(MESSAGES.en.app.language.label).selectOption("nl");
+  await chooseLanguage(visitorPage, "nl");
   await expect(visitorPage.locator("html")).toHaveAttribute("lang", "nl");
   expect(visitorPage.url()).toBe(beforeSwitch);
   await expect(visitorPage.getByRole("link", { name: MESSAGES.nl.search.first })).toBeVisible();
@@ -108,12 +109,12 @@ test("a search with more than one page of seedlings can be continued, and the qu
   expect(await cardAddresses(visitorPage)).toEqual(secondPage);
 
   // French keeps the same position and the same names.
-  await visitorPage.getByLabel(MESSAGES.nl.app.language.label).selectOption("fr");
+  await chooseLanguage(visitorPage, "fr");
   await expect(visitorPage.locator("html")).toHaveAttribute("lang", "fr");
   expect(visitorPage.url()).toBe(beforeSwitch);
   await expect(visitorPage.getByRole("link", { name: MESSAGES.fr.search.first })).toBeVisible();
   expect(await cardAddresses(visitorPage)).toEqual(secondPage);
-  await visitorPage.getByLabel(MESSAGES.fr.app.language.label).selectOption("nl");
+  await chooseLanguage(visitorPage, "nl");
   await expect(visitorPage.locator("html")).toHaveAttribute("lang", "nl");
 
   // Back to the first results returns the first page.

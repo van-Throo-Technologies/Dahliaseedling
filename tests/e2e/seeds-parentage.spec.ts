@@ -1,3 +1,4 @@
+import { chooseLanguage } from "../support/language";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { MESSAGES } from "../../src/i18n/messages";
@@ -197,7 +198,7 @@ test("in Dutch the unidentified dahlia reads as a dahlia with an unknown name, d
   await page.waitForLoadState("networkidle");
   await expect(page.getByText(EN.seedlings.parent.saved)).toBeVisible();
 
-  await page.locator("#language-select").selectOption("nl");
+  await chooseLanguage(page, "nl");
   await expect(page).toHaveURL(new RegExp(`${path}(\\?|$)`));
   const main = page.locator("main");
   await expect(
