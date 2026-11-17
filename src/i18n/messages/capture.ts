@@ -16,6 +16,15 @@ export const en = {
     takePhoto: "Take photo",
     recordVideo: "Record video",
     chooseFile: "Choose a file",
+    shareUpdate: "Share update",
+    shareUpdateHint:
+      "Publishes this photo to the community Feed, with the caption below. Nothing is shared until you choose this.",
+    captionForUpdate: "Caption for the update (optional)",
+    captionForUpdateHint: "Used only when you share. Your private note is not copied in.",
+    confirmPublicTitle: "Make this seedling public?",
+    confirmPublicText:
+      "This seedling is private. Sharing makes its public page visible to everyone and publishes this photo as an update. Your other photos, notes and observations stay private.",
+    confirmPublicAction: "Make seedling public and share",
     nothingChosen:
       "Nothing chosen yet. Take a photo, record a short video, or choose one you already have.",
     filesToSave: "Files to save",
@@ -120,6 +129,16 @@ export const nl: typeof en = {
     takePhoto: "Foto maken",
     recordVideo: "Video opnemen",
     chooseFile: "Kies een bestand",
+    shareUpdate: "Update delen",
+    shareUpdateHint:
+      "Zet deze foto in de gemeenschappelijke Feed, met het onderschrift hieronder. Niets wordt gedeeld tot je dit kiest.",
+    captionForUpdate: "Onderschrift voor de update (optioneel)",
+    captionForUpdateHint:
+      "Alleen gebruikt als je deelt. Je privénotitie wordt er niet in gekopieerd.",
+    confirmPublicTitle: "Deze zaailing openbaar maken?",
+    confirmPublicText:
+      "Deze zaailing is privé. Delen maakt de openbare pagina zichtbaar voor iedereen en plaatst deze foto als update. Je andere foto's, notities en waarnemingen blijven privé.",
+    confirmPublicAction: "Zaailing openbaar maken en delen",
     nothingChosen:
       "Nog niets gekozen. Maak een foto, neem een korte video op, of kies er een die je al hebt.",
     filesToSave: "Bestanden om op te slaan",
@@ -226,6 +245,16 @@ export const fr: typeof en = {
     takePhoto: "Prendre une photo",
     recordVideo: "Enregistrer une vidéo",
     chooseFile: "Choisir un fichier",
+    shareUpdate: "Partager la mise à jour",
+    shareUpdateHint:
+      "Publie cette photo dans le fil communautaire, avec la légende ci-dessous. Rien n'est partagé tant que vous ne choisissez pas cette option.",
+    captionForUpdate: "Légende de la mise à jour (facultatif)",
+    captionForUpdateHint:
+      "Utilisée seulement si vous partagez. Votre note privée n'y est pas copiée.",
+    confirmPublicTitle: "Rendre ce semis public ?",
+    confirmPublicText:
+      "Ce semis est privé. Le partager rend sa page publique visible par tous et publie cette photo comme mise à jour. Vos autres photos, notes et observations restent privées.",
+    confirmPublicAction: "Rendre le semis public et partager",
     nothingChosen:
       "Rien de choisi pour l'instant. Prenez une photo, enregistrez une courte vidéo, ou choisissez un fichier existant.",
     filesToSave: "Fichiers à enregistrer",

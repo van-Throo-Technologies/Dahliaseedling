@@ -121,6 +121,8 @@ export const en = {
     back: "Back to the observation",
     publicNow: "The seedling is public now. Choose the photos you want to share.",
     makePublicError: "The seedling could not be made public. Nothing has changed.",
+    publishError:
+      "The update could not be published. Nothing was shared. Try again from this page.",
     videoTitle: "Public video sharing isn't available yet",
     videoText:
       "This observation holds only video, and video stays private for now. Your video is kept safely and is not published.",
@@ -290,6 +292,8 @@ export const nl: typeof en = {
     back: "Terug naar de observatie",
     publicNow: "De zaailing is nu openbaar. Kies de foto's die je wilt delen.",
     makePublicError: "De zaailing kon niet openbaar worden gemaakt. Er is niets veranderd.",
+    publishError:
+      "De update kon niet worden geplaatst. Er is niets gedeeld. Probeer het opnieuw op deze pagina.",
     videoTitle: "Het openbaar delen van video is nog niet beschikbaar",
     videoText:
       "Deze observatie bevat alleen video, en video blijft voorlopig privé. Je video wordt veilig bewaard en niet gepubliceerd.",
@@ -460,6 +464,8 @@ export const fr: typeof en = {
     back: "Retour à l'observation",
     publicNow: "Le semis est désormais public. Choisissez les photos que vous voulez partager.",
     makePublicError: "Le semis n'a pas pu être rendu public. Rien n'a changé.",
+    publishError:
+      "La mise à jour n'a pas pu être publiée. Rien n'a été partagé. Réessayez depuis cette page.",
     videoTitle: "Le partage public de vidéos n'est pas encore disponible",
     videoText:
       "Cette observation ne contient que de la vidéo, et la vidéo reste privée pour le moment. Votre vidéo est conservée en lieu sûr et n'est pas publiée.",

@@ -79,6 +79,9 @@ export default async function SharePage({
       {query.error === "seedling" ? (
         <FormMessage tone="error">{t("publication.share.makePublicError")}</FormMessage>
       ) : null}
+      {query.error === "publish" ? (
+        <FormMessage tone="error">{t("publication.share.publishError")}</FormMessage>
+      ) : null}
 
       {images.length === 0 ? (
         <section aria-labelledby="no-images-title" className="flex flex-col gap-3">

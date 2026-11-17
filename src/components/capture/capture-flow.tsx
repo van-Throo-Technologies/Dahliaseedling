@@ -7,7 +7,7 @@ import { translateMsg } from "@/i18n/message";
 import { FormMessage } from "@/design-system/components/form-message";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { IDLE_FORM_STATE } from "@/modules/identity/form-state";
-import { prepareUploadsAction, captureAction, composePostAction } from "@/modules/capture/actions";
+import { prepareUploadsAction, composePostAction } from "@/modules/capture/actions";
 import { CAPTURE_LIMITS } from "@/modules/capture/limits";
 import { matchVoiceCommand, normaliseTranscript, type VoiceCommand } from "@/modules/capture/voice";
 import { validateSelection } from "@/modules/capture/validation";
@@ -22,6 +22,8 @@ import { VoiceNote } from "./voice-note";
 export interface HeldSeedlingChoice {
   readonly id: string;
   readonly label: string;
+  /** A seedling is public or private. Sharing an Update needs a public seedling, so a private one is confirmed first. */
+  readonly visibility: "public" | "private";
 }
 
 /** url: the address of the preview, or null when the file has none on this device (a HEIC file, until it is saved). */
@@ -32,28 +34,26 @@ interface Chosen {
 }
 
 type Mode = "new" | "existing" | "identifier";
-type Phase = "idle" | "uploading" | "saving";
+type Phase = "idle" | "uploading";
+type Share = "private" | "public";
 
 /**
- * The fast path: take or choose media, then save privately. New seedling is the default, so a grower who
- * only takes a photo needs one more tap. Notes, voice and time are optional and never block saving.
- * Uploads go straight to private storage, one file at a time. Retrying resumes the files not yet uploaded.
+ * The fast path: take or choose media, then save privately or share it as an Update. New seedling is the default, so a grower who
+ * only takes a photo needs one more tap. Notes, voice and time are optional and never block saving. Uploads go straight to private
+ * storage, one file at a time. Retrying resumes the files not yet uploaded.
  */
 /**
- * The Capture flow. On the Capture page it stands alone. On the Feed it is embedded, and a grower who starts from a seedling passes that
- * seedling as initialSeedlingId, so it is already chosen and nothing needs to be re-entered.
+ * The Capture flow. It stands alone on the Capture page. Elsewhere it can start on a seedling the grower passes as initialSeedlingId,
+ * so that seedling is already chosen and nothing needs to be re-entered.
  */
 export function CaptureFlow({
   seedlings,
   initialSeedlingId = null,
   embedded = false,
-  composer = false,
 }: {
   readonly seedlings: readonly HeldSeedlingChoice[];
   readonly initialSeedlingId?: string | null;
   readonly embedded?: boolean;
-  /** The Feed composer: photos only, with an optional caption and an explicit choice to share publicly now. */
-  readonly composer?: boolean;
 }) {
   const Heading = embedded ? "h2" : "h1";
   const startingSeedling =
@@ -61,23 +61,16 @@ export function CaptureFlow({
       ? initialSeedlingId
       : null;
   const t = useT();
-  const [state, formAction] = useActionState(
-    composer ? composePostAction : captureAction,
-    IDLE_FORM_STATE,
-  );
+  const [state, formAction, pending] = useActionState(composePostAction, IDLE_FORM_STATE);
   const [caption, setCaption] = useState("");
-  const [sharePublicly, setSharePublicly] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const submitting = useRef(false);
   const [chosen, setChosen] = useState<Chosen[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>(
-    startingSeedling || (composer && seedlings.length > 0) ? "existing" : "new",
-  );
+  const [mode, setMode] = useState<Mode>(startingSeedling ? "existing" : "new");
   const [seedlingSearch, setSeedlingSearch] = useState("");
   const [voiceNotice, setVoiceNotice] = useState<VoiceCommand | null>(null);
-  // The Feed composer starts with no seedling chosen, so a photo is never filed under one the grower did not pick.
-  const [seedlingId, setSeedlingId] = useState(
-    startingSeedling ?? (composer ? "" : (seedlings[0]?.id ?? "")),
-  );
+  const [seedlingId, setSeedlingId] = useState(startingSeedling ?? seedlings[0]?.id ?? "");
   const [identifier, setIdentifier] = useState("");
   const [note, setNote] = useState("");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -88,6 +81,11 @@ export function CaptureFlow({
   const uploadedPaths = useRef<Map<string, string>>(new Map());
   const pathsForAttempt = useRef<string[] | null>(null);
   const urls = useRef<string[]>([]);
+
+  // The action has finished, whatever its result: a failed save or publish returns the form to editing, with everything still in it.
+  useEffect(() => {
+    if (!pending) submitting.current = false;
+  }, [pending]);
 
   // Revoke preview URLs when the page goes away. Nothing else holds them.
   useEffect(() => {
@@ -145,7 +143,11 @@ export function CaptureFlow({
     (item) => searchTerm === "" || normaliseTranscript(item.label).includes(searchTerm),
   );
 
-  async function save() {
+  /**
+   * Saves the photos. "Save privately" stops there. "Share update" also publishes them. A new or private seedling becomes public only
+   * after the grower confirms it in the panel below, so the first press of Share update asks and changes nothing.
+   */
+  async function save(share: Share, confirmed = false) {
     const check = validateSelection(chosen.map((item) => item.file));
     if (!check.ok) {
       setProblem(translateProblem(check.fieldErrors));
@@ -156,6 +158,16 @@ export function CaptureFlow({
       setProblem(t("capture.capture.chooseSeedling"));
       return;
     }
+    const alreadyPublic =
+      mode === "existing" &&
+      seedlings.find((item) => item.id === seedlingId)?.visibility === "public";
+    if (share === "public" && !confirmed && !alreadyPublic) {
+      setConfirming(true);
+      return;
+    }
+    if (submitting.current) return;
+    submitting.current = true;
+    setConfirming(false);
     setUploadError(null);
     setPhase("uploading");
 
@@ -188,6 +200,7 @@ export function CaptureFlow({
       }
     } catch (error) {
       setPhase("idle");
+      submitting.current = false;
       setUploadError(
         error instanceof UploadProblem
           ? `${error.message} ${t("capture.capture.stillHere")}`
@@ -196,7 +209,7 @@ export function CaptureFlow({
       return;
     }
 
-    setPhase("saving");
+    setPhase("idle");
     const form = new FormData();
     form.set("mode", mode);
     form.set("seedlingId", seedlingId);
@@ -206,22 +219,22 @@ export function CaptureFlow({
     form.set("observedAt", observedAt ? new Date(observedAt).toISOString() : "");
     form.set("paths", JSON.stringify(pathsForAttempt.current));
     form.set("caption", caption);
-    form.set("share", composer && sharePublicly ? "public" : "private");
+    form.set("share", share);
+    form.set("visibilityConfirmed", confirmed ? "1" : "0");
     startTransition(() => {
       formAction(form);
     });
   }
 
-  const busy = phase !== "idle";
+  const busy = phase !== "idle" || pending;
   const saveLabel =
     phase === "uploading"
       ? t("capture.capture.uploadingShort")
-      : phase === "saving"
+      : pending
         ? t("capture.capture.savingPrivately")
-        : composer && sharePublicly
-          ? t("capture.capture.composer.post")
-          : t("capture.capture.save");
+        : t("capture.capture.save");
   const message = state.status === "error" ? state.message : null;
+  const actionsDisabled = busy || chosen.length === 0 || problem !== null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -247,23 +260,21 @@ export function CaptureFlow({
               disabled={busy}
             />
           </label>
-          {composer ? null : (
-            <label
-              htmlFor="capture-video"
-              className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
-            >
-              {t("capture.capture.recordVideo")}
-              <input
-                id="capture-video"
-                type="file"
-                accept="video/*"
-                capture="environment"
-                className="sr-only"
-                onChange={(event) => addFiles(event.target.files)}
-                disabled={busy}
-              />
-            </label>
-          )}
+          <label
+            htmlFor="capture-video"
+            className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
+          >
+            {t("capture.capture.recordVideo")}
+            <input
+              id="capture-video"
+              type="file"
+              accept="video/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(event) => addFiles(event.target.files)}
+              disabled={busy}
+            />
+          </label>
           <label
             htmlFor="capture-library"
             className="flex min-h-14 cursor-pointer items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
@@ -272,7 +283,7 @@ export function CaptureFlow({
             <input
               id="capture-library"
               type="file"
-              accept={composer ? "image/*" : "image/*,video/*"}
+              accept="image/*,video/*"
               multiple
               className="sr-only"
               onChange={(event) => addFiles(event.target.files)}
@@ -378,6 +389,7 @@ export function CaptureFlow({
                         onChange={(event) => {
                           setSeedlingId(event.target.value);
                           setProblem(null);
+                          setConfirming(false);
                         }}
                         size={Math.min(Math.max(shownSeedlings.length + 1, 2), 6)}
                         className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
@@ -425,119 +437,128 @@ export function CaptureFlow({
           ) : null}
         </fieldset>
 
-        {composer ? null : (
-          <>
-            <details className="rounded-surface border border-border bg-surface p-4">
-              <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
-                {t("capture.capture.addNote")}
-              </summary>
-              <div className="mt-4 flex flex-col gap-4">
-                <VoiceNote
-                  onTranscript={(transcript) => {
-                    setVoiceTranscript((current) =>
-                      current ? `${current} ${transcript}` : transcript,
-                    );
-                    setNote((current) => (current ? `${current} ${transcript}` : transcript));
-                  }}
-                  onCommand={handleVoiceCommand}
-                  disabled={busy}
-                />
-                {voiceNotice === "new_seedling" ? (
-                  <p role="status" className="text-sm text-text-muted">
-                    {t("assistive.capture.newSeedlingApplied")}
-                  </p>
-                ) : null}
-                {voiceNotice === "not_keeping" ? (
-                  <div
-                    role="status"
-                    className="flex flex-col gap-2 rounded-control border border-border bg-background p-3"
+        <details className="rounded-surface border border-border bg-surface p-4">
+          <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
+            {t("capture.capture.addNote")}
+          </summary>
+          <div className="mt-4 flex flex-col gap-4">
+            <VoiceNote
+              onTranscript={(transcript) => {
+                setVoiceTranscript((current) =>
+                  current ? `${current} ${transcript}` : transcript,
+                );
+                setNote((current) => (current ? `${current} ${transcript}` : transcript));
+              }}
+              onCommand={handleVoiceCommand}
+              disabled={busy}
+            />
+            {voiceNotice === "new_seedling" ? (
+              <p role="status" className="text-sm text-text-muted">
+                {t("assistive.capture.newSeedlingApplied")}
+              </p>
+            ) : null}
+            {voiceNotice === "not_keeping" ? (
+              <div
+                role="status"
+                className="flex flex-col gap-2 rounded-control border border-border bg-background p-3"
+              >
+                <p className="text-base font-medium text-text">
+                  {t("assistive.voice.notKeepingHeading")}
+                </p>
+                {mode === "existing" && seedlingId ? (
+                  <Link
+                    href={`/seedlings/${seedlingId}/rehome`}
+                    className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
                   >
-                    <p className="text-base font-medium text-text">
-                      {t("assistive.voice.notKeepingHeading")}
-                    </p>
-                    {mode === "existing" && seedlingId ? (
-                      <Link
-                        href={`/seedlings/${seedlingId}/rehome`}
-                        className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-base font-medium text-text-brand"
-                      >
-                        {t("assistive.voice.notKeepingAction")}
-                      </Link>
-                    ) : (
-                      <p className="text-sm text-text-muted">
-                        {t("assistive.voice.notKeepingChoose")}
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-                <label htmlFor="capture-note" className="text-base font-medium text-text">
-                  {t("capture.capture.note")}
-                </label>
-                <textarea
-                  id="capture-note"
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  maxLength={CAPTURE_LIMITS.noteMaxLength}
-                  rows={3}
-                  disabled={busy}
-                  className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
-                />
+                    {t("assistive.voice.notKeepingAction")}
+                  </Link>
+                ) : (
+                  <p className="text-sm text-text-muted">{t("assistive.voice.notKeepingChoose")}</p>
+                )}
               </div>
-            </details>
-
-            <details className="rounded-surface border border-border bg-surface p-4">
-              <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
-                {t("capture.capture.time")}
-              </summary>
-              <div className="mt-4 flex flex-col gap-2">
-                <label htmlFor="capture-observed" className="text-base font-medium text-text">
-                  {t("capture.capture.timeLabel")}
-                </label>
-                <input
-                  id="capture-observed"
-                  type="datetime-local"
-                  value={observedAt}
-                  onChange={(event) => setObservedAt(event.target.value)}
-                  disabled={busy}
-                  className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
-                />
-                <p className="text-sm text-text-muted">{t("capture.capture.timeHint")}</p>
-              </div>
-            </details>
-          </>
-        )}
-
-        {composer ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="composer-caption" className="text-base font-medium text-text">
-                {t("capture.capture.composer.caption")}
-              </label>
-              <textarea
-                id="composer-caption"
-                rows={3}
-                maxLength={2000}
-                value={caption}
-                onChange={(event) => setCaption(event.target.value)}
-                disabled={busy}
-                className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
-              />
-            </div>
-            <label className="inline-flex min-h-11 items-start gap-3 text-base text-text">
-              <input
-                type="checkbox"
-                checked={sharePublicly}
-                onChange={(event) => setSharePublicly(event.target.checked)}
-                disabled={busy}
-                className="mt-1 h-6 w-6 shrink-0 accent-[var(--color-text-brand)]"
-              />
-              <span>
-                {t("capture.capture.composer.sharePublicly")}
-                <span className="block text-sm text-text-muted">
-                  {t("capture.capture.composer.sharePubliclyHint")}
-                </span>
-              </span>
+            ) : null}
+            <label htmlFor="capture-note" className="text-base font-medium text-text">
+              {t("capture.capture.note")}
             </label>
+            <textarea
+              id="capture-note"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              maxLength={CAPTURE_LIMITS.noteMaxLength}
+              rows={3}
+              disabled={busy}
+              className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
+            />
           </div>
+        </details>
+
+        <details className="rounded-surface border border-border bg-surface p-4">
+          <summary className="min-h-11 cursor-pointer text-base font-medium text-text-brand">
+            {t("capture.capture.time")}
+          </summary>
+          <div className="mt-4 flex flex-col gap-2">
+            <label htmlFor="capture-observed" className="text-base font-medium text-text">
+              {t("capture.capture.timeLabel")}
+            </label>
+            <input
+              id="capture-observed"
+              type="datetime-local"
+              value={observedAt}
+              onChange={(event) => setObservedAt(event.target.value)}
+              disabled={busy}
+              className="min-h-11 w-full rounded-control border border-border bg-background px-3 text-base text-text"
+            />
+            <p className="text-sm text-text-muted">{t("capture.capture.timeHint")}</p>
+          </div>
+        </details>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="capture-caption" className="text-base font-medium text-text">
+            {t("capture.capture.captionForUpdate")}
+          </label>
+          <p id="capture-caption-hint" className="text-sm text-text-muted">
+            {t("capture.capture.captionForUpdateHint")}
+          </p>
+          <textarea
+            id="capture-caption"
+            rows={3}
+            maxLength={2000}
+            value={caption}
+            onChange={(event) => setCaption(event.target.value)}
+            disabled={busy}
+            aria-describedby="capture-caption-hint"
+            className="w-full rounded-control border border-border bg-background px-3 py-2 text-base text-text"
+          />
+        </div>
+
+        {confirming ? (
+          <section
+            aria-labelledby="confirm-public-title"
+            className="flex flex-col gap-3 rounded-surface border border-border bg-surface p-4"
+          >
+            <h2 id="confirm-public-title" className="text-lg font-medium text-text">
+              {t("capture.capture.confirmPublicTitle")}
+            </h2>
+            <p className="text-base text-text-muted">{t("capture.capture.confirmPublicText")}</p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => save("public", true)}
+                disabled={actionsDisabled}
+                className="inline-flex min-h-14 flex-1 items-center justify-center rounded-control bg-primary px-4 py-3 text-base font-medium text-on-primary disabled:cursor-wait disabled:opacity-70"
+              >
+                {t("capture.capture.confirmPublicAction")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                disabled={busy}
+                className="inline-flex min-h-14 flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-base font-medium text-text-brand"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </section>
         ) : null}
 
         {uploadError ? <FormMessage tone="error">{uploadError}</FormMessage> : null}
@@ -545,28 +566,31 @@ export function CaptureFlow({
         <p role="status" aria-live="polite" className="text-base text-text-muted">
           {phase === "uploading"
             ? t("capture.capture.uploading", { done: progress.done + 1, total: progress.total })
-            : phase === "saving"
+            : pending
               ? t("capture.capture.savingPrivately")
               : ""}
         </p>
 
-        <button
-          type="button"
-          onClick={save}
-          disabled={busy || chosen.length === 0 || problem !== null}
-          className="inline-flex min-h-14 w-full items-center justify-center rounded-control bg-primary px-4 py-3 text-lg font-medium text-on-primary disabled:cursor-wait disabled:opacity-70"
-        >
-          {saveLabel}
-        </button>
-        <p className="text-sm text-text-muted">
-          {composer
-            ? t(
-                sharePublicly
-                  ? "capture.capture.composer.privacyPublic"
-                  : "capture.capture.composer.privacyPrivate",
-              )
-            : t("capture.capture.privacyNote")}
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => save("private")}
+            disabled={actionsDisabled}
+            className="inline-flex min-h-14 flex-1 items-center justify-center rounded-control bg-primary px-4 py-3 text-lg font-medium text-on-primary disabled:cursor-wait disabled:opacity-70"
+          >
+            {saveLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => save("public")}
+            disabled={actionsDisabled}
+            className="inline-flex min-h-14 flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3 text-lg font-medium text-text-brand disabled:cursor-wait disabled:opacity-70"
+          >
+            {t("capture.capture.shareUpdate")}
+          </button>
+        </div>
+        <p className="text-sm text-text-muted">{t("capture.capture.shareUpdateHint")}</p>
+        <p className="text-sm text-text-muted">{t("capture.capture.privacyNote")}</p>
         <p className="text-sm">
           <Link href="/profile" className="text-text-brand underline underline-offset-4">
             {t("capture.capture.backToProfile")}

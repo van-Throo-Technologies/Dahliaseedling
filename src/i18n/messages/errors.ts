@@ -47,6 +47,8 @@ export const en = {
     notDeleted: "That observation could not be deleted. Try again.",
     seedlingUnavailable:
       "That seedling is not available to you. Check the identifier, or choose one from your list.",
+    visibilityNotConfirmed:
+      "Sharing an update makes the seedling public. Confirm that first, and nothing has been saved.",
     fileNotSupported: "That file type is not supported.",
     readFailed: "The photos could not be read.",
   },
@@ -124,6 +126,8 @@ export const nl: typeof en = {
     notDeleted: "Die observatie kon niet worden verwijderd. Probeer het opnieuw.",
     seedlingUnavailable:
       "Die zaailing is voor jou niet beschikbaar. Controleer de identificatie, of kies er een uit je lijst.",
+    visibilityNotConfirmed:
+      "Delen van een update maakt de zaailing openbaar. Bevestig dat eerst; er is nog niets opgeslagen.",
     fileNotSupported: "Dit bestandstype wordt niet ondersteund.",
     readFailed: "De foto's konden niet worden gelezen.",
   },
@@ -205,6 +209,8 @@ export const fr: typeof en = {
     notDeleted: "Cette observation n'a pas pu être supprimée. Réessayez.",
     seedlingUnavailable:
       "Ce semis ne vous est pas accessible. Vérifiez l'identifiant, ou choisissez-en un dans votre liste.",
+    visibilityNotConfirmed:
+      "Partager une mise à jour rend le semis public. Confirmez-le d'abord ; rien n'a été enregistré.",
     fileNotSupported: "Ce type de fichier n'est pas pris en charge.",
     readFailed: "Les photos n'ont pas pu être lues.",
   },

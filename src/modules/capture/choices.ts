@@ -16,16 +16,21 @@ export async function heldSeedlingChoices(
 ): Promise<HeldSeedlingChoice[]> {
   const { data } = await supabase.rpc("held_seedling_candidates", { p_limit: 200 });
   const candidates = data ?? [];
-  const labels = await displayLabels(
-    supabase,
-    candidates.map((item) => item.seedling_id),
-    words,
+  const ids = candidates.map((item) => item.seedling_id);
+  const labels = await displayLabels(supabase, ids, words);
+  // Visibility is read through the same session, so the grower sees the visibility of their own seedlings only.
+  const { data: rows } = ids.length
+    ? await supabase.from("seedlings").select("id, visibility").in("id", ids)
+    : { data: [] };
+  const publicIds = new Set(
+    (rows ?? []).filter((row) => row.visibility === "public").map((row) => row.id),
   );
   return candidates.map((item) => {
     const label = labels.get(item.seedling_id) ?? words.seedling;
     return {
       id: item.seedling_id,
       label: item.working_name ? `${label} · ${item.working_name}` : label,
+      visibility: publicIds.has(item.seedling_id) ? "public" : "private",
     };
   });
 }

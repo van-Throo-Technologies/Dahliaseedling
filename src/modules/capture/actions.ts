@@ -186,13 +186,6 @@ async function saveCapture(
   return { ok: true, observationId: saved.id, seedlingId: saved.seedlingId };
 }
 
-export async function captureAction(_previous: FormState, formData: FormData): Promise<FormState> {
-  refuseOnPublicSurface();
-  const result = await saveCapture(formData);
-  if (!result.ok) return result.state;
-  redirect(`/observations/${result.observationId}?saved=1`);
-}
-
 async function setSeedlingVisibility(
   seedlingId: string,
   visibility: "public" | "private",
@@ -226,9 +219,21 @@ export async function composePostAction(
   formData: FormData,
 ): Promise<FormState> {
   refuseOnPublicSurface();
+  const sharing = formData.get("share") === "public";
+  // A public Update needs a public seedling, and a private seedling becomes public only when the grower has confirmed that. Unless the
+  // chosen seedling is already public, an unconfirmed share is refused before anything is saved.
+  if (sharing && formData.get("visibilityConfirmed") !== "1") {
+    const chosen = text(formData, "mode") === "existing" ? text(formData, "seedlingId") : "";
+    const current = isUuid(chosen)
+      ? await getSeedling(await createSupabaseServerClient(), chosen)
+      : null;
+    if (current?.visibility !== "public")
+      return failureKey("errors.capture.visibilityNotConfirmed");
+  }
+
   const saved = await saveCapture(formData);
   if (!saved.ok) return saved.state;
-  if (formData.get("share") !== "public") redirect(`/observations/${saved.observationId}?saved=1`);
+  if (!sharing) redirect(`/observations/${saved.observationId}?saved=1`);
 
   const supabase = await createSupabaseServerClient();
   const seedling = await getSeedling(supabase, saved.seedlingId);
@@ -244,6 +249,9 @@ export async function composePostAction(
   post.set("caption", String(formData.get("caption") ?? ""));
   for (const photo of photos) if (photo.kind === "image") post.append("mediaId", photo.id);
 
+  // The seedling stays public after a successful share: an Update is public only while its seedling is. If publishing fails, the
+  // seedling is made private again, because no Update was published. The photo is already saved, so a failure leads to the Share page,
+  // not back to this form, where a second save would create a second observation.
   let result: FormState;
   try {
     result = await publishUpdateAction(IDLE_FORM_STATE, post);
@@ -252,7 +260,10 @@ export async function composePostAction(
       await setSeedlingVisibility(saved.seedlingId, "private");
     throw error;
   }
-  if (!wasPublic) await setSeedlingVisibility(saved.seedlingId, "private");
+  if (result.status === "error") {
+    if (!wasPublic) await setSeedlingVisibility(saved.seedlingId, "private");
+    redirect(`/observations/${saved.observationId}/share?error=publish`);
+  }
   return result;
 }
 
